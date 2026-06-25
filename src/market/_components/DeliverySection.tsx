@@ -3,7 +3,7 @@ import type { Address } from '../types'
 
 // 배송지 — 접기/펼치기와 선택 요약은 스스로 책임진다.
 // 단, 실제 선택 동작(onSelectAddress)은 AddressForm → AddressField 로 통과시킨다.
-export function DeliverySection({
+export const DeliverySection = ({
   addresses,
   selectedAddressId,
   onSelectAddress,
@@ -11,7 +11,7 @@ export function DeliverySection({
   addresses: Address[]
   selectedAddressId: string
   onSelectAddress: (id: string) => void
-}) {
+}) => {
   const [expanded, setExpanded] = useState(false)
   const selected = addresses.find((a) => a.id === selectedAddressId)!
   return (
@@ -39,7 +39,7 @@ export function DeliverySection({
 
 // '도서산간 제외' 필터는 스스로 책임진다.
 // 선택 동작(onSelectAddress)은 그대로 AddressField 로 통과시킨다.
-function AddressForm({
+const AddressForm = ({
   addresses,
   selectedAddressId,
   onSelectAddress,
@@ -47,7 +47,7 @@ function AddressForm({
   addresses: Address[]
   selectedAddressId: string
   onSelectAddress: (id: string) => void
-}) {
+}) => {
   const [onlyNear, setOnlyNear] = useState(false)
   const list = onlyNear ? addresses.filter((a) => !a.isRemote) : addresses
   return (
@@ -68,7 +68,7 @@ function AddressForm({
   )
 }
 
-function AddressField({
+const AddressField = ({
   address,
   selected,
   onSelect,
@@ -76,7 +76,7 @@ function AddressField({
   address: Address
   selected: boolean
   onSelect: (id: string) => void
-}) {
+}) => {
   return (
     <label className="addr">
       <input type="radio" checked={selected} onChange={() => onSelect(address.id)} />

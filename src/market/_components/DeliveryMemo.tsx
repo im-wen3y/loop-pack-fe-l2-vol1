@@ -1,11 +1,11 @@
 /** ② 구현 vs 조합: 내부 useState 제거 → value/onChange를 받는 제어 컴포넌트로 변경 */
-export function DeliveryMemo({
+export const DeliveryMemo = ({
   value,
   onChange,
 }: {
   value: string
   onChange: (value: string) => void
-}) {
+}) => {
   return (
     <textarea
       value={value}

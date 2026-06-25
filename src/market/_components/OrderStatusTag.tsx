@@ -13,7 +13,7 @@ const orderStatusMap: Record<OrderStatus, { label: string; color: string }> = {
   cancelled: { label: '주문취소', color: '#ef4444' },
 }
 
-export function OrderStatusTag({ status }: { status: OrderStatus }) {
+export const OrderStatusTag = ({ status }: { status: OrderStatus }) => {
   const { label, color } = orderStatusMap[status]
 
   return (

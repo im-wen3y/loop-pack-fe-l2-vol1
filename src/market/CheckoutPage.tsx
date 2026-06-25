@@ -16,7 +16,7 @@ const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   kakao: '카카오페이',
 }
 
-export function CheckoutPage() {
+export const CheckoutPage = () => {
   const member = MEMBER
   const cart = CART
 
