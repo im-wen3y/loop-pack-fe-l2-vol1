@@ -13,7 +13,9 @@ export const DeliverySection = ({
   onSelectAddress: (id: string) => void
 }) => {
   const [expanded, setExpanded] = useState(false)
-  const selected = addresses.find((a) => a.id === selectedAddressId)!
+  const selected = addresses.find((a) => a.id === selectedAddressId)
+  // find()는 Address | undefined — ! 단언 대신 명시적 처리 (훅 호출 이후 early return)
+  if (!selected) return null
   return (
     <div className="section">
       <div className="row between">
