@@ -8,7 +8,7 @@ import {
   calculateItemTotal,
   calculateShippingFee,
   calculatePointDiscount,
-  calculateFinalPrice,
+  calculateVipDiscountAmount,
 } from './calculateOrderPrice'
 
 type UseOrderPriceParams = {
@@ -30,18 +30,29 @@ export const useOrderPrice = ({
   memberPoint,
   memberGrade,
 }: UseOrderPriceParams) => {
+  // 제품 합계 금액 계산
   const itemTotal = calculateItemTotal(cartItems)
+  // VIP 할인 금액 계산
+  const vipDiscount = calculateVipDiscountAmount(itemTotal, memberGrade)
+  // VIP 할인 적용 후 상품 합계 금액
+  const itemTotalAfterVip = itemTotal - vipDiscount
+
+  // 배송비 계산
   const shippingFee = calculateShippingFee(itemTotal, isRemote)
+  // 적립금 할인 계산
   const pointDiscount = usePoint ? calculatePointDiscount(pointInput, memberPoint, itemTotal) : 0
+
+  // 최종 할인 금액 계산
   const totalDiscount = couponDiscount + pointDiscount
-  const subtotal = itemTotal + shippingFee - totalDiscount
-  const finalPrice = calculateFinalPrice(subtotal, memberGrade)
+  // 최종 결제 금액 계산
+  const finalPrice = itemTotalAfterVip + shippingFee - totalDiscount
 
   return {
     itemTotal,
     shippingFee,
     couponDiscount,
     pointDiscount,
+    vipDiscount,
     finalPrice,
   }
 }

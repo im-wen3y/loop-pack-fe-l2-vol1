@@ -3,7 +3,7 @@ import {
   calculateItemTotal,
   calculateShippingFee,
   calculatePointDiscount,
-  calculateFinalPrice,
+  calculateVipDiscountAmount,
 } from './calculateOrderPrice'
 import type { CartItem } from './types'
 
@@ -68,12 +68,12 @@ describe('calculatePointDiscount', () => {
   })
 })
 
-describe('calculateFinalPrice', () => {
-  it('VIP는 10% 할인', () => {
-    expect(calculateFinalPrice(50000, 'VIP')).toBe(Math.round(50000 * 0.9))
+describe('calculateVipDiscountAmount', () => {
+  it('VIP는 상품 금액의 10%를 할인 금액으로 반환한다', () => {
+    expect(calculateVipDiscountAmount(50000, 'VIP')).toBe(50000 - Math.round(50000 * 0.9))
   })
 
-  it('NORMAL은 할인 없음', () => {
-    expect(calculateFinalPrice(50000, 'NORMAL')).toBe(50000)
+  it('NORMAL은 할인 금액이 0이다', () => {
+    expect(calculateVipDiscountAmount(50000, 'NORMAL')).toBe(0)
   })
 })

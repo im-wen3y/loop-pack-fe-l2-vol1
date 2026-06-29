@@ -27,6 +27,10 @@ export const calculatePointDiscount = (
   itemTotal: number,
 ) => Math.min(pointInput, memberPoint, itemTotal)
 
-/** 최종 금액: VIP 등급이면 10% 할인 */
-export const calculateFinalPrice = (subtotal: number, memberGrade: 'VIP' | 'NORMAL') =>
-  memberGrade === 'VIP' ? Math.round(subtotal * VIP_DISCOUNT_RATE) : subtotal
+/** VIP 할인: VIP 등급이면 10% 할인 */
+export const calculateVipDiscount = (amount: number, memberGrade: 'VIP' | 'NORMAL') =>
+  memberGrade === 'VIP' ? Math.round(amount * VIP_DISCOUNT_RATE) : amount
+
+/** VIP 할인 금액: VIP 등급일 때 깎이는 금액, 아니면 0 */
+export const calculateVipDiscountAmount = (amount: number, memberGrade: 'VIP' | 'NORMAL') =>
+  memberGrade === 'VIP' ? amount - calculateVipDiscount(amount, memberGrade) : 0
