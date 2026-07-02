@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import type { Address, Coupon, PaymentMethod } from './types'
+import type { Coupon, PaymentMethod } from './types'
+import { useOrderPrice } from './useOrderPrice'
 import { ADDRESSES, CART, COUPONS, MEMBER, PAST_ORDERS } from './data'
-import { Price } from './Price'
-import { OrderLineRow } from './OrderLineRow'
-import { OrderStatusTag } from './OrderStatusTag'
-import { DeliveryMemo } from './DeliveryMemo'
+import { OrderItemRow } from './_components/OrderItemRow'
+import { OrderPriceRow } from './_components/OrderPriceRow'
+import { OrderStatusTag } from './_components/OrderStatusTag'
+import { DeliveryMemo } from './_components/DeliveryMemo'
+import { DeliverySection } from './_components/DeliverySection'
+import { OrderCompleteStep } from './_components/OrderCompleteStep'
+import { TermsModal } from './_components/TermsModal'
 import './market.css'
 
 const PAYMENT_LABEL: Record<PaymentMethod, string> = {
@@ -13,98 +17,7 @@ const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   kakao: '카카오페이',
 }
 
-// 배송지 — 접기/펼치기와 선택 요약은 스스로 책임진다.
-// 단, 실제 선택 동작(onSelectAddress)은 AddressForm → AddressField 로 통과시킨다.
-function DeliverySection({
-  addresses,
-  selectedAddressId,
-  onSelectAddress,
-}: {
-  addresses: Address[]
-  selectedAddressId: string
-  onSelectAddress: (id: string) => void
-}) {
-  const [expanded, setExpanded] = useState(false)
-  const selected = addresses.find((a) => a.id === selectedAddressId)!
-  return (
-    <div className="section">
-      <div className="row between">
-        <h2>배송지</h2>
-        <button className="link" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? '접기' : '변경'}
-        </button>
-      </div>
-      {expanded ? (
-        <AddressForm
-          addresses={addresses}
-          selectedAddressId={selectedAddressId}
-          onSelectAddress={onSelectAddress}
-        />
-      ) : (
-        <p className="addr-summary">
-          {selected.label} · {selected.recipient} ({selected.detail})
-        </p>
-      )}
-    </div>
-  )
-}
-
-// '도서산간 제외' 필터는 스스로 책임진다.
-// 선택 동작(onSelectAddress)은 그대로 AddressField 로 통과시킨다.
-function AddressForm({
-  addresses,
-  selectedAddressId,
-  onSelectAddress,
-}: {
-  addresses: Address[]
-  selectedAddressId: string
-  onSelectAddress: (id: string) => void
-}) {
-  const [onlyNear, setOnlyNear] = useState(false)
-  const list = onlyNear ? addresses.filter((a) => !a.isRemote) : addresses
-  return (
-    <>
-      <label className="filter">
-        <input
-          type="checkbox"
-          checked={onlyNear}
-          onChange={(e) => setOnlyNear(e.target.checked)}
-        />
-        도서산간 제외
-      </label>
-      {list.map((a) => (
-        <AddressField
-          key={a.id}
-          address={a}
-          selected={a.id === selectedAddressId}
-          onSelect={onSelectAddress}
-        />
-      ))}
-    </>
-  )
-}
-
-function AddressField({
-  address,
-  selected,
-  onSelect,
-}: {
-  address: Address
-  selected: boolean
-  onSelect: (id: string) => void
-}) {
-  return (
-    <label className="addr">
-      <input type="radio" checked={selected} onChange={() => onSelect(address.id)} />
-      <span>
-        {address.label} · {address.recipient} ({address.detail})
-        {address.isRemote ? ' · 도서산간' : ''}
-      </span>
-    </label>
-  )
-}
-
-export function CheckoutPage() {
+export const CheckoutPage = () => {
   const member = MEMBER
   const cart = CART
 
@@ -117,44 +30,32 @@ export function CheckoutPage() {
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [placed, setPlaced] = useState(false)
+  // ② 구현 vs 조합: DeliveryMemo에서 끌어올린 상태
+  const [memo, setMemo] = useState('')
 
   const address = ADDRESSES.find((a) => a.id === selectedAddressId)!
 
-  // ── 배송비 정책 ──────────────────────────────
-  const itemTotal = cart.reduce((sum, it) => sum + it.price * it.quantity, 0)
-  let shippingFee = 3000
-  if (itemTotal >= 50000) shippingFee = 0
-  if (address.isRemote) shippingFee += 3000
+  const { itemTotal, shippingFee, couponDiscount, pointDiscount, vipDiscount, finalPrice } =
+    useOrderPrice({
+      cartItems: cart,
+      isRemote: address.isRemote,
+      couponDiscount: appliedCoupon ? appliedCoupon.discount : 0,
+      usePoint,
+      pointInput,
+      memberPoint: member.point,
+      memberGrade: member.grade,
+    })
 
-  // ── 쿠폰 정책 ────────────────────────────────
-  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0
-
-  // ── 적립금 정책 ──────────────────────────────
-  const pointDiscount = usePoint ? Math.min(pointInput, member.point, itemTotal) : 0
-
-  // 최종 금액을 state 에 담아둔다.
-  const [finalPrice] = useState(itemTotal + shippingFee - couponDiscount - pointDiscount)
-
-  const applyCoupon = () => {
+  // 컨벤션: 내부 이벤트 핸들러는 handleX 네이밍 적용
+  const handleApplyCoupon = () => {
     const found = COUPONS.find((c) => c.code === couponCode.trim())
     setAppliedCoupon(found ?? null)
     if (!found) alert('존재하지 않는 쿠폰이에요')
   }
 
+  // ⑨ Context 전에 composition: 주문 완료 UI를 분리하고 props로 값 전달
   if (placed) {
-    return (
-      <div className="checkout">
-        <h1>주문 완료</h1>
-        <div className="section">
-          <p style={{ color: 'var(--text-h)' }}>
-            주문이 접수되었어요. 결제 금액 {finalPrice.toLocaleString()}원
-          </p>
-        </div>
-        <button className="pay" onClick={() => setPlaced(false)}>
-          주문서로 돌아가기
-        </button>
-      </div>
-    )
+    return <OrderCompleteStep finalPrice={finalPrice} memo={memo} onBack={() => setPlaced(false)} />
   }
 
   return (
@@ -169,21 +70,18 @@ export function CheckoutPage() {
 
       <div className="section">
         <h2>배송 요청사항</h2>
-        <DeliveryMemo />
+        <DeliveryMemo value={memo} onChange={setMemo} />
       </div>
 
       <div className="section">
         <h2>주문 상품</h2>
+        {/* ⑤ props 과다 → Composition: 필요한 서브컴포넌트만 조합 */}
         {cart.map((it) => (
-          <OrderLineRow
-            key={it.id}
-            type="product"
-            label={it.name}
-            amount={it.price * it.quantity}
-            thumbnail={it.thumbnail}
-            option={it.option}
-            quantity={it.quantity}
-          />
+          <OrderItemRow key={it.id}>
+            <OrderItemRow.Thumbnail thumbnail={it.thumbnail} />
+            <OrderItemRow.Label label={it.name} option={`${it.option} · 수량 ${it.quantity} `} />
+            <OrderItemRow.Amount amount={it.price * it.quantity} />
+          </OrderItemRow>
         ))}
       </div>
 
@@ -196,7 +94,7 @@ export function CheckoutPage() {
             onChange={(e) => setCouponCode(e.target.value)}
             placeholder="쿠폰 코드 (예: WELCOME5000)"
           />
-          <button onClick={applyCoupon}>적용</button>
+          <button onClick={handleApplyCoupon}>적용</button>
         </div>
         {appliedCoupon ? <small>{appliedCoupon.label} 적용됨</small> : null}
       </div>
@@ -232,23 +130,37 @@ export function CheckoutPage() {
 
       <div className="section">
         <h2>결제 금액</h2>
-        <OrderLineRow type="subtotal" label="상품 금액" amount={itemTotal} />
-        <OrderLineRow type="shipping" label="배송비" amount={shippingFee} />
+        {/* ⑤ props 과다 → Composition: type 분기 없이 서브컴포넌트 조합 */}
+        <OrderPriceRow>
+          <OrderPriceRow.Label label="상품 금액" />
+          <OrderPriceRow.Amount amount={itemTotal} />
+        </OrderPriceRow>
+        <OrderPriceRow>
+          <OrderPriceRow.Label label="배송비" />
+          <OrderPriceRow.Amount amount={shippingFee} />
+        </OrderPriceRow>
         {appliedCoupon ? (
-          <OrderLineRow
-            type="coupon"
-            label="쿠폰 할인"
-            amount={couponDiscount}
-            isDiscount
-            couponCode={appliedCoupon.code}
-          />
+          <OrderPriceRow>
+            <OrderPriceRow.Label label="쿠폰 할인" option={appliedCoupon.code} />
+            <OrderPriceRow.Amount amount={couponDiscount} isDiscount />
+          </OrderPriceRow>
         ) : null}
         {usePoint ? (
-          <OrderLineRow type="point" label="적립금 사용" amount={pointDiscount} isDiscount />
+          <OrderPriceRow>
+            <OrderPriceRow.Label label="적립금 사용" />
+            <OrderPriceRow.Amount amount={pointDiscount} isDiscount />
+          </OrderPriceRow>
+        ) : null}
+        {vipDiscount > 0 ? (
+          <OrderPriceRow>
+            <OrderPriceRow.Label label="VIP 할인" />
+            <OrderPriceRow.Amount amount={vipDiscount} isDiscount />
+          </OrderPriceRow>
         ) : null}
         <div className="total">
           <span>최종 결제 금액</span>
-          <Price amount={finalPrice} member={member} />
+          {/* ④ 성급한 추상화: 한 줄짜리 Price 컴포넌트 제거, 인라인으로 교체 */}
+          <strong>{finalPrice.toLocaleString()}원</strong>
         </div>
       </div>
 
@@ -266,28 +178,16 @@ export function CheckoutPage() {
         {finalPrice.toLocaleString()}원 결제하기
       </button>
 
-      {isTermsOpen ? (
-        <div className="modal" onClick={() => setIsTermsOpen(false)}>
-          <div className="modal-body" onClick={(e) => e.stopPropagation()}>
-            <h3>이용 약관</h3>
-            <p>주문 후 7일 이내 단순 변심 반품이 가능하며, 도서산간은 배송비가 추가됩니다.</p>
-            <button onClick={() => setIsTermsOpen(false)}>닫기</button>
-          </div>
-        </div>
-      ) : null}
+      {/* ⑩ children vs slot: 모달 패턴을 TermsModal로 분리 */}
+      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
 
       <div className="section">
         <h2>최근 주문</h2>
         {PAST_ORDERS.map((o) => (
           <div key={o.id} className="line">
             <div className="grow">{o.summary}</div>
-            <OrderStatusTag
-              isPaid={o.status === 'paid'}
-              isPreparing={o.status === 'preparing'}
-              isShipped={o.status === 'shipped'}
-              isDelivered={o.status === 'delivered'}
-              isCancelled={o.status === 'cancelled'}
-            />
+            {/* ⑥ boolean 폭발 → enum: 5개 boolean props 대신 status만 전달 */}
+            <OrderStatusTag status={o.status} />
           </div>
         ))}
       </div>
