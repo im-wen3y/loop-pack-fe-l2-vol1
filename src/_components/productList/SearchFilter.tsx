@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react'
 import type { CategoryFilter } from '../../_types/product'
+import type { ProductFilters } from '../../_hooks/productList/useProductFilters'
 
 const CATEGORIES: { value: CategoryFilter; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -9,31 +10,28 @@ const CATEGORIES: { value: CategoryFilter; label: string }[] = [
   { value: 'beauty', label: '뷰티' },
 ]
 
-type SearchFilterProps = {
-  category: CategoryFilter
-  minPrice: number | ''
-  maxPrice: number | ''
-  inStockOnly: boolean
+type SearchFilterValues = Pick<ProductFilters, 'category' | 'minPrice' | 'maxPrice' | 'inStockOnly'>
+
+type SearchFilterHandlers = {
   onCategoryChange: (category: CategoryFilter) => void
   onMinPriceChange: (value: number | '') => void
   onMaxPriceChange: (value: number | '') => void
   onInStockOnlyChange: (isInStockOnly: boolean) => void
+}
+
+type SearchFilterProps = {
+  filters: SearchFilterValues
+  onFilterChange: SearchFilterHandlers
   onResetFilters: () => void
 }
 
 const parsePrice = (value: string): number | '' => (value === '' ? '' : Number(value))
 
-export const SearchFilter = ({
-  category,
-  minPrice,
-  maxPrice,
-  inStockOnly,
-  onCategoryChange,
-  onMinPriceChange,
-  onMaxPriceChange,
-  onInStockOnlyChange,
-  onResetFilters,
-}: SearchFilterProps) => {
+export const SearchFilter = ({ filters, onFilterChange, onResetFilters }: SearchFilterProps) => {
+  const { category, minPrice, maxPrice, inStockOnly } = filters
+  const { onCategoryChange, onMinPriceChange, onMaxPriceChange, onInStockOnlyChange } =
+    onFilterChange
+
   const handleMinPriceChange = (e: ChangeEvent<HTMLInputElement>) =>
     onMinPriceChange(parsePrice(e.target.value))
 
