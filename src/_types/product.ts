@@ -1,5 +1,5 @@
 // 도메인 타입 — UI·로직 등 앱 전반에서 공유한다.
-// API 요청/응답 타입(DTO)은 서버 계약이므로 여기 두지 않고 repository에 colocate.
+// API 요청/응답 타입(DTO)은 서버 계약이므로 여기 두지 않고 _apis에 colocate.
 
 export type Product = {
   id: number
