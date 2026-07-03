@@ -1,9 +1,11 @@
 import type { GetProductListParams } from '../../_apis/product/model'
 import type { Product } from '../../_types/product'
 import { useGetProductList } from '../../_service/product/service'
+import { useDebouncedValue } from '../useDebouncedValue'
 import type { ProductFilters } from './useProductFilters'
 
 const PAGE_SIZE = 12
+const SEARCH_DEBOUNCE_MS = 300
 
 type UseProductListQueryParams = {
   filters: ProductFilters
@@ -29,8 +31,14 @@ function toGetProductListParams(filters: ProductFilters, page: number): GetProdu
 
 // 필터·페이지로 상품 목록을 조회하고, 컴포넌트가 바로 쓸 수 있는 형태
 // (products·totalCount·totalPages·로딩/에러/재조회)로 되돌려준다.
+// 검색어는 타이핑 중 매 키 입력마다 재조회되지 않도록 debounce한 값으로만 조회한다.
+// (입력창 자체는 filters.searchQuery를 그대로 써서 타이핑 반응성은 유지된다)
 export const useProductListQuery = ({ filters, page }: UseProductListQueryParams) => {
-  const queryParams = toGetProductListParams(filters, page)
+  const debouncedSearchQuery = useDebouncedValue(filters.searchQuery, SEARCH_DEBOUNCE_MS)
+  const queryParams = toGetProductListParams(
+    { ...filters, searchQuery: debouncedSearchQuery },
+    page,
+  )
   const { data, isLoading, isFetching, error, refetch } = useGetProductList(queryParams)
 
   const products: Product[] = data?.products ?? []
