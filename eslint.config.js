@@ -1,6 +1,6 @@
-import tseslint from 'typescript-eslint';
-import reactHooks from 'eslint-plugin-react-hooks';
-import eslintConfigPrettier from 'eslint-config-prettier';
+import tseslint from 'typescript-eslint'
+import reactHooks from 'eslint-plugin-react-hooks'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
 export default tseslint.config(
   {
@@ -41,4 +41,4 @@ export default tseslint.config(
     },
   },
   eslintConfigPrettier,
-);
+)
