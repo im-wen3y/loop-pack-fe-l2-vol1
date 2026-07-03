@@ -1,14 +1,16 @@
 import type { ChangeEvent } from 'react'
-import type { CategoryFilter } from '../../_types/product'
+import { CATEGORY_FILTER_VALUES, type CategoryFilter } from '../../_types/product'
 import type { ProductFilters } from '../../_hooks/productList/useProductFilters'
 
-const CATEGORIES: { value: CategoryFilter; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'electronics', label: '전자제품' },
-  { value: 'fashion', label: '패션' },
-  { value: 'home', label: '홈' },
-  { value: 'beauty', label: '뷰티' },
-]
+const CATEGORY_LABELS: Record<CategoryFilter, string> = {
+  all: '전체',
+  electronics: '전자제품',
+  fashion: '패션',
+  home: '홈',
+  beauty: '뷰티',
+}
+
+const CATEGORIES = CATEGORY_FILTER_VALUES.map((value) => ({ value, label: CATEGORY_LABELS[value] }))
 
 type SearchFilterValues = Pick<ProductFilters, 'category' | 'minPrice' | 'maxPrice' | 'inStockOnly'>
 

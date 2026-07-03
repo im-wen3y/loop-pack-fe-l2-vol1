@@ -1,12 +1,14 @@
 import type { ChangeEvent } from 'react'
-import type { SortBy, ViewMode } from '../../_types/product'
+import { SORT_BY_VALUES, type SortBy, type ViewMode } from '../../_types/product'
 
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'latest', label: '최신순' },
-  { value: 'popular', label: '인기순' },
-  { value: 'price-asc', label: '가격 낮은순' },
-  { value: 'price-desc', label: '가격 높은순' },
-]
+const SORT_LABELS: Record<SortBy, string> = {
+  'latest': '최신순',
+  'popular': '인기순',
+  'price-asc': '가격 낮은순',
+  'price-desc': '가격 높은순',
+}
+
+const SORT_OPTIONS = SORT_BY_VALUES.map((value) => ({ value, label: SORT_LABELS[value] }))
 
 type SearchSortProps = {
   searchQuery: string
