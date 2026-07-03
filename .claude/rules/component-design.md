@@ -16,6 +16,7 @@
 - **파생값은 계산** — `useState` + `useEffect` 동기화 금지
 - `useMemo` / `useCallback`은 실측 성능 문제 시에만
 - 커스텀 훅은 단일 책임
+- 데이터 조회 훅은 `fetch`/`axios` 등 통신 구현에 직접 의존하지 않는다 — service 함수만 호출한다 (DIP)
 
 ## JSX / 렌더링
 
