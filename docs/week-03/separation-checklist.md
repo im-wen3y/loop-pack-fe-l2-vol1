@@ -140,7 +140,7 @@
 | `GetProductListResponse`(DTO)를 도메인 `_types`가 아닌 api 파일에 둔 것   | 도메인 타입은 앱 전반이 소유하지만 API 응답은 서버 계약이라 소유 주체가 다름. 지금은 DTO가 1개뿐이라 `_apis/product/model.ts` 안에 colocate하고, 늘어나면 별도 dto 파일로 분리 예정                                                                                                                                                                                                                                                                                                                                        |
 | `ProductListPage.tsx`의 `viewMode`(그리드/리스트) 상태                    | 부수효과·파생·localStorage 동기화가 없는 순수 UI 로컬 상태 1개. 훅으로 빼면 파일·import만 늘고 얻는 게 없어 `useState` 그대로 페이지에 둠(④ 성급한 추상화 방지). 추후 영속화·공유가 필요해지면 그때 훅 검토                                                                                                                                                                                                                                                                                                                |
 | `usePagination`을 `useProductFilters`에 합치지 않은 것                    | 둘 다 "목록 쿼리 파라미터"라 합치고 싶은 유혹이 있으나, 필터 변경 시 페이지 리셋이라는 단방향 규칙만 있을 뿐 책임이 다름(조건 vs 위치). 하나로 합치면 "큰 훅"이 되어 컴포넌트 복잡도를 그대로 옮기게 됨 → `onFilterChange` 콜백으로만 연결                                                                                                                                                                                                                                                                                 |
-| 필터 상태를 URL(URL 상태)로만 두지 않고 `useState`로 소유한 것            | `component-design.md`의 상태 분류상 필터·검색·페이지는 URL 상태 후보지만, 이번 단계는 `useState` 소유 + `useSyncFiltersToUrl`로 URL에 단방향 반영까지만. URL→상태 복원(초기값 파싱)은 라우터 도입 시점의 다음 단계로 미룸                                                                                                                                                                                                                                                                                                  |
+| 필터 상태를 URL(URL 상태)로만 두지 않고 `useState`로 소유한 것            | `component-design.md`의 상태 분류상 필터·검색·페이지는 URL 상태 후보지만, `useState` 소유 + `useSyncFiltersToUrl`로 URL에 단방향 반영하는 구조는 유지. 다만 URL→초기값 복원에 라우터가 필요하다던 이전 판단은 근거가 과장된 것이었음이 드러나 철회 — 아래 "URL 초기값 복원" 섹션 참고                                                                                                                                                                                                                                      |
 
 ## component-review 반영 — 4개 관점 리뷰 이후 구조 변경
 
@@ -173,6 +173,16 @@
 ### useProductListQuery — 검색 debounce 추가 (self-review 버그 헌팅 반영)
 
 셀프 리뷰에서 검색어 입력마다 debounce 없이 즉시 재조회되는 걸 지적받아, `useDebouncedValue(filters.searchQuery, 300)`로 조회용 검색어만 debounce했다. 입력창(`filters.searchQuery`)은 그대로 즉시 반영해 타이핑 반응성은 유지하고, 네트워크 요청만 300ms 정지 후 1회로 줄였다 — Playwright로 타이핑 중 0건·정지 후 1건을 확인.
+
+### useProductFilters/usePagination — URL 초기값 복원 (분리 근거 정정)
+
+"새로고침·북마크 시 필터 초기화" 버그를 "URL→상태 복원은 라우터 도입 시점으로 미룸"이라고 적어뒀는데, 다시 따져보니 틀린 근거였다. `useSyncFiltersToUrl`이 이미 라우터 없이 `URLSearchParams` + `window.history.replaceState`만으로 URL에 쓰고 있었으므로, 읽는 것도 같은 방식으로 충분했다 — 과제가 요구하는 범위(새로고침·북마크 시 마운트 시점 1회 복원)는 뒤로가기/앞으로가기에 반응할 필요가 없어 라우터의 `popstate` 처리가 애초에 불필요했다.
+
+`useLocalStorageState`가 `useState`의 lazy initializer로 localStorage를 마운트 시 1회 읽던 것과 같은 패턴을 그대로 적용했다: `useProductFilters`·`usePagination` 각각에 `readFiltersFromUrl`/`readPageFromUrl`을 만들어 `useState(초기값)` 대신 `useState(read함수)`로 바꿨다. `category`·`sortBy`는 도메인 유니온 값인지 검증(`isCategoryFilter`/`isSortBy` 타입가드)한 뒤 사용하고, 유효하지 않으면 기존 기본값으로 폴백한다. Playwright로 필터 적용 후 URL을 새 탭에서 열어 카테고리·검색어·재고체크가 그대로 복원됨을 확인.
+
+"분리하지 않는 이유"도 과장하면 안 된다는 걸 다시 한번 확인한 사례 — 필요하지도 않은 의존성(라우터)을 근거로 들어 버그 수정을 미뤘던 셈이다.
+
+**추가 수정 — 검증 목록 중복 제거**: 처음엔 `isCategoryFilter`/`isSortBy`가 쓸 유효값 목록(`Set`)을 `useProductFilters.ts`에 새로 하드코딩했는데, 이미 같은 값이 `SearchFilter.tsx`의 `CATEGORIES`·`SearchSort.tsx`의 `SORT_OPTIONS`에 있었다 — 같은 목록을 두 번째로 만든 셈(`code-style.md`의 "기존 코드를 재사용한다" 위반). `_types/product.ts`에 `CATEGORY_FILTER_VALUES`·`SORT_BY_VALUES`를 단일 출처로 export하고, `SearchFilter`/`SearchSort`는 라벨 맵(`CATEGORY_LABELS`/`SORT_LABELS`)과 조합해 옵션 목록을 만들고, `useProductFilters`는 같은 배열로 검증 `Set`을 만들도록 통합했다.
 
 ### 검증
 
