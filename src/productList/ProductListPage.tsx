@@ -11,11 +11,14 @@ import { useProductListQuery } from '../_hooks/productList/useProductListQuery'
 import { useSyncFiltersToUrl } from '../_hooks/productList/useSyncFiltersToUrl'
 import { useWishlist } from '../_hooks/productList/useWishlist'
 import { useRecentlyViewed } from '../_hooks/productList/useRecentlyViewed'
+import { useScrollToTop } from '../_hooks/useScrollToTop'
 import type { ViewMode } from '../_types/product'
 import './ProductListPage.css'
 
 export function ProductListPage() {
   const pagination = usePagination()
+  useScrollToTop(pagination.page)
+
   const {
     filters,
     handleCategoryChange,
@@ -27,10 +30,11 @@ export function ProductListPage() {
     handleResetFilters,
   } = useProductFilters({ onFilterChange: pagination.resetPage })
 
-  const { products, totalCount, totalPages, isLoading, isFetching, error } = useProductListQuery({
-    filters,
-    page: pagination.page,
-  })
+  const { products, totalCount, totalPages, isLoading, isFetching, error, refetch } =
+    useProductListQuery({
+      filters,
+      page: pagination.page,
+    })
 
   useSyncFiltersToUrl(filters, pagination.page)
 
@@ -46,7 +50,7 @@ export function ProductListPage() {
   }
 
   if (error) {
-    return <ErrorState message={error.message} onRetry={() => window.location.reload()} />
+    return <ErrorState message={error.message} onRetry={() => void refetch()} />
   }
 
   return (
@@ -54,14 +58,18 @@ export function ProductListPage() {
       <Header totalCount={totalCount} wishlistCount={wishlist.length} />
 
       <SearchFilter
-        category={filters.category}
-        minPrice={filters.minPrice}
-        maxPrice={filters.maxPrice}
-        inStockOnly={filters.inStockOnly}
-        onCategoryChange={handleCategoryChange}
-        onMinPriceChange={handleMinPriceChange}
-        onMaxPriceChange={handleMaxPriceChange}
-        onInStockOnlyChange={handleInStockToggle}
+        filters={{
+          category: filters.category,
+          maxPrice: filters.maxPrice,
+          minPrice: filters.minPrice,
+          inStockOnly: filters.inStockOnly,
+        }}
+        onFilterChange={{
+          onCategoryChange: handleCategoryChange,
+          onMinPriceChange: handleMinPriceChange,
+          onMaxPriceChange: handleMaxPriceChange,
+          onInStockOnlyChange: handleInStockToggle,
+        }}
         onResetFilters={handleResetFilters}
       />
 
