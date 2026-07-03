@@ -11,6 +11,15 @@ export type ProductFilters = {
   inStockOnly: boolean
 }
 
+const INITIAL_FILTERS: ProductFilters = {
+  category: 'all',
+  minPrice: '',
+  maxPrice: '',
+  sortBy: 'latest',
+  searchQuery: '',
+  inStockOnly: false,
+}
+
 type UseProductFiltersOptions = {
   // 필터가 바뀔 때마다 호출된다. (예: 페이지네이션을 1페이지로 되돌리기)
   onFilterChange: () => void
@@ -19,60 +28,29 @@ type UseProductFiltersOptions = {
 // 필터·검색·정렬 상태와 의미 기반 핸들러를 소유한다. 페이지 리셋 같은
 // "필터가 바뀌면 벌어져야 할 일"은 onFilterChange 콜백으로 위임해 page를 직접 알지 않는다.
 export const useProductFilters = ({ onFilterChange }: UseProductFiltersOptions) => {
-  const [category, setCategory] = useState<CategoryFilter>('all')
-  const [minPrice, setMinPrice] = useState<number | ''>('')
-  const [maxPrice, setMaxPrice] = useState<number | ''>('')
-  const [sortBy, setSortBy] = useState<SortBy>('latest')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [inStockOnly, setInStockOnly] = useState(false)
+  const [filters, setFilters] = useState<ProductFilters>(INITIAL_FILTERS)
 
-  const handleCategoryChange = (nextCategory: CategoryFilter) => {
-    setCategory(nextCategory)
+  const updateFilter = <K extends keyof ProductFilters>(key: K, value: ProductFilters[K]) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
     onFilterChange()
   }
 
-  const handleMinPriceChange = (value: number | '') => {
-    setMinPrice(value)
-    onFilterChange()
-  }
+  const handleCategoryChange = (nextCategory: CategoryFilter) =>
+    updateFilter('category', nextCategory)
 
-  const handleMaxPriceChange = (value: number | '') => {
-    setMaxPrice(value)
-    onFilterChange()
-  }
+  const handleMinPriceChange = (value: number | '') => updateFilter('minPrice', value)
 
-  const handleSortChange = (sort: SortBy) => {
-    setSortBy(sort)
-    onFilterChange()
-  }
+  const handleMaxPriceChange = (value: number | '') => updateFilter('maxPrice', value)
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query)
-    onFilterChange()
-  }
+  const handleSortChange = (sort: SortBy) => updateFilter('sortBy', sort)
 
-  const handleInStockToggle = (isInStockOnly: boolean) => {
-    setInStockOnly(isInStockOnly)
-    onFilterChange()
-  }
+  const handleSearchChange = (query: string) => updateFilter('searchQuery', query)
+
+  const handleInStockToggle = (isInStockOnly: boolean) => updateFilter('inStockOnly', isInStockOnly)
 
   const handleResetFilters = () => {
-    setCategory('all')
-    setMinPrice('')
-    setMaxPrice('')
-    setSortBy('latest')
-    setSearchQuery('')
-    setInStockOnly(false)
+    setFilters(INITIAL_FILTERS)
     onFilterChange()
-  }
-
-  const filters: ProductFilters = {
-    category,
-    minPrice,
-    maxPrice,
-    sortBy,
-    searchQuery,
-    inStockOnly,
   }
 
   return {
