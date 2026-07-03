@@ -29,21 +29,21 @@ export const ProductCard = ({
   const discountRate = getDiscountRate(product.price, product.originalPrice)
   const nameSegments = getHighlightSegments(product.name, searchQuery)
   const soldOut = isSoldOut(product.stock)
+  const isNew = isNewProduct(product.createdAt)
+  const isHot = isHotDeal(discountRate)
+  const isBest = isBestProduct(product.rating, product.reviewCount)
+  const isAlmostOut = isAlmostSoldOut(product.stock)
 
   return (
     <article className="product-card" onClick={() => onProductClick(product.id)}>
       <div className="image-wrap">
         <img src={product.imageUrl} alt={product.name} loading="lazy" />
         {discountRate > 0 && <span className="badge badge-discount">{discountRate}% 할인</span>}
-        {isNewProduct(product.createdAt) && <span className="badge badge-new">NEW</span>}
-        {isHotDeal(discountRate) && <span className="badge badge-hot">특가</span>}
-        {isBestProduct(product.rating, product.reviewCount) && (
-          <span className="badge badge-best">BEST</span>
-        )}
+        {isNew && <span className="badge badge-new">NEW</span>}
+        {isHot && <span className="badge badge-hot">특가</span>}
+        {isBest && <span className="badge badge-best">BEST</span>}
         {soldOut && <span className="badge badge-soldout">품절</span>}
-        {!soldOut && isAlmostSoldOut(product.stock) && (
-          <span className="badge badge-warning">품절 임박</span>
-        )}
+        {!soldOut && isAlmostOut && <span className="badge badge-warning">품절 임박</span>}
       </div>
 
       <div className="card-body">
