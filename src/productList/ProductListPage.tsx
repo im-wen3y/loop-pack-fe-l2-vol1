@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Header } from '../_components/productList/Header'
 import { SearchFilter } from '../_components/productList/SearchFilter'
 import { SearchSort } from '../_components/productList/SearchSort'
@@ -28,15 +28,25 @@ export function ProductListPage() {
     handleSearchChange,
     handleInStockToggle,
     handleResetFilters,
+    replaceFilters,
   } = useProductFilters({ onFilterChange: pagination.resetPage })
+
+  const { page, goToPage } = pagination
 
   const { products, totalCount, totalPages, isLoading, isFetching, error, refetch } =
     useProductListQuery({
       filters,
-      page: pagination.page,
+      page,
     })
 
-  useSyncFiltersToUrl(filters, pagination.page)
+  useSyncFiltersToUrl(filters, page, replaceFilters, goToPage)
+
+  // ?page=99처럼 totalPages를 넘는 값으로 진입하면 응답을 받은 뒤 마지막 페이지로 재보정한다.
+  // totalPages는 서버 응답 이후에만 알 수 있어 usePagination 초기화 시점엔 클램프할 수 없다.
+  useEffect(() => {
+    if (isLoading || page <= totalPages) return
+    goToPage(totalPages)
+  }, [isLoading, page, totalPages, goToPage])
 
   const { wishlist, toggleWishlist } = useWishlist()
   const { addRecentlyViewed } = useRecentlyViewed()
@@ -91,11 +101,7 @@ export function ProductListPage() {
         onWishlistToggle={toggleWishlist}
       />
 
-      <Pagination
-        page={pagination.page}
-        totalPages={totalPages}
-        onPageChange={pagination.goToPage}
-      />
+      <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
 
       {/* ─── 백그라운드 로딩 인디케이터 ─────────────────── */}
       {isFetching && <div className="background-loading">데이터 갱신 중...</div>}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-// 새로고침·북마크 시 이전 페이지가 복원되도록 마운트 시 URL의 page 쿼리를 1회만 읽는다.
-const readPageFromUrl = (): number => {
+// 마운트 시 초기값 복원, 뒤로가기 시 popstate 복원 양쪽에서 재사용한다.
+export const readPageFromUrl = (): number => {
   const page = Number(new URLSearchParams(window.location.search).get('page'))
   return Number.isInteger(page) && page > 0 ? page : 1
 }

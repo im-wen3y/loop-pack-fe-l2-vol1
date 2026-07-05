@@ -41,9 +41,9 @@ const parsePriceParam = (value: string | null): number | '' => {
   return Number.isFinite(parsed) ? parsed : ''
 }
 
-// 새로고침·북마크 시 이전 필터가 복원되도록 마운트 시 URL 쿼리를 1회만 읽는다.
+// 마운트 시 초기값 복원, 뒤로가기 시 popstate 복원 양쪽에서 재사용한다.
 // useSyncFiltersToUrl이 같은 키로 기록해두므로 라우터 없이 URLSearchParams 왕복만으로 충분하다.
-function readFiltersFromUrl(): ProductFilters {
+export function readFiltersFromUrl(): ProductFilters {
   const params = new URLSearchParams(window.location.search)
   const category = params.get('category')
   const sortBy = params.get('sort')
@@ -91,6 +91,10 @@ export const useProductFilters = ({ onFilterChange }: UseProductFiltersOptions) 
     onFilterChange()
   }
 
+  // 뒤로가기(popstate) 시 URL에서 읽은 필터를 그대로 되돌리기 위한 용도.
+  // 페이지를 1로 리셋하는 onFilterChange를 거치지 않는다 — 복원 시 page는 URL 값을 따라야 한다.
+  const replaceFilters = (next: ProductFilters) => setFilters(next)
+
   return {
     filters,
     handleCategoryChange,
@@ -100,5 +104,6 @@ export const useProductFilters = ({ onFilterChange }: UseProductFiltersOptions) 
     handleSearchChange,
     handleInStockToggle,
     handleResetFilters,
+    replaceFilters,
   }
 }
