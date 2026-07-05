@@ -1,7 +1,17 @@
-import { CheckoutPage } from './market/CheckoutPage'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ProductListPage } from './productList/ProductListPage'
+// 2주차 체크아웃 화면이 필요하면 아래 import로 교체하세요.
+// import { CheckoutPage } from './market/CheckoutPage'
 
 function App() {
-  return <CheckoutPage />
+  // 2주차 체크아웃 화면이 필요하면 아래 <CheckoutPage /> 코드로 교체하세요.
+  // return <CheckoutPage />;
+  return (
+    <>
+      <ProductListPage />
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </>
+  )
 }
 
 export default App
