@@ -19,6 +19,11 @@ type Product = {
   stock: number
 }
 
+/*
+ * Server Component의 fetch는 브라우저처럼 현재 origin을 암묵적으로 붙여주지 않아서
+ * 상대 경로('/api/...')를 그대로 넘기면 실패한다 — headers()로 요청받은 host를 읽어
+ * 절대 URL을 직접 구성한다.
+ */
 const fetchApi = async <T,>(path: string): Promise<T> => {
   const headerList = await headers()
   const host = headerList.get('host')
@@ -43,6 +48,11 @@ type SelectDocSectionProps = {
   children: ReactNode
 }
 
+/*
+ * 컴포넌트 3개를 한 줄에 연달아 두면 뭐가 뭔지 구분이 안 돼서, storybook처럼
+ * 이름/설명/사용법 코드를 컴포넌트 하나당 섹션으로 분리했다 — 다른 개발자가 훑어보고
+ * 바로 가져다 쓸 수 있게.
+ */
 const SelectDocSection = ({ name, description, usage, children }: SelectDocSectionProps) => (
   <section className={styles.section}>
     <div className={styles.sectionHeader}>
@@ -97,7 +107,7 @@ const SelectDemoPage = async () => {
   title="옵션 선택"
   options={textOptions} // TextSelectOption[]
   onChange={(option) => {
-    // option: { id, label, isMaxDiscount, price, unitPrice, freeShipping, stock }
+    // option: { id, label, isMaxDiscount, price, unitPrice, isFreeShipping, stock }
   }}
 />`}
       >

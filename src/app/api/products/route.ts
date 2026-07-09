@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 
-// mock 백엔드 (Next route handler). 실제 DB 대신 여기서 데이터를 내려준다.
-// 필요하면 자유롭게 늘리거나 구조를 바꿔도 된다.
-// ThumbnailOptionSelect 데모용 — 할인율(discountRate)/배지(badge)/묶음배지(bundleBadge)/
-// 재고(stock) 조합을 한 번에 보여주도록 구성했다. 품절은 boolean으로 내려주지 않고
-// stock === 0으로 프론트에서 판단한다(사이즈 옵션과 동일한 방식).
+/*
+ * mock 백엔드 (Next route handler). 실제 DB 대신 여기서 데이터를 내려준다.
+ * 필요하면 자유롭게 늘리거나 구조를 바꿔도 된다.
+ * ThumbnailOptionSelect 데모용 — 할인율(discountRate)/배지(badge)/묶음배지(bundleBadge)/
+ * 재고(stock) 조합을 한 번에 보여주도록 구성했다. 품절은 boolean으로 내려주지 않고
+ * stock === 0으로 프론트에서 판단한다(사이즈 옵션과 동일한 방식).
+ */
 const products = [
   {
     id: 'p1',

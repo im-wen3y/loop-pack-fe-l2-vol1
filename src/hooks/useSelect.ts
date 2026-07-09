@@ -1,6 +1,11 @@
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { useState } from 'react'
 
+/*
+ * TextOptionSelect/SizeOptionSelect/ThumbnailOptionSelect는 마크업·스타일이 전부 다르지만
+ * 열림/닫힘, 키보드 이동, 품절 옵션 스킵, 선택/해제라는 '동작'은 동일하다. 이 동작만 이 훅이
+ * 전담하는 Headless UI로 분리해, 각 컴포넌트는 훅이 준 상태/핸들러를 자기 마크업에 꽂기만 한다.
+ */
 type UseSelectParams<T> = {
   options: T[]
   defaultValue?: T
@@ -18,8 +23,10 @@ export const useSelect = <T>({
   const [selected, setSelected] = useState<T | undefined>(defaultValue)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
 
-  // selected는 옵션 객체 자체라 selectedIndex는 매번 계산 가능한 파생값이다.
-  // 별도 state로 두면 옵션이 바뀔 때 두 값이 어긋나는 동기화 버그가 생길 수 있어 그냥 계산한다.
+  /*
+   * selected는 옵션 객체 자체라 selectedIndex는 매번 계산 가능한 파생값이다.
+   * 별도 state로 두면 옵션이 바뀔 때 두 값이 어긋나는 동기화 버그가 생길 수 있어 그냥 계산한다.
+   */
   const selectedIndex = options.findIndex((option) => option === selected)
 
   // 전부 품절이어도 options.length번을 넘겨 순회하지 않으므로 무한루프 없이 -1로 끝난다.
@@ -46,8 +53,10 @@ export const useSelect = <T>({
 
   const toggle = () => (isOpen ? close() : open())
 
-  // Safari/WebKit don't focus a <button> on click by default, so a mouse click that opens
-  // the list would leave ArrowDown/Enter/Esc with nothing focused to fire on. Force it.
+  /*
+   * Safari/WebKit don't focus a <button> on click by default, so a mouse click that opens
+   * the list would leave ArrowDown/Enter/Esc with nothing focused to fire on. Force it.
+   */
   const onTriggerClick = (event: MouseEvent<HTMLElement>) => {
     event.currentTarget.focus()
     toggle()
@@ -64,14 +73,20 @@ export const useSelect = <T>({
     close()
   }
 
+  /*
+   * onTriggerClick처럼 DOM 이벤트 prop에 그대로 꽂는 핸들러라 onX 네이밍으로 통일했다
+   * (clearSelection 대신 onClear).
+   */
   const onClear = () => {
     setSelected(undefined)
     setHighlightedIndex(-1)
     onChange?.(undefined)
   }
 
-  // 트리거는 실제 <button>이라 Enter/Space로 열리는 건 네이티브 클릭이 처리하므로
-  // 메뉴가 열려 있을 때의 이동/선택/닫기만 여기서 다룬다.
+  /*
+   * 트리거는 실제 <button>이라 Enter/Space로 열리는 건 네이티브 클릭이 처리하므로
+   * 메뉴가 열려 있을 때의 이동/선택/닫기만 여기서 다룬다.
+   */
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (!isOpen) return
     switch (event.key) {

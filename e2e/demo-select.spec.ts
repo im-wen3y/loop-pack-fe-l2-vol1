@@ -1,8 +1,10 @@
 import { test, expect, type Locator } from '@playwright/test'
 
-// toBeVisible() only checks layout, not whether the <img>'s src actually loaded —
-// next/image silently 400s on local SVGs unless `unoptimized` is set, and a visible-but-broken
-// <img> still passes toBeVisible(). This checks the browser actually decoded pixels.
+/*
+ * toBeVisible() only checks layout, not whether the <img>'s src actually loaded —
+ * next/image silently 400s on local SVGs unless `unoptimized` is set, and a visible-but-broken
+ * <img> still passes toBeVisible(). This checks the browser actually decoded pixels.
+ */
 const expectImageLoaded = async (image: Locator) => {
   await expect(image).toBeVisible()
   const isLoaded = await image.evaluate(
@@ -121,9 +123,11 @@ test('ThumbnailOptionSelect: sold-out option cannot be selected by click', async
   const soldOutOption = options.nth(5)
   await expect(soldOutOption).toHaveAttribute('aria-disabled', 'true')
 
-  // real browsers don't block a click just because aria-disabled is set (only assistive tech
-  // and Playwright's default actionability checks do) — force it to match what a real user could
-  // do, and confirm the component's own isOptionDisabled guard is what actually prevents selection.
+  /*
+   * real browsers don't block a click just because aria-disabled is set (only assistive tech
+   * and Playwright's default actionability checks do) — force it to match what a real user could
+   * do, and confirm the component's own isOptionDisabled guard is what actually prevents selection.
+   */
   await soldOutOption.click({ force: true })
   await expect(container.getByRole('listbox')).toBeVisible()
   await expect(soldOutOption).toHaveAttribute('aria-selected', 'false')

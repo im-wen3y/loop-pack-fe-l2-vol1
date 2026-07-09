@@ -13,6 +13,10 @@ export type ThumbnailSelectOption = {
   discountRate?: number
   badge?: string
   bundleBadge?: string
+  /*
+   * soldOut(boolean) 대신 stock 자체를 받는다 — SizeSelectOption과 동일한 방식으로,
+   * 품절 여부(stock === 0)는 값을 따로 안 받고 아래에서 파생값으로 계산한다.
+   */
   stock: number
 }
 
