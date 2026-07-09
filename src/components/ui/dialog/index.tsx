@@ -12,5 +12,5 @@
 // 아래는 import가 깨지지 않게 둔 placeholder다. 자유롭게 갈아엎어도 된다.
 
 export function Dialog() {
-  return null;
+  return null
 }
