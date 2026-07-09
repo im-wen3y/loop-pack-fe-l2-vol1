@@ -11,7 +11,11 @@ export type TextSelectOption = {
   isMaxDiscount: boolean
   price: number
   unitPrice: number
-  freeShipping: boolean
+  isFreeShipping: boolean
+  /*
+   * soldOut(boolean) 대신 stock 자체를 받는다 — SizeSelectOption과 동일한 방식으로,
+   * 품절 여부(stock === 0)는 값을 따로 안 받고 아래에서 파생값으로 계산한다.
+   */
   stock: number
 }
 
@@ -91,7 +95,7 @@ export const TextOptionSelect = ({
                     <span className={styles.label}>
                       {option.isMaxDiscount ? `[최대할인] ${option.label}` : option.label}
                     </span>
-                    {option.freeShipping && <span className={styles.badge}>무료배송</span>}
+                    {option.isFreeShipping && <span className={styles.badge}>무료배송</span>}
                   </div>
                   <div className={styles.optionPrice}>
                     <span className={styles.price}>{formatPrice(option.price)}</span>
@@ -112,7 +116,7 @@ export const TextOptionSelect = ({
               {selected.isMaxDiscount ? `[최대할인] ${selected.label}` : selected.label}
             </span>
             <div className={styles.selectedTopRight}>
-              {selected.freeShipping && <span className={styles.badge}>무료배송</span>}
+              {selected.isFreeShipping && <span className={styles.badge}>무료배송</span>}
               <button
                 type="button"
                 className={styles.clearButton}

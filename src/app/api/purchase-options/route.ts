@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 
-// mock 백엔드. 베이글 번들 구매 옵션 — /api/products의 상품들과는 다른 상품(별개 카탈로그)의
-// 데이터라서 같은 응답에 얹지 않고 리소스를 분리했다.
+/*
+ * mock 백엔드. 베이글 번들 구매 옵션 — /api/products의 상품들과는 다른 상품(별개 카탈로그)의
+ * 데이터라서 같은 응답에 얹지 않고 리소스를 분리했다.
+ */
 const options = [
   {
     id: 'po1',
@@ -9,7 +11,7 @@ const options = [
     isMaxDiscount: true,
     price: 21000,
     unitPrice: 2100,
-    freeShipping: true,
+    isFreeShipping: true,
     stock: 150,
   },
   {
@@ -18,7 +20,7 @@ const options = [
     isMaxDiscount: false,
     price: 4200,
     unitPrice: 4200,
-    freeShipping: false,
+    isFreeShipping: false,
     stock: 120,
   },
 ]
