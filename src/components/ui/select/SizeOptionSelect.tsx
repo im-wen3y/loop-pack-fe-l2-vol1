@@ -1,7 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import { useSelect } from '@/hooks/useSelect'
+import { isSoldOut as checkIsSoldOut } from '@/utils/isSoldOut'
+import { SelectToggleIcon } from './SelectToggleIcon'
 import styles from './SizeOptionSelect.module.css'
 
 export type SizeSelectOption = {
@@ -40,6 +41,7 @@ export const SizeOptionSelect = ({
   onChange,
 }: SizeOptionSelectProps) => {
   const {
+    containerRef,
     isOpen,
     selected,
     selectedIndex,
@@ -51,13 +53,13 @@ export const SizeOptionSelect = ({
   } = useSelect({
     options,
     defaultValue,
-    isOptionDisabled: (option) => option.stock === 0,
+    isOptionDisabled: (option) => checkIsSoldOut(option.stock),
     onChange,
   })
 
   return (
     <div>
-      <div className={styles.container}>
+      <div className={styles.container} ref={containerRef}>
         <button
           type="button"
           className={styles.trigger}
@@ -66,23 +68,12 @@ export const SizeOptionSelect = ({
           onKeyDown={onKeyDown}
         >
           <span>{title}</span>
-          {/* next/image's optimizer rejects local SVGs by default; unoptimized serves it as-is. */}
-          <Image
-            src="/toggle.svg"
-            alt=""
-            aria-hidden
-            width={20}
-            height={20}
-            unoptimized
-            className={[styles.toggleIcon, isOpen && styles.toggleIconOpen]
-              .filter(Boolean)
-              .join(' ')}
-          />
+          <SelectToggleIcon isOpen={isOpen} />
         </button>
         {isOpen && (
           <ul className={styles.list} role="listbox">
             {options.map((option, index) => {
-              const isSoldOut = option.stock === 0
+              const isSoldOut = checkIsSoldOut(option.stock)
               return (
                 <li
                   key={option.value}
@@ -119,7 +110,7 @@ export const SizeOptionSelect = ({
         <div className={styles.selected} data-testid="selected">
           <div className={styles.selectedInfo}>
             <span className={styles.value}>{selected.value}</span>
-            {selected.stock === 0 ? (
+            {checkIsSoldOut(selected.stock) ? (
               <span className={styles.soldOut}>품절</span>
             ) : (
               selected.deliveryText && (
