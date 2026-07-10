@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { Product } from './_types'
 
 /*
  * mock 백엔드 (Next route handler). 실제 DB 대신 여기서 데이터를 내려준다.
@@ -7,7 +8,7 @@ import { NextResponse } from 'next/server'
  * 재고(stock) 조합을 한 번에 보여주도록 구성했다. 품절은 boolean으로 내려주지 않고
  * stock === 0으로 프론트에서 판단한다(사이즈 옵션과 동일한 방식).
  */
-const products = [
+const products: Product[] = [
   {
     id: 'p1',
     name: '그로우턴 앰플 100ml기획(+100ml)',
@@ -64,5 +65,5 @@ const products = [
 ]
 
 export async function GET() {
-  return NextResponse.json({ products, totalCount: products.length })
+  return NextResponse.json({ products })
 }
