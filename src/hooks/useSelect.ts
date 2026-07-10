@@ -12,6 +12,11 @@ import { useEffect, useRef, useState } from 'react'
  * 동일하다. Dialog가 custom hook 대신 Context를 쓰는 이유, 바깥 클릭 감지를 별도 훅으로 안 뽑은
  * 이유는 `src/hooks/README.md` 참고.
  */
+/*
+ * selectedIndex는 options.findIndex(option => option === selected)로 참조 동일성 비교를 한다
+ * — 즉 options는 렌더마다 새로 만든 배열/아이템이 아니라 안정적인 참조여야 매칭이 깨지지 않는다.
+ * 지금 소비처들은 모두 이 조건을 만족하지만, 새 소비처를 추가할 때 지켜야 하는 전제다.
+ */
 type UseSelectParams<T> = {
   options: T[]
   defaultValue?: T
@@ -144,15 +149,18 @@ export const useSelect = <T>({
     }
   }
 
+  /*
+   * open/close/toggle은 훅 내부(onTriggerClick, selectIndex, onKeyDown)에서만 쓰이고
+   * 현재 어떤 소비 컴포넌트도 직접 구조분해해 쓰지 않는다 — 실제로 안 쓰이는 걸 반환 객체에
+   * 남겨두면 API 표면만 넓어져서 뺐다. 소비처가 열기/닫기를 직접 제어해야 하는 경우가
+   * 생기면 그때 다시 반환하면 된다.
+   */
   return {
     containerRef,
     isOpen,
     selected,
     selectedIndex,
     highlightedIndex,
-    open,
-    close,
-    toggle,
     onTriggerClick,
     selectIndex,
     onClear,

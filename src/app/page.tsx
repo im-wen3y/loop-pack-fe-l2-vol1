@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { HomeTabs } from './_components/HomeTabs'
 import { SelectPreview } from './_components/SelectPreview'
+import { SelectPreviewBoundary } from './_components/SelectPreviewBoundary'
 import { DialogPreview } from './_components/DialogPreview'
 import styles from './page.module.css'
 
@@ -28,13 +29,21 @@ export default function Home() {
         구조는 최소 골격만 있어요. 폴더 구성은 각자 근거를 대고 바꾸면 돼요.
       </p>
 
+      {/*
+       * Select/Dialog를 각자 /demo/select, /demo/dialog 라우트로 뒀었는데, 둘 다 "컴포넌트가
+       * 실제로 동작하는지 눈으로 확인"하는 같은 목적이라 페이지를 오가는 대신 여기서 탭으로
+       * 바로 전환하며 볼 수 있게 합쳤다. HomeTabs가 두 프리뷰를 언마운트 없이 hidden으로만
+       * 감추는 이유는 HomeTabs.tsx 주석 참고.
+       */}
       <section className={styles.previewSection}>
         <h2 className={styles.previewTitle}>동작 확인</h2>
         <HomeTabs
           selectPanel={
-            <Suspense fallback={<p className={styles.note}>불러오는 중...</p>}>
-              <SelectPreview />
-            </Suspense>
+            <SelectPreviewBoundary>
+              <Suspense fallback={<p className={styles.note}>불러오는 중...</p>}>
+                <SelectPreview />
+              </Suspense>
+            </SelectPreviewBoundary>
           }
           dialogPanel={<DialogPreview />}
         />

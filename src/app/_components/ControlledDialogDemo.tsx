@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
+import triggerStyles from './DialogDemoTrigger.module.css'
 import styles from './ControlledDialogDemo.module.css'
 
 /*
  * controlled 데모(외부 버튼으로 열기 + onOpenChange 로그)만 실제로 useState가 필요하다.
  * 페이지 전체를 'use client'로 두는 대신 이 조각만 leaf Client Component로 분리해서,
  * 나머지(제목/설명, uncontrolled 데모)는 Server Component로 남긴다.
+ * 트리거 버튼 스타일은 UncontrolledDialogDemo와 완전히 같아서 DialogDemoTrigger.module.css로
+ * 공유한다. eventLog는 이 컴포넌트에만 필요해서 여기 그대로 둔다.
  */
 export const ControlledDialogDemo = () => {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false)
@@ -17,7 +20,7 @@ export const ControlledDialogDemo = () => {
     <>
       <button
         type="button"
-        className={styles.trigger}
+        className={triggerStyles.trigger}
         onClick={() => {
           setIsNoticeOpen(true)
           setEventLog((log) => [...log, '외부 버튼으로 열림 (Trigger 없이 open을 직접 true로)'])
