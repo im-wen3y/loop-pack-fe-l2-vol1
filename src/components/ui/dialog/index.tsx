@@ -22,6 +22,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ComponentPropsWithoutRef,
@@ -60,6 +61,12 @@ type DialogCloseProps = ComponentPropsWithoutRef<'button'>
 
 const DialogContext = createContext<DialogContextValue | null>(null)
 
+/*
+ * useSelect와 달리 Dialog는 상태를 custom hook으로 빼지 않고 Context로 둔다 — Select는
+ * "하나의 동작을 여러 마크업이 공유"하는 문제라 훅이 맞고, Dialog는 "여러 조각(Trigger/
+ * Overlay/Content/Close)이 같은 상태 일부씩만 구독"하는 문제라 Context가 맞는 도구다.
+ * 자세한 비교는 src/hooks/README.md 참고.
+ */
 // Dialog 밖에서 Dialog.Trigger 등을 쓰는 실수를 조립 순서 문제로 남기지 않고 바로 에러로 드러낸다.
 const useDialogContext = (component: string): DialogContextValue => {
   const context = useContext(DialogContext)
@@ -154,6 +161,19 @@ const DialogContent = ({ children, ...props }: DialogContentProps) => {
   const { isOpen, setOpen } = useDialogContext('Content')
 
   /*
+   * setOpen은 DialogRoot가 렌더될 때마다 새 함수로 만들어진다(controlled 소비자가 onOpenChange를
+   * 인라인으로 넘기면 특히 자주 바뀐다). 아래 keydown effect의 deps에 setOpen을 직접 넣으면
+   * 다이얼로그가 열려 있는 동안에도 부모가 리렌더될 때마다 리스너를 떼었다 다시 붙이게 된다 —
+   * ref에 최신 함수만 담아두고 keydown effect는 isOpen에만 반응하게 해서 이 churn을 없앤다.
+   * ref 갱신은 렌더 중이 아니라 커밋 이후(deps 없는 effect)에 해야 한다 — 렌더 중 ref.current를
+   * 바꾸는 건 React 19에서 금지된 패턴이다(react-hooks/refs).
+   */
+  const setOpenRef = useRef(setOpen)
+  useEffect(() => {
+    setOpenRef.current = setOpen
+  })
+
+  /*
    * `if (!isOpen) return null`은 이 컴포넌트의 렌더 출력만 비울 뿐 훅 자체는 매번 그대로
    * 실행된다 — 즉 이 effect를 isOpen과 무관하게 두면 닫혀 있을 때도 Esc 리스너가 붙고
    * 스크롤이 잠긴다. 그래서 effect 안에서 직접 isOpen을 확인해 열려 있을 때만 동작시킨다.
@@ -162,7 +182,7 @@ const DialogContent = ({ children, ...props }: DialogContentProps) => {
     if (!isOpen) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') setOpenRef.current(false)
     }
     document.addEventListener('keydown', onKeyDown)
 
@@ -173,7 +193,7 @@ const DialogContent = ({ children, ...props }: DialogContentProps) => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = previousOverflow
     }
-  }, [isOpen, setOpen])
+  }, [isOpen])
 
   if (!isOpen) return null
   return (
