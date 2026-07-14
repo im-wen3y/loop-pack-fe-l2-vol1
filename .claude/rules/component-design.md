@@ -1,10 +1,21 @@
 # 컴포넌트 컨벤션
 
+## 파일 / 이름
+
+- 커스텀 훅: `use` 접두사 + `camelCase`
+- 파일명과 내보내기 이름 일치
+
 ## Server/Client Component 경계
 
 - Client 경계는 최대한 하위(leaf 컴포넌트)로 — 상위를 Client로 선언하면 그 아래 트리 전체가 Client Component가 됨
 - Server Component를 Client Component의 children/props로 전달해 Client 경계를 최소화하는 합성(Composition) 우선 고려
 - 함수형 컴포넌트만 작성, `React.FC` 금지 — Server Component는 async 함수일 수 있어 `React.FC` 시그니처와 맞지 않음
+
+## 작성 규칙
+
+- named export 권장
+- props는 `type` 별칭으로 정의, 선택적 props는 `?` + 컴포넌트 내부 기본값
+- 한 컴포넌트 = 한 책임, 두 가지 이상을 하고 있다면 분리
 
 ## 데이터 조회 / 변경
 
@@ -18,6 +29,32 @@
 - `useMemo` / `useCallback`은 실측 성능 문제 시에만
 - 커스텀 훅은 단일 책임
 - URL에 반영되어야 하는 값(필터, 페이지, 검색어)은 Next Router(`useSearchParams`, `useRouter`) 기반 URL 상태로 관리
+
+## 상태 분류 기준
+
+- 서버에서 오는 데이터 → Server Component에서 조회, Client에서 불가피한 경우 데이터 조회 훅(service 함수 경유)으로 조회
+- UI 전용 상태(모달 열림, 탭 선택) → 로컬 상태(`useState`)
+- 여러 컴포넌트가 공유해야 하는 상태 → Context 또는 전역 상태
+
+## JSX / 렌더링
+
+- 조건부 렌더링은 early return (훅 호출 이후)
+- 복잡한 로직은 별도 함수로 분리
+
+## 설계 원칙
+
+- Props가 5개를 넘으면 설계를 재검토
+- 하나의 상태를 표현하는 여러 boolean props는 enum/union으로 통합
+- Props Drilling이 3단계 이상이면 Context 또는 상태 관리 도입 검토
+- 공통 컴포넌트는 비즈니스 로직을 포함하지 않음
+
+## key
+
+- 고유 식별자 사용, 인덱스 / `Math.random()` / `Date.now()` 금지
+
+## React 19 특화
+
+- `use()`, `useActionState`, `useOptimistic`, `useTransition(async)`, ref 콜백 클린업 활용
 
 ## 로딩 / 에러 (App Router)
 
