@@ -1,15 +1,10 @@
 'use client'
 
 import { useSelect } from '@/hooks/useSelect'
+import type { SizeSelectOption } from '@/types/product-options'
 import { isSoldOut as checkIsSoldOut } from '@/utils/isSoldOut'
 import { SelectToggleIcon } from './SelectToggleIcon'
 import styles from './SizeOptionSelect.module.css'
-
-export type SizeSelectOption = {
-  value: number
-  stock: number
-  deliveryText?: string
-}
 
 const DeliveryTruckIcon = () => (
   <svg
