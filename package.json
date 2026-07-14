@@ -1,45 +1,36 @@
 {
-  "name": "loop-pack-fe-l2-vol1",
+  "name": "commerce",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "packageManager": "pnpm@10.15.1",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "format": "prettier --write .",
-    "lint": "eslint 'src/**/*.{ts,tsx}'",
-    "prepare": "husky"
+  "engines": {
+    "node": ">=22.12.0"
   },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --max-warnings=0"
-    ],
-    "*.{ts,tsx,json,css,md}": [
-      "prettier --write"
-    ]
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm test && pnpm lint && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "next": "16.2.10",
+    "nuqs": "^2.9.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tanstack/react-query-devtools": "^5.101.2",
-    "@types/node": "^24.12.3",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.0.7",
-    "prettier": "^3.0.0",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.61.1",
-    "vite": "^8.0.12",
-    "vitest": "^4.1.9"
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
