@@ -1,21 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 
-/*
- * TextOptionSelect/SizeOptionSelect/ThumbnailOptionSelect는 마크업·스타일이 전부 다르지만
- * 열림/닫힘, 키보드 이동, 품절 옵션 스킵, 선택/해제라는 '동작'은 동일하다. 이 동작만 이 훅이
- * 전담하는 Headless UI로 분리해, 각 컴포넌트는 훅이 준 상태/핸들러를 자기 마크업에 꽂기만 한다.
- *
- * 훅 이름은 useSelect지만 실제로는 열림/닫힘 · 키보드 탐색(품절 스킵) · 바깥 클릭 감지 · 선택까지
- * 담당한다. 더 잘게 쪼개지 않은 이유는 이 전부가 "헤드리스 select 위젯 하나"의 상호작용 상태
- * 머신이라는 단일 책임에 속하기 때문이다 — 네이티브 <select> 하나가 내부적으로 처리하는 범위와
- * 동일하다. Dialog가 custom hook 대신 Context를 쓰는 이유, 바깥 클릭 감지를 별도 훅으로 안 뽑은
- * 이유는 `src/hooks/README.md` 참고.
- */
-/*
- * selectedIndex는 options.findIndex(option => option === selected)로 참조 동일성 비교를 한다
- * — 즉 options는 렌더마다 새로 만든 배열/아이템이 아니라 안정적인 참조여야 매칭이 깨지지 않는다.
- * 지금 소비처들은 모두 이 조건을 만족하지만, 새 소비처를 추가할 때 지켜야 하는 전제다.
- */
+// 선택 여부는 객체 참조로 비교하므로 options와 defaultValue는 같은 옵션 객체를 사용해야 한다.
 type UseSelectParams<T> = {
   options: T[]
   defaultValue?: T
@@ -23,7 +8,7 @@ type UseSelectParams<T> = {
   onChange?: (value: T | undefined) => void
 }
 
-export type SelectItem<T> = {
+type SelectItem<T> = {
   option: T
   selected: boolean
   highlighted: boolean
@@ -41,16 +26,8 @@ export const useSelect = <T>({
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  /*
-   * selected는 옵션 객체 자체라 selectedIndex는 매번 계산 가능한 파생값이다.
-   * 별도 state로 두면 옵션이 바뀔 때 두 값이 어긋나는 동기화 버그가 생길 수 있어 그냥 계산한다.
-   */
   const selectedIndex = options.findIndex((option) => option === selected)
 
-  /*
-   * 소비처가 매번 index === selectedIndex / index === highlightedIndex로 상태를 재구성하지
-   * 않도록, 옵션별 상태를 훅이 직접 계산해 items로 내려준다(Downshift 스타일 getter).
-   */
   const items: SelectItem<T>[] = options.map((option, index) => ({
     option,
     selected: index === selectedIndex,
@@ -128,12 +105,6 @@ export const useSelect = <T>({
     close()
   }
 
-  /*
-   * onTriggerClick처럼 DOM 이벤트 prop에 그대로 꽂는 핸들러라 onX 네이밍으로 통일했다
-   * (clearSelection 대신 onClear). selectIndex와 마찬가지로 실질 변화가 없으면 아무것도
-   * 안 한다 — 이미 선택 해제된 상태에서 또 onClear가 불려도 onChange(undefined)가 중복
-   * 호출되지 않는다.
-   */
   const onClear = () => {
     if (selected === undefined) return
     setSelected(undefined)
@@ -167,12 +138,6 @@ export const useSelect = <T>({
     }
   }
 
-  /*
-   * open/close/toggle은 훅 내부(onTriggerClick, selectIndex, onKeyDown)에서만 쓰이고
-   * 현재 어떤 소비 컴포넌트도 직접 구조분해해 쓰지 않는다 — 실제로 안 쓰이는 걸 반환 객체에
-   * 남겨두면 API 표면만 넓어져서 뺐다. 소비처가 열기/닫기를 직접 제어해야 하는 경우가
-   * 생기면 그때 다시 반환하면 된다.
-   */
   return {
     containerRef,
     isOpen,
