@@ -36,6 +36,15 @@
 - UI 전용 상태(모달 열림, 탭 선택) → 로컬 상태(`useState`)
 - 여러 컴포넌트가 공유해야 하는 상태 → Context 또는 전역 상태
 
+## `useSyncExternalStore` 선택 기준
+
+- React 외부 store 또는 변경 가능한 브라우저 API를 실제로 구독할 때만 사용
+- 단순 마운트 판별 → `useState(false)` + 마운트 effect 사용
+- 외부 store가 없는데 mount flag를 만들기 위한 빈 `subscribe` 함수 사용 금지
+- SSR 지원 시 `getServerSnapshot`은 서버와 최초 클라이언트 hydration에서 정확히 같은 값 반환
+- `getServerSnapshot` 생략 → 해당 영역을 의도적으로 클라이언트 전용 렌더링하고 Suspense fallback을 사용할 때만 검토
+- 서버에서 외부 store 초기값을 제공할 수 있으면 동일한 값을 반환하는 `getServerSnapshot` 제공
+
 ## JSX / 렌더링
 
 - 조건부 렌더링은 early return (훅 호출 이후)
