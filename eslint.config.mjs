@@ -43,6 +43,8 @@ const eslintConfig = defineConfig([
       'no-duplicate-imports': 'error',
       // code-style.md: ! 단언 회피 규칙을 lint로 강제
       '@typescript-eslint/no-non-null-assertion': 'error',
+      // `as Type` / `<Type>value` 타입 단언으로 타입 검사를 우회하지 않는다.
+      '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
     },
   },
   eslintConfigPrettier,
