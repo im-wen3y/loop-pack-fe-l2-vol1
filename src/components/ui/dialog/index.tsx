@@ -24,7 +24,6 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from 'react'
@@ -96,20 +95,22 @@ const DialogRoot = ({ open, defaultOpen = false, onOpenChange, children }: Dialo
 // 3. Portal — Overlay/Content가 공용으로 쓰는 SSR-safe 포탈 헬퍼
 // ---------------------------------------------------------------------------
 
-const noopSubscribe = () => () => {}
-
 /*
- * document가 없는 최초 서버 렌더를 피하려고 마운트 이후에만 포탈한다. useEffect+setState로
- * 짜면 "effect 안에서 동기 setState" 린트 룰에 걸리므로, 클라이언트/서버 스냅샷이 다른 값을
- * 갖는 상황을 위해 만들어진 useSyncExternalStore로 처리한다 — 서버는 항상 false,
- * 클라이언트는 커밋 이후 true라 hydration mismatch도 없다.
+ * document가 없는 서버 렌더와 hydration 중에는 포탈을 만들지 않고, 마운트가 끝난 뒤에만
+ * document.body로 렌더한다. mounted는 외부 store의 값이 아니라 React 컴포넌트 생명주기에서
+ * 파생되는 로컬 상태이므로 useState와 useEffect로 직접 표현한다.
  */
-const useIsMounted = () =>
-  useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  )
+const useIsMounted = () => {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    // 포탈을 hydration 이후에만 만드는 의도적인 1회 추가 렌더다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true)
+  }, [])
+
+  return isMounted
+}
 
 const DialogPortal = ({ children }: DialogPortalProps) => {
   const isMounted = useIsMounted()
