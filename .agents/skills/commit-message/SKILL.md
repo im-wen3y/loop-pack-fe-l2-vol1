@@ -1,6 +1,6 @@
 ---
 name: commit-message
-description: '커밋 메시지 생성. Conventional Commits 기반 한글 작성'
+description: '커밋 메시지 작성, 커밋 메세지 작성 또는 생성 요청에 사용. Conventional Commits 기반 한글 작성'
 ---
 
 # 커밋 컨벤션

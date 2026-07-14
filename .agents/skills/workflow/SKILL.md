@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: '브랜치 전략 및 머지 전 체크. git push/merge 작업 시 사용'
+description: '워크플로우, 브랜치 전략 및 머지 전 체크 요청에 사용. git push 또는 merge 작업 시 적용'
 ---
 
 # 워크플로우 규칙

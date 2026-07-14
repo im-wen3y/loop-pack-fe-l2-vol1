@@ -1,6 +1,6 @@
 ---
 name: pr-description
-description: 'PR 디스크립션 작성. 템플릿 기반, 사용자 입력 4항목 수집'
+description: 'PR 디스크립션 또는 PR 본문 작성 요청에 사용. 템플릿을 따르고 사용자 입력 4항목 수집'
 ---
 
 # PR 디스크립션 작성
