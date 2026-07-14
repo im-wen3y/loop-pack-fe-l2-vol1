@@ -16,6 +16,35 @@ const eslintConfig = defineConfig([
     // Vite 시절 빌드 산출물 (남아있는 경우 대비)
     'dist/**',
   ]),
+  // week-03에서 적용했던 규칙 이관
+  {
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      'react-hooks/exhaustive-deps': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        {
+          checksVoidReturn: {
+            attributes: false,
+          },
+        },
+      ],
+      '@typescript-eslint/await-thenable': 'error',
+      'eqeqeq': ['error', 'always'],
+      'no-debugger': 'error',
+      'no-duplicate-imports': 'error',
+      // code-style.md: ! 단언 회피 규칙을 lint로 강제
+      '@typescript-eslint/no-non-null-assertion': 'error',
+    },
+  },
   eslintConfigPrettier,
 ])
 

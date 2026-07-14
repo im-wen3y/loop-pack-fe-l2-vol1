@@ -41,7 +41,8 @@ test('TextOptionSelect: click opens, click-select closes it, reflects on reopen,
   await trigger.click()
   const options = container.getByRole('option')
   await expect(options).toHaveCount(2)
-  const firstOptionText = (await options.nth(0).textContent())!.trim()
+  // textContent()는 null을 반환할 수 있으나, 위에서 옵션 개수(2개)를 이미 검증했으므로 빈 문자열로 대체
+  const firstOptionText = ((await options.nth(0).textContent()) ?? '').trim()
 
   await expect(wrapper.getByTestId('selected')).toHaveCount(0)
 
