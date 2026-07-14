@@ -1,5 +1,4 @@
-import type { KeyboardEvent, MouseEvent } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 
 /*
  * TextOptionSelect/SizeOptionSelect/ThumbnailOptionSelect는 마크업·스타일이 전부 다르지만
@@ -24,6 +23,13 @@ type UseSelectParams<T> = {
   onChange?: (value: T | undefined) => void
 }
 
+export type SelectItem<T> = {
+  option: T
+  selected: boolean
+  highlighted: boolean
+  disabled: boolean
+}
+
 export const useSelect = <T>({
   options,
   defaultValue,
@@ -40,6 +46,17 @@ export const useSelect = <T>({
    * 별도 state로 두면 옵션이 바뀔 때 두 값이 어긋나는 동기화 버그가 생길 수 있어 그냥 계산한다.
    */
   const selectedIndex = options.findIndex((option) => option === selected)
+
+  /*
+   * 소비처가 매번 index === selectedIndex / index === highlightedIndex로 상태를 재구성하지
+   * 않도록, 옵션별 상태를 훅이 직접 계산해 items로 내려준다(Downshift 스타일 getter).
+   */
+  const items: SelectItem<T>[] = options.map((option, index) => ({
+    option,
+    selected: index === selectedIndex,
+    highlighted: index === highlightedIndex,
+    disabled: isOptionDisabled(option),
+  }))
 
   // 전부 품절이어도 options.length번을 넘겨 순회하지 않으므로 무한루프 없이 -1로 끝난다.
   const stepToEnabled = (from: number, direction: 1 | -1): number => {
@@ -159,8 +176,7 @@ export const useSelect = <T>({
     containerRef,
     isOpen,
     selected,
-    selectedIndex,
-    highlightedIndex,
+    items,
     onTriggerClick,
     selectIndex,
     onClear,

@@ -35,22 +35,13 @@ export const ThumbnailOptionSelect = ({
   defaultValue,
   onChange,
 }: ThumbnailOptionSelectProps) => {
-  const {
-    containerRef,
-    isOpen,
-    selected,
-    selectedIndex,
-    highlightedIndex,
-    onTriggerClick,
-    selectIndex,
-    onClear,
-    onKeyDown,
-  } = useSelect({
-    options,
-    defaultValue,
-    isOptionDisabled: (option) => checkIsSoldOut(option.stock),
-    onChange,
-  })
+  const { containerRef, isOpen, selected, items, onTriggerClick, selectIndex, onClear, onKeyDown } =
+    useSelect({
+      options,
+      defaultValue,
+      isOptionDisabled: (option) => checkIsSoldOut(option.stock),
+      onChange,
+    })
 
   return (
     <div>
@@ -67,18 +58,17 @@ export const ThumbnailOptionSelect = ({
         </button>
         {isOpen && (
           <ul className={styles.list} role="listbox">
-            {options.map((option, index) => {
-              const isSoldOut = checkIsSoldOut(option.stock)
+            {items.map(({ option, selected: isSelected, highlighted, disabled }, index) => {
               return (
                 <li
                   key={option.id}
                   role="option"
-                  aria-selected={index === selectedIndex}
-                  aria-disabled={isSoldOut}
+                  aria-selected={isSelected}
+                  aria-disabled={disabled}
                   className={[
                     styles.option,
-                    index === highlightedIndex && styles.highlighted,
-                    isSoldOut && styles.disabled,
+                    highlighted && styles.highlighted,
+                    disabled && styles.disabled,
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -91,30 +81,30 @@ export const ThumbnailOptionSelect = ({
                     width={56}
                     height={56}
                     unoptimized
-                    className={[styles.thumbnail, isSoldOut && styles.thumbnailSoldOut]
+                    className={[styles.thumbnail, disabled && styles.thumbnailSoldOut]
                       .filter(Boolean)
                       .join(' ')}
                   />
                   <div className={styles.info}>
                     <span
-                      className={[styles.label, isSoldOut && styles.textSoldOut]
+                      className={[styles.label, disabled && styles.textSoldOut]
                         .filter(Boolean)
                         .join(' ')}
                     >
                       {option.label}
                     </span>
                     <div className={styles.priceRow}>
-                      {option.discountRate !== undefined && !isSoldOut && (
+                      {option.discountRate !== undefined && !disabled && (
                         <span className={styles.discountRate}>{option.discountRate}%</span>
                       )}
                       <span
-                        className={[styles.price, isSoldOut && styles.textSoldOut]
+                        className={[styles.price, disabled && styles.textSoldOut]
                           .filter(Boolean)
                           .join(' ')}
                       >
                         {formatPrice(option.price)}
                       </span>
-                      {isSoldOut ? (
+                      {disabled ? (
                         <span className={styles.soldOutBadge}>일시품절</span>
                       ) : (
                         option.badge && <span className={styles.badge}>{option.badge}</span>

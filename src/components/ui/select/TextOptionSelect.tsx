@@ -33,22 +33,13 @@ export const TextOptionSelect = ({
   defaultValue,
   onChange,
 }: TextOptionSelectProps) => {
-  const {
-    containerRef,
-    isOpen,
-    selected,
-    selectedIndex,
-    highlightedIndex,
-    onTriggerClick,
-    selectIndex,
-    onClear,
-    onKeyDown,
-  } = useSelect({
-    options,
-    defaultValue,
-    isOptionDisabled: (option) => checkIsSoldOut(option.stock),
-    onChange,
-  })
+  const { containerRef, isOpen, selected, items, onTriggerClick, selectIndex, onClear, onKeyDown } =
+    useSelect({
+      options,
+      defaultValue,
+      isOptionDisabled: (option) => checkIsSoldOut(option.stock),
+      onChange,
+    })
 
   return (
     <div>
@@ -65,18 +56,17 @@ export const TextOptionSelect = ({
         </button>
         {isOpen && (
           <ul className={styles.list} role="listbox">
-            {options.map((option, index) => {
-              const isSoldOut = checkIsSoldOut(option.stock)
+            {items.map(({ option, selected: isSelected, highlighted, disabled }, index) => {
               return (
                 <li
                   key={option.id}
                   role="option"
-                  aria-selected={index === selectedIndex}
-                  aria-disabled={isSoldOut}
+                  aria-selected={isSelected}
+                  aria-disabled={disabled}
                   className={[
                     styles.option,
-                    index === highlightedIndex && styles.highlighted,
-                    isSoldOut && styles.disabled,
+                    highlighted && styles.highlighted,
+                    disabled && styles.disabled,
                   ]
                     .filter(Boolean)
                     .join(' ')}
