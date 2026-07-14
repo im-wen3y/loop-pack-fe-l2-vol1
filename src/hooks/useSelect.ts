@@ -100,7 +100,8 @@ export const useSelect = <T>({
   useEffect(() => {
     if (!isOpen) return
     const onOutsideMouseDown = (event: globalThis.MouseEvent) => {
-      if (containerRef.current?.contains(event.target as Node)) return
+      if (!(event.target instanceof Node)) return
+      if (containerRef.current?.contains(event.target)) return
       setIsOpen(false)
     }
     document.addEventListener('mousedown', onOutsideMouseDown)
