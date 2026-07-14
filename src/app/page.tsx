@@ -1,7 +1,5 @@
-import { Suspense } from 'react'
 import { HomeTabs } from './_components/HomeTabs'
 import { SelectPreview } from './_components/SelectPreview'
-import { SelectPreviewBoundary } from './_components/SelectPreviewBoundary'
 import { DialogPreview } from './_components/DialogPreview'
 import styles from './page.module.css'
 
@@ -37,16 +35,7 @@ export default function Home() {
        */}
       <section className={styles.previewSection}>
         <h2 className={styles.previewTitle}>동작 확인</h2>
-        <HomeTabs
-          selectPanel={
-            <SelectPreviewBoundary>
-              <Suspense fallback={<p className={styles.note}>불러오는 중...</p>}>
-                <SelectPreview />
-              </Suspense>
-            </SelectPreviewBoundary>
-          }
-          dialogPanel={<DialogPreview />}
-        />
+        <HomeTabs selectPanel={<SelectPreview />} dialogPanel={<DialogPreview />} />
       </section>
     </main>
   )
