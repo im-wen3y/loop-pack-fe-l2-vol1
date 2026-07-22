@@ -3,6 +3,7 @@
 import styles from './page.module.css'
 
 // 페이지 렌더링 중 발생한 예기치 못한 오류를 처리하는 App Router 에러 경계다.
+// 홈을 useSuspenseQuery로 바꾸면서, 조회 실패 시 던져지는 에러도 이 경계가 함께 잡는다.
 const RootError = ({ reset }: { error: Error & { digest?: string }; reset: () => void }) => (
   <main className={styles.page}>
     <h1 className={styles.title}>문제가 발생했어요</h1>

@@ -6,6 +6,8 @@
   gap: 8px;
   padding: 32px;
   background: #ececec;
+  background-size: cover;
+  background-position: top;
 }
 
 @media (max-width: 480px) {

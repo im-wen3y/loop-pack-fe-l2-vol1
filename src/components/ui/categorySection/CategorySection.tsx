@@ -12,7 +12,7 @@ export const CategorySection = ({ categories }: CategorySectionProps) => {
       <h2>카테고리</h2>
       <div className={styles.categories}>
         {categories.map(({ id, name }) => (
-          <Link key={id} href="/products">
+          <Link key={id} href={`/products?category=${id}`}>
             {name}
           </Link>
         ))}
