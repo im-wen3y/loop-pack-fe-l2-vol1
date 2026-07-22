@@ -1,5 +1,5 @@
-import type { GetProductListParams, GetProductListResponse } from '@/api/products/model'
-import { serializeProductListQuery } from '@/api/products/searchParams'
+import type { GetProductListParams, GetProductListResponse } from '@/service/products/model'
+import { serializeProductListQuery } from '@/service/products/searchParams'
 
 export const getProductList = async (
   params: GetProductListParams,
