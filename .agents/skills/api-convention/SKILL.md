@@ -94,7 +94,7 @@ export const productQueryKeys = {
 ```ts
 import { queryOptions, mutationOptions, keepPreviousData } from '@tanstack/react-query'
 
-export const productQuery = {
+export const productQueries = {
   list: (query: GetProductListParams) =>
     queryOptions({
       queryKey: productQueryKeys.list(query),
@@ -103,7 +103,7 @@ export const productQuery = {
     }),
 }
 
-export const productMutation = {
+export const productMutations = {
   create: () =>
     mutationOptions({
       mutationKey: [...productQueryKeys.all, 'create'],
@@ -115,22 +115,22 @@ export const productMutation = {
 ## `service.ts` — 소비 훅
 
 - 컴포넌트가 import 하는 유일한 계층
-- `use` 접두사 + `camelCase` (`useGetProductList`, `useCreateProductItem`)
+- 훅 이름은 `use + 행위 + Query / Mutation`: 조회는 `Query`, 변경은 `Mutation` suffix로 훅의 성격을 이름에 드러낸다 (`useHomeQuery`, `useProductListQuery`, `useProductCreateMutation`)
 - `queries.ts`의 옵션을 `useQuery` / `useSuspenseQuery` / `useMutation`에 그대로 넘긴다
 - 여기서 통신·쿼리 설정을 다시 만들지 않는다
 
-같은 query 옵션을 `useQuery`로도 `useSuspenseQuery`로도 쓸 수 있다. Suspense 경계(`loading.tsx` / `<Suspense>`)에 맡길 화면은 `useSuspenseQuery`를, `data` undefined를 직접 다뤄야 하면 `useQuery`를 쓴다.
+같은 query 옵션을 `useQuery`로도 `useSuspenseQuery`로도 쓸 수 있다. Suspense 경계(`loading.tsx` / `<Suspense>`)에 맡길 화면은 `useSuspenseQuery`를, `data` undefined를 직접 다뤄야 하면 `useQuery`를 쓴다. Suspense 변형은 `use + Suspense + 행위 + Query`로 둔다.
 
 ```ts
 import { useQuery, useSuspenseQuery, useMutation } from '@tanstack/react-query'
 
-export const useGetProductList = (params: GetProductListParams) =>
-  useQuery(productQuery.list(params))
+export const useProductListQuery = (params: GetProductListParams) =>
+  useQuery(productQueries.list(params))
 
-export const useSuspenseGetProductList = (params: GetProductListParams) =>
-  useSuspenseQuery(productQuery.list(params))
+export const useSuspenseProductListQuery = (params: GetProductListParams) =>
+  useSuspenseQuery(productQueries.list(params))
 
-export const useCreateProductItem = () => useMutation(productMutation.create())
+export const useProductCreateMutation = () => useMutation(productMutations.create())
 ```
 
 ## 체크리스트
@@ -141,6 +141,7 @@ export const useCreateProductItem = () => useMutation(productMutation.create())
 - [ ] 파라미터·응답 타입이 `model.ts` 한 곳에서 관리되는가
 - [ ] 타입 네이밍이 규칙(Get / Params / Request / Response)을 따르는가
 - [ ] mutation 필드명이 `mutationKey` / `mutationFn`인가
+- [ ] `service.ts` 훅 이름이 `use + 행위 + Query / Mutation`을 따르는가
 
 ---
 
