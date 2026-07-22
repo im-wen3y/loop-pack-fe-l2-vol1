@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { ProductCardActions } from '@/components/ui/productCard/ProductCardActions'
 import styles from './ProductCard.module.css'
 
 export type ProductCardItem = {
@@ -29,14 +30,7 @@ export const ProductCard = ({ product, titleLevel }: ProductCardProps) => {
       <p>{product.brand}</p>
       <ProductTitle>{product.name}</ProductTitle>
       <strong>{product.price.toLocaleString('ko-KR')}원</strong>
-      <div className={styles.actions}>
-        <button type="button" aria-label={`${product.name} 위시리스트`} aria-pressed={false}>
-          찜
-        </button>
-        <button type="button" aria-label={`${product.name} 장바구니`} aria-pressed={false}>
-          담기
-        </button>
-      </div>
+      <ProductCardActions productId={product.id} productName={product.name} />
     </article>
   )
 }
