@@ -23,7 +23,7 @@
 
 - [x] App Router용 `NuqsAdapter`를 구성했는가
 - [x] `useQueryStates`와 parser로 검색·카테고리·정렬·페이지를 관리하는가
-- [x] `history: "push"`로 각 변경을 앞뒤 이동에서 복원하는가 — q·category·sort·page·pageSize에 적용. q는 300ms debounce 완료 단위로 push해 글자마다 히스토리가 쌓이지 않음
+- [x] `history: "push"`로 각 변경을 앞뒤 이동에서 복원하는가 — q·category·sort·page에 적용. q는 300ms debounce 완료 단위로 push해 글자마다 히스토리가 쌓이지 않음
 - [x] 검색·카테고리·정렬 변경 시 page가 1로 돌아가는가 — 필터 onChange에서 `page: 1`
 - [x] 기본 정렬도 API 요청에 `sort=latest`로 명시하는가 — `clearOnDefault: false`
 - [x] URL 공유·새로고침·뒤로 가기·앞으로 가기 후 같은 조건이 복원되는가 — 런타임 확인(뒤로/앞으로 시 이전 조건·select 값 복원)
@@ -53,10 +53,10 @@
 - [x] A 선택 시 persist·hydration·version·migration을 검증했는가 — [hydration-test.md](./hydration-test.md)
 - [x] B 선택 시 요청별 QueryClient·prefetch·hydration·중복 요청을 검증했는가 — decisions.md 8
 - [x] C 선택 시 요청 흐름과 사용자 경험의 개선을 검증했는가 — 검색 debounce, `keepPreviousData`, 오류 재시도를 Chromium·WebKit에서 검증
-- [x] D 선택 시 핵심 상태 계약을 자동화 테스트로 보호했는가 — URL/query 결과, Header 파생 개수, 홈·목록 store 동기화와 persist 복구 E2E 22개 통과
+- [x] D 선택 시 핵심 상태 계약을 자동화 테스트로 보호했는가 — URL/query 결과, Header 파생 개수, 홈·목록 store 동기화와 persist 복구, 페이지 초과 복귀 E2E 20개 시나리오(Chromium·WebKit 40개) 통과
 
 **공통**
 
 - [x] 변경마다 "왜 이렇게 설계했는가" 한 줄 근거가 있는가 — decisions.md·주석
-- [x] 개발 중 `pnpm test`와 제출 전 `pnpm check`가 통과하는가 — Vitest 36개·전체 lint·typecheck·production build 통과, Playwright E2E 22개 별도 통과
+- [x] 개발 중 `pnpm test`와 제출 전 `pnpm check`가 통과하는가 — Vitest 36개·전체 lint·typecheck·production build 통과, Playwright E2E 40개(20 시나리오 × 2 브라우저) 별도 통과
 - [x] AI로 생성한 부분을 표기하고 직접 검토했는가 — md 하단 표기

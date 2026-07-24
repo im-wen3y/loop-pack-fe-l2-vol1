@@ -6,7 +6,7 @@
 
 아래 "빌드 순서" 0~4단계는 **모두 구현 완료**됐고, Advanced A(상태 영속화)·B(서버 프리패치)까지 붙였다. [checklist.md](./checklist.md) 대조에서 **미완으로 남은 항목**은 다음과 같다.
 
-1. ~~[미구현] nuqs `history: "push"`~~ **→ 완료.** `productListParsers`의 q·category·sort·page·pageSize에 `withOptions({ history: 'push' })`를 적용해, 단일 원본을 쓰는 모든 `useQueryStates` 호출부가 상속하게 했다. q는 300ms debounce가 끝난 확정 검색어만 push하므로 글자마다 히스토리가 쌓이지 않는다. 런타임에서 뒤로/앞으로 시 이전 조건·검색어·select 값이 복원됨을 확인했다.
+1. ~~[미구현] nuqs `history: "push"`~~ **→ 완료.** `productListParsers`의 q·category·sort·page에 `withOptions({ history: 'push' })`를 적용해, 단일 원본을 쓰는 모든 `useQueryStates` 호출부가 상속하게 했다. q는 300ms debounce가 끝난 확정 검색어만 push하므로 글자마다 히스토리가 쌓이지 않는다. 런타임에서 뒤로/앞으로 시 이전 조건·검색어·select 값이 복원됨을 확인했다.
 
 2. **[부분] staleTime·gcTime 근거** — 현재 staleTime은 자리표시자(홈 5분·목록 1분)이고 gcTime은 기본값 그대로다. 데이터 변경 빈도를 기준으로 값과 근거를 확정해 [state-design.md](./state-design.md)에 남겨야 한다.
 
