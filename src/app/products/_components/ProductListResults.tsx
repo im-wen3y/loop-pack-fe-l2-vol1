@@ -36,7 +36,18 @@ export const ProductListResults = ({ query }: ProductListResultsProps) => {
 
   const products = data?.products ?? []
   if (products.length === 0) {
-    return <p>검색 결과가 없습니다.</p>
+    // totalCount > 0인데 목록이 비었다면 마지막 페이지를 넘어선 URL로 들어온 경우다.
+    // 이때 페이지네이션까지 감추면 화면 안에서 앞 페이지로 돌아갈 방법이 없어진다.
+    const hasPageOverflow = (data?.totalCount ?? 0) > 0
+
+    return (
+      <>
+        <p>검색 결과가 없습니다.</p>
+        {hasPageOverflow && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={goToPage} />
+        )}
+      </>
+    )
   }
 
   return (
