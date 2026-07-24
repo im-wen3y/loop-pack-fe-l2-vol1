@@ -2,19 +2,15 @@
 
 import { useEffect, useRef } from 'react'
 import { useProductFilters } from '@/app/products/_components/useProductFilters'
-import type { Category, ProductSort } from '@/types/commerce'
+import { SORT_OPTIONS } from '@/service/products/searchParams'
+import type { Category } from '@/types/commerce'
 import styles from './ProductFilters.module.css'
 
 type ProductFiltersProps = {
+  // 카테고리 목록의 원본은 서버 응답이다. 조회 실패·최초 로드처럼 아직 목록이 없을 때는
+  // 빈 배열로 들어오고, "전체"만 보여주면서 검색·정렬은 계속 쓸 수 있게 둔다.
   categories: readonly Category[]
 }
-
-const SORT_OPTIONS = [
-  { value: 'latest', label: '최신순' },
-  { value: 'popular', label: '인기순' },
-  { value: 'price-asc', label: '낮은 가격순' },
-  { value: 'price-desc', label: '높은 가격순' },
-] as const satisfies readonly { value: ProductSort; label: string }[]
 
 export const ProductFilters = ({ categories }: ProductFiltersProps) => {
   const { q, category, sort, setQuery, setCategory, setSort } = useProductFilters()
