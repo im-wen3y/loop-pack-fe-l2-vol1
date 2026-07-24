@@ -305,7 +305,7 @@ test.describe('5주차 예외와 복구', () => {
   })
 
   test('허용 범위를 벗어난 숫자 조건은 제어된 오류 상태로 처리한다', async ({ page }) => {
-    await page.goto('/products?page=0&pageSize=25')
+    await page.goto('/products?page=0')
 
     await expect(page.getByText('상품 목록을 불러오지 못했어요.', { exact: true })).toBeVisible({
       timeout: 20_000,
@@ -313,8 +313,20 @@ test.describe('5주차 예외와 복구', () => {
     await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible()
   })
 
-  test('마지막 페이지를 초과해도 빈 상태를 표시한다', async ({ page }) => {
+  test('마지막 페이지를 초과하면 빈 상태와 함께 앞 페이지로 돌아갈 수단을 남긴다', async ({
+    page,
+  }) => {
     await page.goto('/products?page=999')
+
+    await expect(page.getByText('검색 결과가 없습니다.', { exact: true })).toBeVisible()
+
+    // 검색 결과 자체는 있으므로(총 30개) 페이지네이션으로 앞 페이지에 다시 접근할 수 있어야 한다.
+    await page.getByRole('button', { name: '이전' }).click()
+    await expect(page).toHaveURL('/products?page=998')
+  })
+
+  test('검색 결과가 0건이면 페이지네이션을 표시하지 않는다', async ({ page }) => {
+    await page.goto('/products?q=존재하지않는상품명')
 
     await expect(page.getByText('검색 결과가 없습니다.', { exact: true })).toBeVisible()
     await expect(page.getByRole('navigation', { name: '페이지 이동' })).toHaveCount(0)
