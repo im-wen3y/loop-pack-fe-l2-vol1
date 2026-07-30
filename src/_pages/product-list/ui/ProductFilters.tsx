@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useProductFilters } from '@/_pages/product-list/model/use-product-filters'
+import { useProductFilters } from '@/_pages/product-list/model/useProductFilters'
 import { SORT_OPTIONS } from '@/_pages/product-list/model/search-params'
 import type { Category } from '@/entities/product'
 import styles from './ProductFilters.module.css'
