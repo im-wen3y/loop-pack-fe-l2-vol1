@@ -50,6 +50,8 @@ Client Component 경계는 가능한 한 하위에 두고, 컴포넌트는 하�
 
 비동기 작업은 Server Component 또는 Server Action을 우선 고려하고, 불가피할 때만 클라이언트 effect를 사용한다. React `key`에는 안정적인 도메인 식별자를 사용하며 배열 인덱스, `Math.random()`, `Date.now()`를 사용하지 않는다. 세부 규칙은 `.claude/rules/code-style.md`와 `.claude/rules/component-design.md`를 따른다.
 
+스켈레톤 UI를 추가하거나 수정할 때는 실제 콘텐츠의 이미지 비율, 텍스트·행위 영역 높이, 컨테이너 간격과 반응형 배치를 최대한 동일하게 맞춘다. 완료 시 로딩 전후 요소 위치가 밀리지 않는지 layout shift를 확인해야 한다. 런타임 확인 권한이 없는 작업이라 직접 확인하지 못했다면 완료 보고에 미검증 항목과 수동 확인 필요성을 명시한다.
+
 FSD 구조를 설계·변경·리뷰하거나 PR 전 셀프 리뷰를 수행할 때는 `.claude/rules/fsd-verification.md`의 파일 배치, Public API, 슬라이스 경계, 상향 의존 점검 기준을 함께 적용한다.
 
 ### `useSyncExternalStore` 선택 기준
@@ -63,7 +65,9 @@ FSD 구조를 설계·변경·리뷰하거나 PR 전 셀프 리뷰를 수행할 
 
 ## 테스트 작성 기준
 
-테스트 파일은 `e2e/<feature>.spec.ts` 형식으로 작성하며 각 테스트는 독립적으로 실행할 수 있어야 한다. locator는 접근 가능한 role과 name을 우선 사용한다. 구현 세부 사항보다 사용자에게 보이는 결과, 키보드 조작, ARIA 상태, 이미지 로딩 여부를 검증한다. Chromium과 WebKit의 동작 차이를 고려하고, 공통 준비 과정은 필요한 경우 `test.beforeEach`에 둔다. 현재 별도의 커버리지 기준은 없다.
+테스트는 검증 목적을 충족하는 가장 저렴한 계층부터 선택한다. 순수 함수, Zustand action·selector, 상태 전이, parser와 formatter처럼 브라우저가 필요 없는 로직은 Vitest 또는 Jest 단위 테스트를 우선한다. 여러 모듈의 연결은 통합 테스트로 검증하고, 실제 라우팅·브라우저 API·키보드 조작·접근성 상태·브라우저별 차이처럼 브라우저 경계가 핵심인 흐름만 Playwright E2E로 검증한다. 같은 동작을 단위 테스트와 E2E에서 중복 검증하지 않으며, E2E에는 핵심 사용자 흐름과 브라우저 경계만 남긴다.
+
+E2E 테스트 파일은 `e2e/<feature>.spec.ts` 형식으로 작성하며 각 테스트는 독립적으로 실행할 수 있어야 한다. locator는 접근 가능한 role과 name을 우선 사용한다. 구현 세부 사항보다 사용자에게 보이는 결과, 키보드 조작, ARIA 상태, 이미지 로딩 여부를 검증한다. Chromium과 WebKit의 동작 차이를 고려하고, 공통 준비 과정은 필요한 경우 `test.beforeEach`에 둔다. 현재 별도의 커버리지 기준은 없다.
 
 ## 검증 및 완료 기준
 
