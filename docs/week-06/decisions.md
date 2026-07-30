@@ -136,34 +136,32 @@ mock 전용 타입(`MockApiScenario`)은 `src/app/api` 안에 남긴다. Route H
 
 ### 옮기지 않고 남긴 것
 
-`ProductGrid`·`ProductGridSkeleton`·`CategorySection`·`HeroBanner`·`Header`·`ProductCard`·`ProductCardActions`는 2단계에서 건드리지 않았다. 최종 레이어가 3~6단계 결정에 걸려 있어서다. 특히 `ProductGrid`는 `ProductCard`를 참조하는데, 카드가 `shared`보다 위 레이어로 가면 그리드도 `shared`에 둘 수 없다 — 상향 참조라 막힌다. (실제로 카드는 4단계에서 `features/product-card`로 갔다.)
+`ProductGrid`·`ProductGridSkeleton`·`CategorySection`·`HeroBanner`·`Header`·`ProductCard`·`ProductCardActions`는 2단계에서 건드리지 않았다. 최종 레이어가 3~6단계 결정에 걸려 있어서다. 특히 `ProductGrid`는 `ProductCard`를 참조하는데, 카드가 `shared`보다 위 레이어로 가면 그리드도 `shared`에 둘 수 없다 — 상향 참조라 막힌다. 카드는 4단계에서 `features/product-card`로 중간 배치했다가, 7단계 재검토에서 `widgets/product-card`로 최종 이동했다.
 
 한 파일을 두 번 옮기지 않는다는 원칙(0.5단계)에 따라 각자의 단계에서 한 번만 움직인다.
 
-## 6. 상품 카드를 entity로 볼 것인가 feature로 볼 것인가
+## 6. 상품 카드를 entity, feature, widget 중 어디에 둘 것인가
 
 ### 고민
 
 `ProductCard`가 그리는 건 이미지·브랜드·이름·가격이다. 상품이라는 entity의 표현 그 자체로 보였다. 그런데 지금 코드에서는 그 카드가 `ProductCardActions`(찜·담기 버튼)를 직접 import하고 있다. RFC에서 문제로 꼽았던 지점이기도 하다 — "상품 표현이 장바구니·위시리스트 도메인에 묶여 있어, 행위 없는 곳에서 카드만 재사용할 수 없다".
 
-### 처음 내린 결정과 그 근거
+### 첫 번째 판단 — `entities/product/ui`
 
 `entities/product/ui`로 옮기고, 행위 버튼은 4단계에서 `features`로 분리한 뒤 카드가 `actions` 슬롯으로 받게 한다. 그러면 표시와 행위가 갈라지고 카드만 재사용할 수 있게 된다.
 
 3단계에서 실제로 그렇게 옮겼다.
 
-### 뒤집은 이유
+하지만 "카드만 재사용할 수 있게 된다"는 근거를 검증해 보니, **재사용할 자리가 없었다.**
 
-"카드만 재사용할 수 있게 된다"는 근거를 검증해 보니, **재사용할 자리가 없었다.**
-
-- `ProductCard`의 소비처는 `ProductGrid` 하나뿐이다.
-- `ProductGrid`의 소비처는 홈과 상품 목록 둘인데, **양쪽 다 찜·담기를 함께 그린다.**
+- `ProductCard`의 소비처는 `ProductGrid` 하나뿐이었다.
+- `ProductGrid`의 소비처는 홈과 상품 목록 둘인데, 양쪽 다 찜·담기를 함께 그렸다.
 
 행위 없는 카드가 필요한 곳이 지금 하나도 없었다. 그러니까 슬롯을 만들어 얻는 건 "언젠가 필요할지 모르는 유연성"이고, 대신 카드 → 그리드 → 페이지로 `actions` props를 전달하는 배선이 실제로 생긴다. 있지도 않은 요구를 위해 지금 있는 코드를 복잡하게 만드는 쪽이었다.
 
-### 결정
+### 두 번째 판단 — `features/product-card`
 
-`features/product-card` 한 슬라이스가 표시와 행위를 모두 소유한다.
+현재 모든 소비처에서 상품 표시와 찜·담기를 함께 사용하므로, `features/product-card` 한 슬라이스가 표시와 행위를 모두 소유하도록 바꿨다.
 
 ```text
 features/product-card/
@@ -179,11 +177,66 @@ features/product-card/
 
 `entities/product`에는 도메인 타입만 남았다. entity에 UI가 없어도 되는지 한 번 걸렸는데, 슬라이스가 무엇을 소유해야 하는지는 레이어 이름이 아니라 그 도메인이 실제로 갖고 있는 것이 정한다고 봤다.
 
-### 남는 비용
+이 결정은 당장 필요하지 않은 슬롯과 props 전달을 없앴지만, 다른 문제가 남았다.
 
-행위 없는 카드가 필요해지는 날이 오면 그때 갈라야 한다. 다만 그 시점에는 "어디서 카드만 필요한가"라는 근거가 생겨서, 슬롯으로 할지 컴포넌트를 나눌지도 그때 판단할 수 있다. 지금 미리 정하면 근거 없이 하나를 고르는 셈이다.
+- `product-card`는 사용자 행위가 아니라 UI 블록의 이름인데 `features`에 있었다.
+- `useProductCardActions` 하나가 장바구니와 위시리스트 store를 함께 구독했다.
+- `ProductCardActions`도 서로 독립적인 찜과 담기 행위를 한 컴포넌트로 묶었다.
+- 위시리스트 기능을 삭제하는 변경 반경이 `entities/wishlist`에 그치지 않고 결합 훅과 결합 UI까지 퍼졌다.
 
-삭제 시나리오는 나빠졌다. "위시리스트를 통째로 지운다"의 답이 `entities/wishlist/` 폴더 삭제 + `useProductCardActions`·`ProductCardActions`·`Header` 수정이다. 폴더 하나 삭제로 끝나지 않는 건 찜과 담기를 한 훅에 모은 결과인데, 이건 슬라이스를 나누지 않고도 훅만 가르면 개선할 수 있다. 5단계 자가 검증에서 이 답을 그대로 쓰고 판단한다.
+처음에는 이 비용을 "훅만 둘로 나누면 개선할 수 있다"고 봤다. 그런데 FSD의 feature 정의로 다시 보면, 중요한 건 훅의 개수가 아니라 **각 사용자 행위가 독립된 슬라이스로 식별되는가**였다.
+
+### 다시 검토한 선택지
+
+1. **`entities/product/ui`로 되돌리고 action 슬롯을 둔다.**
+   - 순수한 상품 표현과 행위를 분리할 수 있다.
+   - 현재 존재하지 않는 "행위 없는 카드"를 위해 슬롯과 props 전달을 만들어야 한다.
+2. **`features/product-card`를 유지하고 내부 컴포넌트만 나눈다.**
+   - 변경량은 가장 작다.
+   - 찜과 담기라는 두 사용자 행위가 여전히 `product-card`라는 UI 이름 아래 묶인다.
+   - 두 행위를 별도 feature 슬라이스로 만들면 feature가 같은 레이어의 다른 feature를 직접 조합할 수 없어 의존성 규칙과 충돌한다.
+3. **찜과 담기를 각각 feature로 분리하고 `widgets/product-card`에서 조합한다.**
+   - `add-to-wishlist`는 wishlist entity만, `add-to-cart`는 cart entity만 참조한다.
+   - `ProductCard`는 두 feature를 조합하는 독립 UI 블록이라는 책임을 갖는다.
+   - 상위 `widgets`에서 하위 `features`를 참조하므로 의존 방향도 자연스럽다.
+
+### 최종 결정 — `widgets/product-card`
+
+세 번째 안을 선택했다.
+
+```text
+widgets/product-card/
+├── model/types.ts
+├── ui/
+│   ├── ProductCard.tsx
+│   ├── ProductGrid.tsx
+│   └── ProductGridSkeleton.tsx
+└── index.ts
+
+features/
+├── add-to-wishlist/
+│   └── ui/WishlistButton.tsx
+└── add-to-cart/
+    └── ui/AddCartButton.tsx
+```
+
+`ProductCardActions`와 `useProductCardActions`는 제거했다. `WishlistButton`과 `AddCartButton`은 각 feature가 소유하고 자기 entity store만 구독한다. `ProductCard`는 두 feature의 Public API를 가져와 조합한다.
+
+`ProductGrid`와 `ProductGridSkeleton`도 같은 widget 슬라이스로 옮겼다. `ProductGrid`를 별도 `widgets/product-grid`로 만들면 같은 레이어의 `widgets/product-card`를 직접 참조하게 된다. 현재 의존성 규칙은 widget 간 직접 참조를 금지하므로, 카드 목록과 카드의 결합도가 높은 지금은 한 슬라이스가 소유하는 편이 맞았다.
+
+### 구조만 바꾸고 toggle 동작은 남긴 이유
+
+버튼 이름과 장기적인 책임은 "추가"지만 현재 store API는 `toggle`이다. 향후 장바구니·위시리스트 페이지가 생기면 삭제·수량 수정은 그 화면에서 제공하고, 상품 카드에서는 추가만 담당하게 할 생각이다.
+
+그렇다고 이번 단계에서 `toggle`을 `add`·`remove`로 나누면 FSD 구조 변경과 사용자 동작 변경이 한 diff에 섞인다. 6주차의 기준은 기존 동작 보존이므로, 지금은 두 feature가 기존 `toggle`을 임시로 호출하도록 했다. persist 키(`cart`·`wishlist`)와 `aria-pressed` 동작도 그대로 유지했다.
+
+이 임시 상태는 코드 주석과 RFC에 함께 남겼다. 장바구니·위시리스트 페이지를 만들 때 store API를 분리하면, `AddCartButton`과 `WishlistButton`은 추가 API만 사용하고 삭제·수정 행위는 각 페이지의 feature로 옮긴다.
+
+### 돌아보면
+
+처음 `features/product-card`를 선택할 때는 "현재 카드가 모든 소비처에서 행위와 함께 쓰이는가"를 기준으로 봤다. 그 사실은 맞았지만, **같이 쓰인다는 것과 하나의 feature라는 것은 달랐다.** 카드가 찜과 담기를 함께 보여주는 이유는 두 행위가 하나라서가 아니라, 카드가 여러 행위를 조합하는 UI 블록이기 때문이다.
+
+소비처 개수만 보면 entity의 불필요한 추상화는 피할 수 있었지만, 레이어 책임을 판단하려면 "이 코드는 어떤 사용자 행위를 대표하는가"와 "몇 개의 하위 슬라이스를 조합하는가"까지 함께 봐야 했다. 이번 이동은 파일을 위 레이어로 올린 것이 아니라, 섞여 있던 두 feature를 먼저 식별하고 그 조합 위치를 widget으로 정한 결과다.
 
 ## 7. 파일명 규칙을 한 번 더 고친 이유
 
@@ -203,31 +256,32 @@ features/product-card/
 
 ### 고민
 
-`widgets`는 레이어 목록에 있으니 뭔가는 넣어야 할 것 같았다. 후보는 셋이었다 — `Header`, `ProductGrid`, `CategorySection`. 셋 다 "여러 곳에서 쓰이는 덩어리 UI"로 보였다.
+`widgets`는 레이어 목록에 있으니 뭔가는 넣어야 할 것 같았다. 처음 후보는 셋이었다 — `Header`, `ProductGrid`, `CategorySection`. 셋 다 "여러 곳에서 쓰이는 덩어리 UI"로 보였다. 이후 `ProductCard`의 행위를 분리하면서 카드 자체도 후보에 다시 들어왔다.
 
 ### 기준
 
 프로세스 문서에 적어 둔 확인 포인트를 그대로 썼다. **여러 하위 슬라이스를 조합하는 독립 UI 블록일 때만 widget으로 만들고, UI 하나를 감싸는 중간 폴더로는 만들지 않는다.** "여러 곳에서 쓰인다"가 아니라 "여러 슬라이스를 조합한다"가 기준이다.
 
-이 기준을 대니 셋 중 하나만 남았다.
+이 기준으로 처음에는 `Header`만 남겼지만, `ProductCardActions`를 두 feature로 분리한 뒤 결과가 달라졌다.
 
-| 후보              | 조합하는 슬라이스                         | 판정                               |
-| ----------------- | ----------------------------------------- | ---------------------------------- |
-| `Header`          | `entities/cart`, `entities/wishlist` (둘) | widget                             |
-| `ProductGrid`     | `features/product-card` (하나)            | 미달 → 그 슬라이스 안으로          |
-| `CategorySection` | `entities/product`의 타입 하나            | 미달 → 소비처인 `_pages/home/ui`로 |
+| 후보              | 조합하는 슬라이스                    | 판정                                            |
+| ----------------- | ------------------------------------ | ----------------------------------------------- |
+| `Header`          | `entities/cart`, `entities/wishlist` | widget                                          |
+| `ProductCard`     | `add-to-cart`, `add-to-wishlist`     | widget                                          |
+| `ProductGrid`     | 같은 `product-card`의 카드           | 독립 widget이 아닌 `product-card` 슬라이스 내부 |
+| `CategorySection` | `entities/product`의 타입 하나       | 미달 → 소비처인 `_pages/home/ui`                |
 
 ### 결정
 
-`widgets/header` 하나만 만들었다.
+최종적으로 `widgets/header`와 `widgets/product-card` 두 슬라이스를 만들었다.
 
-`ProductGrid`가 하는 일은 `ProductCard`를 `map`으로 뿌리는 게 전부다. 이걸 widget으로 올리면 레이어가 하나 늘어나는 대신 얻는 게 없다. 카드와 같은 슬라이스에 두니 `ProductGridSkeleton`이 격자 CSS를 공유하는 것도 슬라이스 안쪽 일이 됐다.
+`ProductGrid`가 하는 일은 `ProductCard`를 `map`으로 뿌리는 게 전부라 별도 widget 슬라이스로 만들지 않았다. 같은 `widgets` 레이어의 `product-card`를 참조할 수도 없으므로 `ProductGridSkeleton`과 함께 `widgets/product-card` 내부에 뒀다.
 
 `CategorySection`은 도메인 표현으로 보면 `entities/product/ui`도 맞았다. 다만 소비처가 홈 하나뿐이라, "재사용 근거가 생기기 전에는 소비하는 화면이 갖는다"는 이번 주의 다른 판단들(4번 미사용 자산, 6번 카드)과 같은 기준을 적용했다.
 
 ### 돌아보면
 
-레이어가 정의돼 있으면 그 칸을 채우고 싶어진다. `ProductGrid`를 widget으로 만들 뻔한 게 딱 그 경우였는데, 기준을 미리 문장으로 적어 둔 게 도움이 됐다. 판단이 갈릴 때 "그 레이어의 정의가 뭐였지"로 돌아갈 자리가 있었다.
+레이어가 정의돼 있으면 그 칸을 채우고 싶어진다. 처음 `ProductGrid`를 widget으로 만들 뻔한 것도, 반대로 나중에 `ProductCard`를 feature에 계속 두려 한 것도 파일 이름과 현재 위치에 끌린 경우였다. 판단이 갈릴 때 "여러 하위 슬라이스를 조합하는가"라는 정의로 돌아가니 `ProductCard`는 widget이고, `ProductGrid`는 그 widget 슬라이스의 내부 UI라는 차이를 설명할 수 있었다.
 
 ## 아직 확실하지 않은 것 / 다음에 볼 것
 
@@ -237,4 +291,4 @@ features/product-card/
 
 ---
 
-_이 문서는 제가 이번 주 개발하며 내린 판단과 그 이유를 정리한 것입니다. 각 갈림길에서 후보를 정리하고 현재 코드의 import 관계를 대조해 제약(예: `_pages`가 `_app`을 참조할 수 없다는 점, `ProductCard`의 실제 소비처가 하나뿐이라는 점)을 확인한 것은 AI(Claude)가 했고, 어떤 방식을 택할지의 최종 결정과 문서 서술은 제가 했습니다. 6번의 `features/product-card` 구조는 제가 먼저 제안했고, AI가 제기한 재사용성·삭제 시나리오 반론을 소비처 실측으로 검증한 뒤 확정했습니다. 1~5단계까지의 판단이며, 6단계 이후는 해당 단계에서 이어 적습니다._
+_이 문서는 제가 이번 주 개발하며 내린 판단과 그 이유를 정리한 것입니다. 각 갈림길에서 후보를 정리하고 현재 코드의 import 관계를 대조해 제약(예: `_pages`가 `_app`을 참조할 수 없다는 점, `ProductCard`의 실제 소비처가 하나뿐이라는 점)을 확인한 것은 AI(Claude·Codex)가 했고, 어떤 방식을 택할지의 최종 결정과 문서 서술은 제가 했습니다. 6번은 `entities/product/ui` → `features/product-card` → `widgets/product-card`로 판단이 바뀐 과정을 지우지 않고 남겼습니다. 소비처 실측만으로는 feature의 행위 경계를 설명할 수 없다는 반론을 검토한 뒤, 찜·담기를 별도 feature로 분리하고 widget에서 조합하는 구조로 최종 결정했습니다._
