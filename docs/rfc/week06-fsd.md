@@ -2,9 +2,9 @@
 
 - 작성일: 2026-07-28
 - 브랜치: `feat/week-06`
-- 상태: 구조 변경 완료 (1~7단계 완료 · 정적 검사 통과 · 런타임 검증 및 최종 문서 정리 대기)
+- 상태: 구조 변경 완료 (1~~8단계 완료 · 정적 검사와 단위 테스트 통과 · 런타임 검증(build·E2E)과 수동 M1~~M9 대기)
 
-> 채움 규칙: **사실**(측정값·현재 코드에서 읽어낸 것)은 지금 채웠고, **결정**(목표 구조·슬라이스 배치·Public API)은 비워 뒀다. `_(미정)_` 표시가 있는 칸이 구조 변경과 함께 결정할 자리다.
+> 채움 규칙: 처음에는 **사실**(측정값·현재 코드에서 읽어낸 것)만 채우고 **결정**(목표 구조·슬라이스 배치·Public API)은 비워 뒀다. 지금은 배치 결정이 모두 확정됐고, 남은 `_(검증 대기)_`·빈칸은 **런타임 검증 결과와 자가 검증(4·5단계) 답변**이다. 남은 항목은 [rfc-review-checklist.md](../week-06/rfc-review-checklist.md)에서 추적한다.
 
 ---
 
@@ -33,11 +33,13 @@
 | 명령               | 구조 변경 전 | 구조 변경 후  | 판정 |
 | ------------------ | ------------ | ------------- | ---- |
 | `pnpm check`       | 통과         | _(검증 대기)_ |      |
-| ├ `pnpm test`      | 36/36 통과   | _(검증 대기)_ |      |
-| ├ `pnpm lint`      | 통과         | ✅ 통과       |      |
-| ├ `pnpm typecheck` | 통과         | ✅ 통과       |      |
+| ├ `pnpm test`      | 36/36 통과   | ✅ 36/36 통과 | 동일 |
+| ├ `pnpm lint`      | 통과         | ✅ 통과       | 동일 |
+| ├ `pnpm typecheck` | 통과         | ✅ 통과       | 동일 |
 | └ `pnpm build`     | 통과         | _(검증 대기)_ |      |
 | `pnpm test:e2e`    | 40/40 통과   | _(검증 대기)_ |      |
+
+> `pnpm test`는 8단계에서 한 번 **0개**가 잡히는 상태를 지나왔다. app 디렉터리를 root로 옮기면서 Route Handler 테스트가 `app/` 아래로 갔는데 `vitest.config.ts`의 `include`가 `src/**`에 머물러 있었다. 0개 실행은 실패로 잡히지 않아 기준선 비교로도 드러나지 않았다. `include`를 고쳐 36/36으로 복구했다. **통과 개수만이 아니라 수집된 파일 수도 함께 확인해야 한다.**
 
 #### 기준선 상세 (구조 변경 후 같은 값이 나와야 하는 것)
 
@@ -64,7 +66,7 @@
 | #   | 시나리오                 | 조작                                                                   | 기대 동작                                                         | 구조 변경 전 | 구조 변경 후 | 판정 |
 | --- | ------------------------ | ---------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ | ------------ | ---- |
 | M1  | 홈 로딩                  | Network Slow 3G + `/` 하드 리로드                                      | `홈을 불러오는 중…` 노출 후 본문 교체                             | `[x]`        | `[ ]`        |      |
-| M2  | 홈 에러                  | `service/home/api.ts` fetch에 `?scenario=error` 임시 추가              | `문제가 발생했어요` + `다시 시도`                                 | `[x]`        | `[ ]`        |      |
+| M2  | 홈 에러                  | `_pages/home/api/api.ts` fetch에 `?scenario=error` 임시 추가           | `문제가 발생했어요` + `다시 시도`                                 | `[x]`        | `[ ]`        |      |
 | M3  | 홈 빈 상태               | 같은 자리에 `?scenario=empty` 임시 추가                                | 배너·카테고리 유지, 인기/신상품 섹션 미노출                       | `[x]`        | `[ ]`        |      |
 | M4  | 홈 정상                  | `/`                                                                    | 배너 `매일 새롭게 발견하는 취향`, 카테고리 5개, 인기·신상품 6개씩 | `[x]`        | `[ ]`        |      |
 | M5  | 목록 로딩·정상           | `/products` 첫 진입                                                    | 스켈레톤 → `총 30개`, `1 / 3`                                     | `[x]`        | `[ ]`        |      |
@@ -135,9 +137,9 @@
 
 ### 기능 요구사항 (5주차까지)
 
-현재 코드에서 실제로 동작하는 것만 적는다.
+현재 코드에서 실제로 동작하는 것만 적는다. 위치는 **구조 변경 전(5주차) 기준**이다. 구조 변경 후의 자리는 아래 `파일 매핑표`와 `After 폴더 트리`에서 본다.
 
-| 영역          | 요구사항                                                                   | 현재 구현 위치                                                      |
+| 영역          | 요구사항                                                                   | 5주차 구현 위치                                                     |
 | ------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | 홈            | 배너·카테고리·인기 상품·신상품(각 6개) 렌더                                | `app/(home)/_components/HomeContent.tsx`                            |
 | 홈            | 서버 prefetch 결과를 hydrate해 브라우저 재요청 없이 렌더                   | `app/(home)/page.tsx`, `service/queryClient.ts`                     |
@@ -278,6 +280,11 @@ src/
 │   └── ui/RootErrorFallback.tsx
 ├── _pages/                                # 페이지별 진입점 + 화면 구현
 │   ├── home/
+│   │   ├── api/                           # 홈 화면 전용 조회 계약
+│   │   │   ├── api.ts                     # getHome()
+│   │   │   ├── model.ts                   # GetHomeResponse (여러 섹션을 조립한 응답)
+│   │   │   ├── queries.ts                 # homeQueries, homeQueryKeys
+│   │   │   └── service.ts                 # useSuspenseHomeQuery
 │   │   ├── ui/
 │   │   │   ├── HomePage.tsx               # prefetch + HydrationBoundary
 │   │   │   ├── HomeLoading.tsx
@@ -292,7 +299,7 @@ src/
 │       │   ├── ProductListContent.tsx     # 'use client'
 │       │   └── ProductListResults.tsx
 │       ├── model/
-│       │   ├── search-params.ts           # productListParsers, SORT_OPTIONS
+│       │   ├── search-params.ts           # 히스토리 동작·정렬 라벨·PRODUCT_PAGE_SIZE
 │       │   ├── useProductFilters.ts
 │       │   └── useProductPagination.ts    # 상품 URL 상태 → 범용 페이지네이션 adapter
 │       └── index.ts
@@ -316,6 +323,12 @@ src/
 │       └── index.ts
 ├── entities/
 │   ├── product/
+│   │   ├── api/                           # 상품 도메인의 목록 조회 계약
+│   │   │   ├── api.ts                     # getProductList()
+│   │   │   ├── model.ts                   # GetProductListParams, GetProductListResponse
+│   │   │   ├── query-schema.ts            # 조회 parser·허용값·요청 직렬화(nuqs)
+│   │   │   ├── queries.ts                 # productQueries, productQueryKeys
+│   │   │   └── service.ts                 # useProductListQuery
 │   │   ├── model/
 │   │   │   ├── product.ts                 # Product, ProductSort
 │   │   │   └── category.ts                # Category, CategoryId
@@ -323,39 +336,26 @@ src/
 │   ├── cart/
 │   │   ├── model/cart-store.ts
 │   │   └── index.ts
-│   ├── wishlist/
-│   │   ├── model/wishlist-store.ts
-│   │   └── index.ts
-│   └── index.ts
+│   └── wishlist/
+│       ├── model/wishlist-store.ts
+│       └── index.ts
 ├── shared/
 │   ├── api/
-│   │   ├── home/
-│   │   │   ├── api.ts                     # getHome()
-│   │   │   ├── model.ts                   # GetHomeResponse
-│   │   │   ├── queries.ts                 # homeQueries, homeQueryKeys
-│   │   │   ├── service.ts                 # useSuspenseHomeQuery
-│   │   │   └── index.ts
-│   │   ├── product/
-│   │   │   ├── api.ts                     # getProductList()
-│   │   │   ├── model.ts                   # GetProductListParams, GetProductListResponse
-│   │   │   ├── queries.ts                 # productQueries, productQueryKeys
-│   │   │   ├── service.ts                 # useProductListQuery
-│   │   │   └── index.ts
 │   │   ├── query-client.ts
 │   │   └── get-api-base-url.ts
 │   ├── lib/
 │   │   ├── usePagination.ts               # controlled 범용 페이지네이션 계산·조작
-│   │   ├── use-debounced-callback.ts
+│   │   ├── useDebouncedCallback.ts
 │   │   ├── create-collection-store.ts
 │   │   └── format-price.ts
-│   ├── ui/
-│   │   ├── Pagination/
-│   │   │   ├── Pagination.tsx
-│   │   │   └── Pagination.module.css
-│   │   └── PageContainer/
-│   │       ├── PageContainer.tsx
-│   │       └── PageContainer.module.css
-│   └── index.ts
+│   ├── styles/layout.css                  # .layout-section (두 페이지가 공유)
+│   └── ui/
+│       ├── Pagination/
+│       │   ├── Pagination.tsx
+│       │   └── Pagination.module.css
+│       └── PageContainer/
+│           ├── PageContainer.tsx
+│           └── PageContainer.module.css
 └── fonts/
 
 app/ (root — Next.js App Router)
@@ -401,9 +401,12 @@ import { Pagination } from '@/shared/ui/Pagination'
 // features → entities·shared (O)
 import { useCartStore } from '@/entities/cart'
 
+// _pages → entities (O) — 화면이 도메인의 조회 계약과 parser를 가져다 쓴다
+import { productListQueryParsers, useProductListQuery } from '@/entities/product'
+
 // shared → entities·features·widgets·_pages (금지)
 // import { ProductCard } from '@/widgets/product-card' ✗ (상향 의존)
-// 예외: shared/api/product/api.ts → _pages/product-list/model/search-params (eslint-disable으로 의도적 허용)
+// 8단계 이후 상향 의존 예외는 0건이다. eslint-disable 없이 통과한다.
 
 // 같은 레이어 내: 직접 import 금지, 상위 Public API 사용
 // features/add-to-cart에서 features/add-to-wishlist를 직접 import ✗
@@ -414,75 +417,77 @@ import { useCartStore } from '@/entities/cart'
 
 1단계에서 이동을 마친 것만 채운다. 나머지는 해당 레이어 단계에서 추가한다.
 
-| 현재 위치                                                                                                                  | 목표 위치                                                                                                    | 레이어 / 슬라이스 / 세그먼트         | 이동 또는 유지하는 이유                                                                                          |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `app/providers.tsx`                                                                                                        | `_app/providers/Providers.tsx`                                                                               | `_app` / — / `providers`             | QueryClient·NuqsAdapter 배선은 특정 화면이 아니라 앱 전체의 초기화다                                             |
-| `app/globals.css`                                                                                                          | `_app/styles/globals.css`                                                                                    | `_app` / — / `styles`                | 전역 스타일도 앱 배선. 배럴을 통과할 수 없어 직접 경로로 import한다                                              |
-| `app/error.tsx`(구현)                                                                                                      | `_app/ui/RootErrorFallback.tsx`                                                                              | `_app` / — / `ui`                    | 루트 에러 화면은 특정 페이지가 아니라 앱 전체의 fallback이다                                                     |
-| `app/page.module.css`                                                                                                      | `_app/ui/RootErrorFallback.module.css`                                                                       | `_app` / — / `ui`                    | 유일 소비자가 error fallback이라 이름을 소비자에 맞췄다                                                          |
-| `app/(home)/page.tsx`(본문)                                                                                                | `_pages/home/ui/HomePage.tsx`                                                                                | `_pages` / `home` / `ui`             | prefetch + HydrationBoundary 조립은 화면 구현이다. `dynamic` 세그먼트 설정만 라우팅 파일에 남겼다                |
-| `app/(home)/loading.tsx`(구현)                                                                                             | `_pages/home/ui/HomeLoading.tsx`                                                                             | `_pages` / `home` / `ui`             | 홈 전용 로딩 UI                                                                                                  |
-| `app/(home)/_components/HomeContent.tsx`                                                                                   | `_pages/home/ui/HomeContent.tsx`                                                                             | `_pages` / `home` / `ui`             | 홈 화면 본문                                                                                                     |
-| `app/products/page.tsx`(본문)                                                                                              | `_pages/product-list/ui/ProductListPage.tsx`                                                                 | `_pages` / `product-list` / `ui`     | Suspense 경계와 fallback 조립은 화면 구현이다                                                                    |
-| `app/products/_components/ProductFilters.tsx`(+css)                                                                        | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`     | 목록 화면 전용 필터 UI                                                                                           |
-| `app/products/_components/ProductListContent.tsx`                                                                          | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`     | 목록 화면 본문                                                                                                   |
-| `app/products/_components/ProductListResults.tsx`                                                                          | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`     | 목록의 로딩·에러·빈 상태 분기                                                                                    |
-| `app/products/_components/usePagination.ts`                                                                                | `_pages/product-list/ui/` **(임시)**                                                                         | `_pages` / `product-list` / `ui`     | 최종 세그먼트는 6단계 결정. `model`에 두면 "feature인가 페이지 로직인가"를 미리 확정하게 되어 현 배치를 유지했다 |
-| `app/products/_components/useProductFilters.ts`                                                                            | `_pages/product-list/ui/` **(임시)**                                                                         | `_pages` / `product-list` / `ui`     | 위와 같음                                                                                                        |
-| `app/hydration-demo/page.tsx`                                                                                              | 삭제                                                                                                         | —                                    | 5주차 실험용 라우트. 결론이 문서와 주석에 남아 역할을 다했다                                                     |
-| `service/queryClient.ts`                                                                                                   | `shared/api/query-client.ts`                                                                                 | `shared` / — / `api`                 | 소비처가 `_pages/home`이라 `_app`에 둘 수 없다                                                                   |
-| `utils/getApiBaseUrl.ts`                                                                                                   | `shared/api/get-api-base-url.ts`                                                                             | `shared` / — / `api`                 | 서버·클라이언트 origin 분기. 도메인 지식 없음                                                                    |
-| `store/createCollectionStore.ts`                                                                                           | `shared/lib/create-collection-store.ts`                                                                      | `shared` / — / `lib`                 | cart·wishlist 두 entity의 공통 구현이라 어느 한쪽에 둘 수 없다                                                   |
-| `utils/formatPrice.ts`                                                                                                     | `shared/lib/format-price.ts`                                                                                 | `shared` / — / `lib`                 | 통화·등급 정책이 없는 순수 표시 포맷. 이동과 함께 `ProductCard`의 인라인 포맷을 교체했다                         |
-| `hooks/useDebouncedCallback.ts`                                                                                            | `shared/lib/use-debounced-callback.ts`                                                                       | `shared` / — / `lib`                 | 도메인 비종속 타이밍 유틸                                                                                        |
-| `components/ui/pageContainer/*`                                                                                            | `shared/ui/PageContainer/*`                                                                                  | `shared` / — / `ui`                  | 레이아웃 셸. props가 children뿐                                                                                  |
-| `components/ui/pagination/*`                                                                                               | `shared/ui/Pagination/*`                                                                                     | `shared` / — / `ui`                  | 표시와 경계 계산만 하고 이동은 `onPageChange`로 위임                                                             |
-| `components/ui/select/*`, `components/ui/dialog/*`, `hooks/useSelect.ts`, `types/product-options.ts`, `utils/isSoldOut.ts` | 삭제                                                                                                         | —                                    | 서로만 참조하는 닫힌 섬. 라우트에서 도달 불가                                                                    |
-| `types/commerce.ts`의 `CategoryId`·`Category`                                                                              | `entities/product/model/category.ts`                                                                         | `entities` / `product` / `model`     | 카테고리는 상품 분류값이라 별도 슬라이스로 나누지 않았다                                                         |
-| `types/commerce.ts`의 `Product`·`ProductSort`                                                                              | `entities/product/model/product.ts`                                                                          | `entities` / `product` / `model`     | 상품 도메인 타입                                                                                                 |
-| `types/commerce.ts`의 `HomeResponse`                                                                                       | `service/home/model.ts`(6단계에 `_pages/home/api`)                                                           | 조회하는 쪽                          | 응답 봉투는 도메인이 아니라 화면의 조회 계약                                                                     |
-| `types/commerce.ts`의 `ProductListResponse`·`ProductListQuery`                                                             | `service/products/model.ts`(6단계에 `_pages/product-list/api`)                                               | 조회하는 쪽                          | 위와 같음                                                                                                        |
-| `types/commerce.ts`의 `MockApiScenario`·`ApiErrorResponse`                                                                 | `src/app/api/_types.ts`                                                                                      | 전환 범위 밖                         | mock 백엔드의 내부 계약                                                                                          |
-| `components/ui/productCard/ProductCard.tsx`(+css)                                                                          | `widgets/product-card/ui/ProductCard.tsx`(+css)                                                              | `widgets` / `product-card` / `ui`    | 상품 표현과 장바구니·위시리스트 두 feature를 조합하는 독립 UI 블록                                               |
-| `components/ui/productCard/ProductCardActions.tsx`                                                                         | 삭제 후 `features/add-to-wishlist/ui/WishlistButton.tsx`, `features/add-to-cart/ui/AddCartButton.tsx`로 분리 | `features` / 각 행위 슬라이스 / `ui` | 두 사용자 행위를 각각의 feature가 소유하고 widget에서 조합한다. 현재 toggle 동작은 기준선 보존을 위해 유지한다   |
-| `ProductCard.tsx`의 `ProductCardItem`                                                                                      | `widgets/product-card/model/types.ts`                                                                        | `widgets` / `product-card` / `model` | widget 카드가 실제로 그리는 5개 필드만 받는 뷰 타입                                                              |
-| `store/cartStore.ts`                                                                                                       | `entities/cart/model/cart-store.ts`                                                                          | `entities` / `cart` / `model`        | 상태는 entity, 상태를 바꾸는 행위는 feature                                                                      |
-| `store/wishlistStore.ts`                                                                                                   | `entities/wishlist/model/wishlist-store.ts`                                                                  | `entities` / `wishlist` / `model`    | 위와 같음                                                                                                        |
-| `components/ui/header/*`                                                                                                   | `widgets/header/*`                                                                                           | `widgets` / `header` / —             | cart·wishlist 두 슬라이스를 조합하는 독립 블록                                                                   |
-| `components/ui/productGrid/ProductGrid.tsx`(+css)                                                                          | `widgets/product-card/ui/ProductGrid.tsx`(+css)                                                              | `widgets` / `product-card` / `ui`    | 별도 widget으로 나누면 같은 레이어 슬라이스 간 참조가 생기므로 카드와 같은 슬라이스가 소유한다                   |
-| `components/ui/productGrid/ProductGridSkeleton.tsx`(+css)                                                                  | `widgets/product-card/ui/`                                                                                   | `widgets` / `product-card` / `ui`    | `ProductGrid.module.css`의 격자 레이아웃을 참조한다                                                              |
-| `components/ui/categorySection/*`                                                                                          | `_pages/home/ui/CategorySection.tsx`(+css)                                                                   | `_pages` / `home` / `ui`             | 소비처가 홈 하나뿐                                                                                               |
+| 현재 위치                                                                                                                  | 목표 위치                                                                                                    | 레이어 / 슬라이스 / 세그먼트                               | 이동 또는 유지하는 이유                                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `app/providers.tsx`                                                                                                        | `_app/providers/Providers.tsx`                                                                               | `_app` / — / `providers`                                   | QueryClient·NuqsAdapter 배선은 특정 화면이 아니라 앱 전체의 초기화다                                                        |
+| `app/globals.css`                                                                                                          | `_app/styles/globals.css`                                                                                    | `_app` / — / `styles`                                      | 전역 스타일도 앱 배선. 배럴을 통과할 수 없어 직접 경로로 import한다                                                         |
+| `app/error.tsx`(구현)                                                                                                      | `_app/ui/RootErrorFallback.tsx`                                                                              | `_app` / — / `ui`                                          | 루트 에러 화면은 특정 페이지가 아니라 앱 전체의 fallback이다                                                                |
+| `app/page.module.css`                                                                                                      | `_app/ui/RootErrorFallback.module.css`                                                                       | `_app` / — / `ui`                                          | 유일 소비자가 error fallback이라 이름을 소비자에 맞췄다                                                                     |
+| `app/(home)/page.tsx`(본문)                                                                                                | `_pages/home/ui/HomePage.tsx`                                                                                | `_pages` / `home` / `ui`                                   | prefetch + HydrationBoundary 조립은 화면 구현이다. `dynamic` 세그먼트 설정만 라우팅 파일에 남겼다                           |
+| `app/(home)/loading.tsx`(구현)                                                                                             | `_pages/home/ui/HomeLoading.tsx`                                                                             | `_pages` / `home` / `ui`                                   | 홈 전용 로딩 UI                                                                                                             |
+| `app/(home)/_components/HomeContent.tsx`                                                                                   | `_pages/home/ui/HomeContent.tsx`                                                                             | `_pages` / `home` / `ui`                                   | 홈 화면 본문                                                                                                                |
+| `app/products/page.tsx`(본문)                                                                                              | `_pages/product-list/ui/ProductListPage.tsx`                                                                 | `_pages` / `product-list` / `ui`                           | Suspense 경계와 fallback 조립은 화면 구현이다                                                                               |
+| `app/products/_components/ProductFilters.tsx`(+css)                                                                        | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`                           | 목록 화면 전용 필터 UI                                                                                                      |
+| `app/products/_components/ProductListContent.tsx`                                                                          | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`                           | 목록 화면 본문                                                                                                              |
+| `app/products/_components/ProductListResults.tsx`                                                                          | `_pages/product-list/ui/`                                                                                    | `_pages` / `product-list` / `ui`                           | 목록의 로딩·에러·빈 상태 분기                                                                                               |
+| `app/products/_components/usePagination.ts`                                                                                | `shared/lib/usePagination.ts` + `_pages/product-list/model/useProductPagination.ts`                          | `shared` / — / `lib` + `_pages` / `product-list` / `model` | 1단계에는 `ui/`에 임시로 뒀다가 6단계에서 확정했다. 범용 계산은 controlled 입력만 받는 `shared`, nuqs 연결은 화면의 adapter |
+| `app/products/_components/useProductFilters.ts`                                                                            | `_pages/product-list/model/useProductFilters.ts`                                                             | `_pages` / `product-list` / `model`                        | 이 화면의 URL 상태를 다루는 로직이라 페이지가 소유한다 (6단계 확정)                                                         |
+| `app/hydration-demo/page.tsx`                                                                                              | 삭제                                                                                                         | —                                                          | 5주차 실험용 라우트. 결론이 문서와 주석에 남아 역할을 다했다                                                                |
+| `service/queryClient.ts`                                                                                                   | `shared/api/query-client.ts`                                                                                 | `shared` / — / `api`                                       | 소비처가 `_pages/home`이라 `_app`에 둘 수 없다                                                                              |
+| `utils/getApiBaseUrl.ts`                                                                                                   | `shared/api/get-api-base-url.ts`                                                                             | `shared` / — / `api`                                       | 서버·클라이언트 origin 분기. 도메인 지식 없음                                                                               |
+| `store/createCollectionStore.ts`                                                                                           | `shared/lib/create-collection-store.ts`                                                                      | `shared` / — / `lib`                                       | cart·wishlist 두 entity의 공통 구현이라 어느 한쪽에 둘 수 없다                                                              |
+| `utils/formatPrice.ts`                                                                                                     | `shared/lib/format-price.ts`                                                                                 | `shared` / — / `lib`                                       | 통화·등급 정책이 없는 순수 표시 포맷. 이동과 함께 `ProductCard`의 인라인 포맷을 교체했다                                    |
+| `hooks/useDebouncedCallback.ts`                                                                                            | `shared/lib/use-debounced-callback.ts`                                                                       | `shared` / — / `lib`                                       | 도메인 비종속 타이밍 유틸                                                                                                   |
+| `components/ui/pageContainer/*`                                                                                            | `shared/ui/PageContainer/*`                                                                                  | `shared` / — / `ui`                                        | 레이아웃 셸. props가 children뿐                                                                                             |
+| `components/ui/pagination/*`                                                                                               | `shared/ui/Pagination/*`                                                                                     | `shared` / — / `ui`                                        | 표시와 경계 계산만 하고 이동은 `onPageChange`로 위임                                                                        |
+| `components/ui/select/*`, `components/ui/dialog/*`, `hooks/useSelect.ts`, `types/product-options.ts`, `utils/isSoldOut.ts` | 삭제                                                                                                         | —                                                          | 서로만 참조하는 닫힌 섬. 라우트에서 도달 불가                                                                               |
+| `types/commerce.ts`의 `CategoryId`·`Category`                                                                              | `entities/product/model/category.ts`                                                                         | `entities` / `product` / `model`                           | 카테고리는 상품 분류값이라 별도 슬라이스로 나누지 않았다                                                                    |
+| `types/commerce.ts`의 `Product`·`ProductSort`                                                                              | `entities/product/model/product.ts`                                                                          | `entities` / `product` / `model`                           | 상품 도메인 타입                                                                                                            |
+| `types/commerce.ts`의 `HomeResponse`                                                                                       | `_pages/home/api/model.ts` (`GetHomeResponse`)                                                               | `_pages` / `home` / `api`                                  | 여러 섹션을 조립한 화면 전용 응답이라 조회하는 쪽이 소유한다                                                                |
+| `types/commerce.ts`의 `ProductListResponse`·`ProductListQuery`                                                             | `entities/product/api/model.ts` (`GetProductListResponse`·`GetProductListParams`)                            | `entities` / `product` / `api`                             | 페이지네이션 메타는 화면 조립이 아니라 목록 엔드포인트 자체의 계약이다 (8단계 결정)                                         |
+| `types/commerce.ts`의 `MockApiScenario`·`ApiErrorResponse`                                                                 | `app/api/_types.ts` (root)                                                                                   | 전환 범위 밖                                               | mock 백엔드의 내부 계약. 6단계에서 app 디렉터리가 root로 이동해 경로가 바뀌었다                                             |
+| `components/ui/productCard/ProductCard.tsx`(+css)                                                                          | `widgets/product-card/ui/ProductCard.tsx`(+css)                                                              | `widgets` / `product-card` / `ui`                          | 상품 표현과 장바구니·위시리스트 두 feature를 조합하는 독립 UI 블록                                                          |
+| `components/ui/productCard/ProductCardActions.tsx`                                                                         | 삭제 후 `features/add-to-wishlist/ui/WishlistButton.tsx`, `features/add-to-cart/ui/AddCartButton.tsx`로 분리 | `features` / 각 행위 슬라이스 / `ui`                       | 두 사용자 행위를 각각의 feature가 소유하고 widget에서 조합한다. 현재 toggle 동작은 기준선 보존을 위해 유지한다              |
+| `ProductCard.tsx`의 `ProductCardItem`                                                                                      | `widgets/product-card/model/types.ts`                                                                        | `widgets` / `product-card` / `model`                       | widget 카드가 실제로 그리는 5개 필드만 받는 뷰 타입                                                                         |
+| `store/cartStore.ts`                                                                                                       | `entities/cart/model/cart-store.ts`                                                                          | `entities` / `cart` / `model`                              | 상태는 entity, 상태를 바꾸는 행위는 feature                                                                                 |
+| `store/wishlistStore.ts`                                                                                                   | `entities/wishlist/model/wishlist-store.ts`                                                                  | `entities` / `wishlist` / `model`                          | 위와 같음                                                                                                                   |
+| `components/ui/header/*`                                                                                                   | `widgets/header/*`                                                                                           | `widgets` / `header` / —                                   | cart·wishlist 두 슬라이스를 조합하는 독립 블록                                                                              |
+| `components/ui/productGrid/ProductGrid.tsx`(+css)                                                                          | `widgets/product-card/ui/ProductGrid.tsx`(+css)                                                              | `widgets` / `product-card` / `ui`                          | 별도 widget으로 나누면 같은 레이어 슬라이스 간 참조가 생기므로 카드와 같은 슬라이스가 소유한다                              |
+| `components/ui/productGrid/ProductGridSkeleton.tsx`(+css)                                                                  | `widgets/product-card/ui/`                                                                                   | `widgets` / `product-card` / `ui`                          | `ProductGrid.module.css`의 격자 레이아웃을 참조한다                                                                         |
+| `components/ui/categorySection/*`                                                                                          | `_pages/home/ui/CategorySection.tsx`(+css)                                                                   | `_pages` / `home` / `ui`                                   | 소비처가 홈 하나뿐                                                                                                          |
 
 ### 애매한 파일 결정표 (5개 이상)
 
 과제가 지정한 4개 + 이 프로젝트에서 실제로 갈리는 것들. 후보만 적어두고 **최종 결정과 기준은 직접 채운다.**
 
-| 대상                                                                                        | 후보 A                       | 후보 B                                                                    | 최종 결정                                                                                                    | 기준                                         |
-| ------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `ProductCard`                                                                               | `entities/product/ui`        | `widgets/product-card`                                                    | **B** — `add-to-wishlist`·`add-to-cart` 두 feature를 조합                                                    | 여러 하위 슬라이스를 조합한 독립 UI 블록인가 |
-| 상품 목록 queryOptions                                                                      | `entities/product/api`       | 상품 목록 페이지의 `api`                                                  |                                                                                                              | 여러 페이지에서 재사용되는가                 |
-| 장바구니 store                                                                              | `entities/cart/model`        | 장바구니 행위 feature의 `model`                                           | **A**                                                                                                        | 상태가 나타내는 도메인과 행위의 경계         |
-| `types/commerce.ts`의 `Product` 타입                                                        | `entities/product/model`     | `shared/types` 유지                                                       | **A** (3단계에서 분해)                                                                                       | 도메인 타입을 한 창고에 모을 때 생기는 결합  |
-| `createCollectionStore` (cart·wishlist 공통 팩토리)                                         | `shared/lib`                 | 두 entity 중 한쪽에 두고 공유                                             | **A**                                                                                                        | 두 도메인이 같은 구현을 나눠 쓸 때의 소유자  |
-| `service/products/searchParams.ts` (nuqs parser + SORT_OPTIONS)                             | `_pages/product-list/model`  | `shared/config`                                                           |                                                                                                              | URL 스키마가 화면 고유인가 공통 계약인가     |
-| `usePagination` / `useProductFilters`                                                       | `features/filter-products`   | 범용 로직은 `shared/lib`, 상품 adapter·필터는 `_pages/product-list/model` | **분리** — `usePagination`은 controlled 입력만 받고 `useProductPagination`이 nuqs를 연결                     | 한 페이지 전용 로직도 feature여야 하는가     |
-| `Header` (store 2개 구독 + 내비게이션)                                                      | `widgets/header`             | `shared/ui` + 조합                                                        | **A**                                                                                                        | 공용 UI에 비즈니스 로직을 넣지 않는다는 규칙 |
-| `getApiBaseUrl` / `queryClient.ts`                                                          | `shared/api`                 | `_app`                                                                    | **A**                                                                                                        | 앱 배선인가 재사용 유틸인가                  |
-| 미사용 자산 (`select` 3종·`dialog`·`useSelect`·`product-options`·`formatPrice`·`isSoldOut`) | `shared`로 이동              | 삭제 또는 현 위치 보류                                                    | **B 삭제** (단 `formatPrice`는 제외 — `shared/lib`로 옮기고 `ProductCard` 호출부를 교체해 소비처를 만들었다) | 소비처가 0인 코드의 소유자는 누구인가        |
-| `app/api/**` (mock 백엔드)                                                                  | 전환 범위 제외(현 위치 유지) | `shared/api`로 이동                                                       | **A** (`MockApiScenario`도 여기 남긴다)                                                                      | 프론트엔드와 mock 백엔드의 경계              |
-| `hydration-demo` 라우트                                                                     | 유지                         | 삭제                                                                      | **B 삭제**                                                                                                   | 5주차 실험용 라우트를 계속 둘 것인가         |
+| 대상                                                                                        | 후보 A                       | 후보 B                                                                    | 최종 결정                                                                                                                                         | 기준                                                             |
+| ------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `ProductCard`                                                                               | `entities/product/ui`        | `widgets/product-card`                                                    | **B** — `add-to-wishlist`·`add-to-cart` 두 feature를 조합                                                                                         | 여러 하위 슬라이스를 조합한 독립 UI 블록인가                     |
+| 상품 목록 queryOptions                                                                      | `entities/product/api`       | 상품 목록 페이지의 `api`                                                  | **A** — 6단계에 `shared/api/product`로 갔다가 8단계에서 되돌렸다. 판단 흐름은 [decisions.md](../week-06/decisions.md) 9번                         | ~~여러 페이지에서 재사용되는가~~ → **이 코드가 도메인을 아는가** |
+| 홈 queryOptions·응답 타입                                                                   | `entities`의 어딘가          | 홈 페이지의 `api`                                                         | **B** (`_pages/home/api`) — 배너·카테고리·인기·신상품을 조립한 화면 전용 응답이다                                                                 | 도메인의 read API인가 화면의 조립 결과인가                       |
+| 장바구니 store                                                                              | `entities/cart/model`        | 장바구니 행위 feature의 `model`                                           | **A**                                                                                                                                             | 상태가 나타내는 도메인과 행위의 경계                             |
+| `types/commerce.ts`의 `Product` 타입                                                        | `entities/product/model`     | `shared/types` 유지                                                       | **A** (3단계에서 분해)                                                                                                                            | 도메인 타입을 한 창고에 모을 때 생기는 결합                      |
+| `createCollectionStore` (cart·wishlist 공통 팩토리)                                         | `shared/lib`                 | 두 entity 중 한쪽에 두고 공유                                             | **A**                                                                                                                                             | 두 도메인이 같은 구현을 나눠 쓸 때의 소유자                      |
+| `service/products/searchParams.ts` (nuqs parser + SORT_OPTIONS)                             | `_pages/product-list/model`  | `shared/config`                                                           | **쪼갬** — 조회 계약(parser·허용값·직렬화)은 `entities/product/api/query-schema`, 화면 동작(히스토리·라벨·pageSize)은 `_pages/product-list/model` | 후보 둘 다 아니었다. 답은 **한 파일 안에 두 소유자가 있었다**    |
+| `usePagination` / `useProductFilters`                                                       | `features/filter-products`   | 범용 로직은 `shared/lib`, 상품 adapter·필터는 `_pages/product-list/model` | **분리** — `usePagination`은 controlled 입력만 받고 `useProductPagination`이 nuqs를 연결                                                          | 한 페이지 전용 로직도 feature여야 하는가                         |
+| `Header` (store 2개 구독 + 내비게이션)                                                      | `widgets/header`             | `shared/ui` + 조합                                                        | **A**                                                                                                                                             | 공용 UI에 비즈니스 로직을 넣지 않는다는 규칙                     |
+| `getApiBaseUrl` / `queryClient.ts`                                                          | `shared/api`                 | `_app`                                                                    | **A**                                                                                                                                             | 앱 배선인가 재사용 유틸인가                                      |
+| 미사용 자산 (`select` 3종·`dialog`·`useSelect`·`product-options`·`formatPrice`·`isSoldOut`) | `shared`로 이동              | 삭제 또는 현 위치 보류                                                    | **B 삭제** (단 `formatPrice`는 제외 — `shared/lib`로 옮기고 `ProductCard` 호출부를 교체해 소비처를 만들었다)                                      | 소비처가 0인 코드의 소유자는 누구인가                            |
+| `app/api/**` (mock 백엔드)                                                                  | 전환 범위 제외(현 위치 유지) | `shared/api`로 이동                                                       | **A** (`MockApiScenario`도 여기 남긴다)                                                                                                           | 프론트엔드와 mock 백엔드의 경계                                  |
+| `hydration-demo` 라우트                                                                     | 유지                         | 삭제                                                                      | **B 삭제**                                                                                                                                        | 5주차 실험용 라우트를 계속 둘 것인가                             |
 
 ### 마이그레이션 단계와 검증
 
-| 단계 | 옮기는 대상                                                                                                                                                                                                                                   | 검증 방법                                                                                        | 결과                                                                                                                                                                                                                                 |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1    | `_app`(providers·globals.css·root error fallback), `_pages/home`, `_pages/product-list`. 라우팅 파일은 default re-export만 남김. `hydration-demo` 삭제                                                                                        | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep       | 정적 검사 둘 다 통과. 규칙 검증에서 `entities → _pages`와 `_pages/home → _pages/product-list` 두 위반 모두 레이어·슬라이스가 찍힌 에러로 잡힘. 런타임 검증은 미실행(승인 대기)                                                       |
-| 2    | `shared/api`(query-client·get-api-base-url), `shared/lib`(create-collection-store·format-price·use-debounced-callback), `shared/ui`(PageContainer·Pagination). 도달 불가 자산 삭제, `ProductCard`의 인라인 가격 포맷을 `formatPrice`로 교체   | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep       | 정적 검사 둘 다 통과. `shared → _pages` 위반이 레이어명이 찍힌 에러로 잡힘. `@/utils`·`@/hooks`·`@/service/queryClient` 잔여 참조 0건. 런타임 검증은 미실행(승인 대기)                                                               |
-| 3    | `entities/product`(타입 2개), `entities/cart`·`entities/wishlist`의 store. `types/commerce.ts` 분해 후 삭제                                                                                                                                   | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, persist 키 grep      | 정적 검사 둘 다 통과. `entities/product → entities/cart` 교차 참조가 슬라이스명까지 찍힌 에러로 잡힘. persist 키 `cart`·`wishlist` 그대로. 런타임 검증은 미실행(승인 대기)                                                           |
-| 4    | **중간 배치:** `features/product-card`(ProductCard·ProductCardActions·useProductCardActions·types). 3단계와 한 커밋으로 합쳤다                                                                                                                | 위와 같음 + `entities → features` 역방향 확인                                                    | 정적 검사 통과. 이후 7단계에서 ProductCard의 두 행위 조합 책임을 재검토해 최종 배치를 수정했다                                                                                                                                       |
-| 5    | `widgets/header`. **중간 결정으로** `ProductGrid`·`ProductGridSkeleton`을 `features/product-card`에 배치하고, `CategorySection`은 `_pages/home/ui`로 이동                                                                                     | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, Public API 우회 grep | 정적 검사 둘 다 통과. product-card의 최종 배치는 7단계에서 widget으로 수정했다                                                                                                                                                       |
-| 6    | `shared/api/home`, `shared/api/product` (query factory 컨트롤러별), `_pages/product-list/model/search-params`, `shared/lib/usePagination`, `_pages/product-list/model/useProductFilters`, `_pages/home/ui/HeroBanner`. app 디렉터리 root 이동 | `pnpm lint`, `pnpm exec tsc --noEmit`, 정적 검사 + 런타임 검증(build·E2E)                        | 정적 검사(`lint`·`tsc`) 통과. 이후 `usePagination`을 controlled 범용 로직으로 수정하고 nuqs 연결을 `_pages/product-list/model/useProductPagination`으로 분리해 `shared → _pages` 예외를 제거했다. 런타임 검증은 _(사용자 승인 대기)_ |
-| 7    | `ProductCard`·`ProductGrid`·skeleton·타입을 `widgets/product-card`로 이동. `ProductCardActions`와 결합 훅을 제거하고 `features/add-to-wishlist`, `features/add-to-cart`로 분리. 현재 toggle 동작과 persist 키는 유지                          | `pnpm lint`, `pnpm exec tsc --noEmit`, 옛 경로·결합 코드 잔여 참조 grep                          | 정적 검사 둘 다 통과. 옛 실행 코드 참조 0건. persist 키 `cart`·`wishlist` 유지. 런타임 검증은 미실행                                                                                                                                 |
+| 단계 | 옮기는 대상                                                                                                                                                                                                                                                                                                     | 검증 방법                                                                                          | 결과                                                                                                                                                                                                                                 |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | `_app`(providers·globals.css·root error fallback), `_pages/home`, `_pages/product-list`. 라우팅 파일은 default re-export만 남김. `hydration-demo` 삭제                                                                                                                                                          | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep         | 정적 검사 둘 다 통과. 규칙 검증에서 `entities → _pages`와 `_pages/home → _pages/product-list` 두 위반 모두 레이어·슬라이스가 찍힌 에러로 잡힘. 런타임 검증은 미실행(승인 대기)                                                       |
+| 2    | `shared/api`(query-client·get-api-base-url), `shared/lib`(create-collection-store·format-price·use-debounced-callback), `shared/ui`(PageContainer·Pagination). 도달 불가 자산 삭제, `ProductCard`의 인라인 가격 포맷을 `formatPrice`로 교체                                                                     | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep         | 정적 검사 둘 다 통과. `shared → _pages` 위반이 레이어명이 찍힌 에러로 잡힘. `@/utils`·`@/hooks`·`@/service/queryClient` 잔여 참조 0건. 런타임 검증은 미실행(승인 대기)                                                               |
+| 3    | `entities/product`(타입 2개), `entities/cart`·`entities/wishlist`의 store. `types/commerce.ts` 분해 후 삭제                                                                                                                                                                                                     | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, persist 키 grep        | 정적 검사 둘 다 통과. `entities/product → entities/cart` 교차 참조가 슬라이스명까지 찍힌 에러로 잡힘. persist 키 `cart`·`wishlist` 그대로. 런타임 검증은 미실행(승인 대기)                                                           |
+| 4    | **중간 배치:** `features/product-card`(ProductCard·ProductCardActions·useProductCardActions·types). 3단계와 한 커밋으로 합쳤다                                                                                                                                                                                  | 위와 같음 + `entities → features` 역방향 확인                                                      | 정적 검사 통과. 이후 7단계에서 ProductCard의 두 행위 조합 책임을 재검토해 최종 배치를 수정했다                                                                                                                                       |
+| 5    | `widgets/header`. **중간 결정으로** `ProductGrid`·`ProductGridSkeleton`을 `features/product-card`에 배치하고, `CategorySection`은 `_pages/home/ui`로 이동                                                                                                                                                       | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, Public API 우회 grep   | 정적 검사 둘 다 통과. product-card의 최종 배치는 7단계에서 widget으로 수정했다                                                                                                                                                       |
+| 6    | `shared/api/home`, `shared/api/product` (query factory 컨트롤러별), `_pages/product-list/model/search-params`, `shared/lib/usePagination`, `_pages/product-list/model/useProductFilters`, `_pages/home/ui/HeroBanner`. app 디렉터리 root 이동                                                                   | `pnpm lint`, `pnpm exec tsc --noEmit`, 정적 검사 + 런타임 검증(build·E2E)                          | 정적 검사(`lint`·`tsc`) 통과. 이후 `usePagination`을 controlled 범용 로직으로 수정하고 nuqs 연결을 `_pages/product-list/model/useProductPagination`으로 분리해 `shared → _pages` 예외를 제거했다. 런타임 검증은 _(사용자 승인 대기)_ |
+| 7    | `ProductCard`·`ProductGrid`·skeleton·타입을 `widgets/product-card`로 이동. `ProductCardActions`와 결합 훅을 제거하고 `features/add-to-wishlist`, `features/add-to-cart`로 분리. 현재 toggle 동작과 persist 키는 유지                                                                                            | `pnpm lint`, `pnpm exec tsc --noEmit`, 옛 경로·결합 코드 잔여 참조 grep                            | 정적 검사 둘 다 통과. 옛 실행 코드 참조 0건. persist 키 `cart`·`wishlist` 유지. 런타임 검증은 미실행                                                                                                                                 |
+| 8    | 조회 계층 재배치. `shared/api/product` → `entities/product/api`, `shared/api/home` → `_pages/home/api`. 조회 parser·직렬화를 `entities/product/api/query-schema`가 소유하고 화면은 히스토리 옵션만 얹도록 분리. `week-05-layout.css`를 `shared/styles/layout.css`로 옮기고 클래스명을 `layout-section`으로 변경 | `pnpm lint`, `pnpm typecheck`, `pnpm test`, `eslint-disable` 잔여 grep, 질의 문자열 이동 전후 대조 | `lint`·`typecheck` 통과, `pnpm test` **36/36**(기준선 일치). **`eslint-disable` 3건 → 0건**, `shared → _pages` 순환 해소. 질의 문자열은 이동 전 serializer 출력과 4케이스에서 바이트 단위로 동일. 런타임 검증은 _(사용자 승인 대기)_ |
 
 ---
 
@@ -492,12 +497,12 @@ import { useCartStore } from '@/entities/cart'
 
 Source of Truth와 소비처는 5주차 결정을 유지한다(폴더 이동으로 바뀌지 않는다). 소유 슬라이스만 이번에 정한다.
 
-| 상태                | Source of Truth     | 소유 슬라이스/레이어                             | 소비하는 곳        | 이동 후에도 중복 저장하지 않는 방법                                                                                           |
-| ------------------- | ------------------- | ------------------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| 상품 조회 결과      | 서버/TanStack Query | `shared/api/home`, `shared/api/product`          | 홈, 상품 목록      | 응답을 store에 옮겨 담지 않는다. 서버·클라이언트가 **같은 `queryOptions`** 를 import해 캐시를 공유한다.                       |
-| 검색·정렬·페이지    | URL/nuqs            | `_pages/product-list/model/search-params`        | 상품 목록          | `productListParsers` 한 곳만 정의하고, 별도 `useState`로 미러링하지 않는다. 입력창의 타이핑 중 값만 DOM(비제어 input)에 둔다. |
-| 장바구니·위시리스트 | Zustand             | `entities/cart/model`, `entities/wishlist/model` | 헤더, 상품 행위 UI | 개수를 저장하지 않고 `ids.length`로 파생한다. persist 저장 키(`cart`·`wishlist`)를 유지한다.                                  |
-| Dialog 열림 여부    | React 로컬 상태     | —                                                | —                  | 현재 미사용. 향후 필요시 해당 UI 컴포넌트에서 관리                                                                            |
+| 상태                | Source of Truth     | 소유 슬라이스/레이어                                                                                    | 소비하는 곳        | 이동 후에도 중복 저장하지 않는 방법                                                                                                                 |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 홈 조회 결과        | 서버/TanStack Query | `_pages/home/api`                                                                                       | 홈                 | 응답을 store에 옮겨 담지 않는다. 서버 prefetch와 클라이언트가 **같은 `homeQueries.detail()`** 을 import해 캐시를 공유한다.                          |
+| 상품 목록 조회 결과 | 서버/TanStack Query | `entities/product/api`                                                                                  | 상품 목록          | 위와 같다. 화면은 `productQueries`만 보고 fetch 구현은 슬라이스 안에 숨는다.                                                                        |
+| 검색·정렬·페이지    | URL/nuqs            | parser는 `entities/product/api/query-schema`, 히스토리 동작은 `_pages/product-list/model/search-params` | 상품 목록          | parser 본체가 한 벌이라 URL 인코딩과 API 요청 직렬화가 갈라지지 않는다. 별도 `useState`로 미러링하지 않고, 타이핑 중 값만 DOM(비제어 input)에 둔다. |
+| 장바구니·위시리스트 | Zustand             | `entities/cart/model`, `entities/wishlist/model`                                                        | 헤더, 상품 행위 UI | 개수를 저장하지 않고 `ids.length`로 파생한다. persist 저장 키(`cart`·`wishlist`)를 유지한다.                                                        |
 
 > 폴더를 옮기면서 서버 응답을 Zustand에 복사하거나, URL 상태를 별도 `useState`에 동기화하지 않는다.
 
@@ -507,22 +512,23 @@ Source of Truth와 소비처는 5주차 결정을 유지한다(폴더 이동으�
 
 ### 슬라이스별 공개 / 비공개
 
-| 슬라이스                   | 공개하는 값                                                      | 숨기는 구현 세부                                           | 이유                                          |
-| -------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
-| `_app/providers`           | Providers 컴포넌트                                               | QueryClient 생성 로직                                      | 앱 진입점에서만 사용                          |
-| `_pages/home`              | HomePage 컴포넌트                                                | 홈 화면 내부 구성                                          | 페이지별 진입점                               |
-| `_pages/product-list`      | ProductListPage 컴포넌트                                         | useProductFilters, useProductPagination, searchParams 파서 | 페이지별 진입점, URL adapter는 내부에서 관리  |
-| `widgets/header`           | Header 컴포넌트                                                  | store 구독 로직                                            | 헤더는 독립 widget                            |
-| `widgets/product-card`     | ProductCard, ProductGrid, ProductGridSkeleton, ProductCardItem   | 카드 내부 배치·스타일                                      | 상품 표현과 두 feature를 조합하는 독립 widget |
-| `features/add-to-wishlist` | WishlistButton                                                   | wishlist store 구독·임시 toggle 구현                       | 위시리스트 추가 행위를 공개                   |
-| `features/add-to-cart`     | AddCartButton                                                    | cart store 구독·임시 toggle 구현                           | 장바구니 추가 행위를 공개                     |
-| `entities/product`         | Product, ProductSort, Category 타입                              | —                                                          | 타입 전용 공개                                |
-| `entities/cart`            | cartStore                                                        | —                                                          | 상태 저장소 공개                              |
-| `entities/wishlist`        | wishlistStore                                                    | —                                                          | 상태 저장소 공개                              |
-| `shared/api/home`          | homeQueries, useSuspenseHomeQuery, GetHomeResponse 타입          | fetch 구현                                                 | 조회 계약만 공개                              |
-| `shared/api/product`       | productQueries, useProductListQuery, GetProductListResponse 타입 | fetch 구현                                                 | 조회 계약만 공개                              |
-| `shared/lib`               | usePagination, useDebounce, formatPrice, createCollectionStore   | 상태 저장 방식                                             | controlled 입력만 받는 범용 라이브러리 공개   |
-| `shared/ui`                | Pagination, PageContainer 컴포넌트                               | 스타일 구현                                                | UI 프리미티브 공개                            |
+| 슬라이스                   | 공개하는 값                                                                                  | 숨기는 구현 세부                                                     | 이유                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `_app/providers`           | Providers 컴포넌트                                                                           | QueryClient 생성 로직                                                | 앱 진입점에서만 사용                                       |
+| `_pages/home`              | HomePage 컴포넌트                                                                            | 홈 화면 내부 구성                                                    | 페이지별 진입점                                            |
+| `_pages/home/api`          | (슬라이스 내부에서만 사용)                                                                   | getHome, homeQueries, useSuspenseHomeQuery, GetHomeResponse          | 홈 화면 전용 조회 계약이라 밖에 열 대상이 없다             |
+| `_pages/product-list`      | ProductListPage 컴포넌트                                                                     | useProductFilters, useProductPagination, SORT_OPTIONS, 히스토리 옵션 | 페이지별 진입점, URL adapter는 내부에서 관리               |
+| `widgets/header`           | Header 컴포넌트                                                                              | store 구독 로직                                                      | 헤더는 독립 widget                                         |
+| `widgets/product-card`     | ProductCard, ProductGrid, ProductGridSkeleton, ProductCardItem                               | 카드 내부 배치·스타일                                                | 상품 표현과 두 feature를 조합하는 독립 widget              |
+| `features/add-to-wishlist` | WishlistButton                                                                               | wishlist store 구독·임시 toggle 구현                                 | 위시리스트 추가 행위를 공개                                |
+| `features/add-to-cart`     | AddCartButton                                                                                | cart store 구독·임시 toggle 구현                                     | 장바구니 추가 행위를 공개                                  |
+| `entities/product`         | Product·ProductSort·Category 타입, productQueries, useProductListQuery, 조회 parser와 허용값 | getProductList의 fetch 구현, serializeProductListQuery               | 도메인 타입과 목록 조회 계약을 공개하고 전송 구현은 숨긴다 |
+| `entities/cart`            | cartStore                                                                                    | —                                                                    | 상태 저장소 공개                                           |
+| `entities/wishlist`        | wishlistStore                                                                                | —                                                                    | 상태 저장소 공개                                           |
+| `shared/api`               | getServerQueryClient, getApiBaseUrl                                                          | —                                                                    | 도메인 지식이 없는 배선·유틸만 남는다                      |
+| `shared/lib`               | usePagination, useDebouncedCallback, formatPrice, createCollectionStore                      | 상태 저장 방식                                                       | controlled 입력만 받는 범용 라이브러리 공개                |
+| `shared/ui`                | Pagination, PageContainer 컴포넌트                                                           | 스타일 구현                                                          | UI 프리미티브 공개                                         |
+| `shared/styles`            | `layout.css` (`.layout-section`)                                                             | —                                                                    | 슬라이스가 없는 레이어라 직접 경로로 import한다            |
 
 ### `ProductCard` + 장바구니·위시리스트 조합 방법
 
@@ -538,7 +544,7 @@ Source of Truth와 소비처는 5주차 결정을 유지한다(폴더 이동으�
 - 의도와 근거:
   - 편의성과 명확성 균형 — 필요할 때만 import (예: `import { ProductCard } from '@/widgets/product-card'`)
   - 각 슬라이스의 공개 면 명확화 — index.ts에 나열된 것이 공개 계약
-  - server-only 모듈 분리 — 예: `shared/api/home/index.server.ts`는 나중에 필요시 추가 가능 (현재는 필요 없음)
+  - server-only 모듈 분리 — 현재 서버 전용 면은 `shared/api/query-client.ts`의 `getServerQueryClient` 하나뿐이라 `index.server.ts`를 만들지 않았다. 서버에서만 부를 수 있는 모듈이 늘면 그때 슬라이스별로 나눈다
 
 ---
 
@@ -572,7 +578,7 @@ _(AI 초안 — 검토 후 확정할 것)_
 - 상품 목록 서버 prefetch — URL 조건마다 결과가 달라 이득을 따져봐야 하는 별개 주제.
 - `select`를 이용한 리렌더 격리 — 소비처가 하나뿐이라 지금은 이득이 없다(5주차 판단 유지).
 - 번들 분할·이미지 최적화 — 측정한 성능 문제가 없다. 근거 없는 최적화는 구조 변경의 검증을 방해한다.
-- Public API(`index.ts`) 도입으로 인한 번들 영향 — 도입 여부 자체가 3단계 결정 사항이라 그 결정 뒤에 본다.
+- Public API(`index.ts`) 도입으로 인한 번들 영향 — 슬라이스 루트 한 겹만 두기로 결정했지만(I 섹션), 번들 크기는 측정하지 않았다. 재-export 한 겹이 tree-shaking을 막는지는 `pnpm build` 결과를 구조 변경 전후로 비교해야 알 수 있고, 그건 이번 주 검증 범위 밖이다.
 
 ---
 

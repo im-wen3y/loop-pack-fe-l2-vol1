@@ -283,12 +283,114 @@ features/
 
 레이어가 정의돼 있으면 그 칸을 채우고 싶어진다. 처음 `ProductGrid`를 widget으로 만들 뻔한 것도, 반대로 나중에 `ProductCard`를 feature에 계속 두려 한 것도 파일 이름과 현재 위치에 끌린 경우였다. 판단이 갈릴 때 "여러 하위 슬라이스를 조합하는가"라는 정의로 돌아가니 `ProductCard`는 widget이고, `ProductGrid`는 그 widget 슬라이스의 내부 UI라는 차이를 설명할 수 있었다.
 
+## 9. 조회 계층(query factory)을 어디에 둘 것인가
+
+### 고민
+
+`homeQueries`·`productQueries` 같은 queryOptions 묶음을 어디에 둘지가 6단계 내내 애매했다. 후보는 셋이었다 — `entities/*/api`, 조회하는 페이지의 `api`, 그리고 `shared/api`.
+
+처음에는 `shared/api`를 골랐다. 근거는 "전체에서 공유하는 queryKey는 shared에 두는 게 일반적"이라는 것이었다. 컨트롤러(도메인)별로 `shared/api/home`·`shared/api/product`를 나누면 API 계층이 한자리에 모여 보기도 좋았다.
+
+### 다시 본 이유
+
+옮기고 나니 `eslint-disable`이 세 개 붙었다.
+
+| 파일                          | 끈 규칙                   | 방향                |
+| ----------------------------- | ------------------------- | ------------------- |
+| `shared/api/product/model.ts` | `boundaries/dependencies` | `shared → entities` |
+| `shared/api/home/model.ts`    | 〃                        | `shared → entities` |
+| `shared/api/product/api.ts`   | 〃                        | `shared → _pages`   |
+
+세 번째가 특히 걸렸다. `getProductList`가 `_pages/product-list/model/search-params`의 serializer를 쓰느라 **최하위 레이어가 최상위 레이어를 참조**하고 있었다. 모듈 그래프로 보면 `_pages/product-list → shared/api/product → _pages/product-list`로 순환이었다.
+
+근거로 삼았던 "전체에서 공유"도 실제로는 성립하지 않았다. 소비처를 세어 보니 `homeQueries`는 `_pages/home`에서만, `productQueries`는 `_pages/product-list`에서만 쓰이고 있었다. 두 페이지가 함께 쓰는 쿼리는 0개였다.
+
+무엇보다 `.claude/rules/fsd-verification.md`에 이번 주에 직접 적어 둔 문장과 어긋났다 — _"'여러 곳에서 쓰니까 shared'는 안 됨"_. `shared`의 기준은 재사용 빈도가 아니라 도메인 무지인데, `Product[]`를 돌려주고 `/api/products`를 아는 코드는 그 기준에 맞지 않았다. `entities`도 이미 모든 페이지가 참조할 수 있는 층이라, 재사용성만으로는 `shared`로 내려갈 이유가 되지 않았다.
+
+### 결정
+
+두 쿼리를 서로 다른 곳으로 나눴다.
+
+| 대상                              | 이동 위치              | 이유                                                 |
+| --------------------------------- | ---------------------- | ---------------------------------------------------- |
+| `productQueries`                  | `entities/product/api` | `Product[]`를 읽어오는 상품 도메인의 read API        |
+| `homeQueries`                     | `_pages/home/api`      | 배너·카테고리·인기·신상품을 조립한 홈 화면 전용 응답 |
+| `query-client`·`get-api-base-url` | `shared/api` 유지      | 도메인 지식이 없는 배선·유틸                         |
+
+`homeQueries`를 페이지로 내린 근거는 이미 코드 주석에 써 둔 원칙이었다 — _"응답 봉투는 도메인이 아니라 이 화면의 조회 계약이라 조회하는 쪽이 소유한다."_ 원칙은 적어 두고 배치는 반대로 하고 있었던 셈이다.
+
+반대로 상품 목록 응답은 `entities`에 뒀다. 페이지네이션 메타(`totalCount`·`page`·`pageSize`)는 특정 화면의 조립이 아니라 목록 엔드포인트 자체의 계약이라고 봤다.
+
+이 이동으로 `eslint-disable` 세 개가 모두 사라졌다.
+
+### 곁가지 — nuqs serializer를 버릴 뻔한 것
+
+순환을 끊으려고 처음에는 `getProductList`가 `URLSearchParams`로 직접 질의 문자열을 만들게 했다. `_pages`의 serializer를 참조하지 않으니 방향 문제는 풀렸다.
+
+그런데 이렇게 하면 RFC의 보존 대상에 적어 둔 것이 깨진다 — _"nuqs parser의 단일 정의. 파서와 화면 옵션 목록이 갈라지면 조건이 어긋난다."_ 기존 `serializeProductListQuery`는 `createSerializer(parsers)`로 parser에서 직접 만들어졌기 때문에 URL 인코딩과 API 요청 형식이 같은 정의에서 나온다는 보장이 있었다. 직접 만든 `String(value)` 루프에는 그 보장이 없다. 지금은 값이 전부 문자열·숫자라 결과가 같지만, 배열이나 커스텀 인코딩 parser가 하나 추가되면 조용히 어긋난다.
+
+방향을 반대로 잡으니 둘 다 됐다. **조회 파라미터 스키마 자체를 `entities`가 소유하고, 화면이 그 위에 자기 URL 동작만 얹는다.**
+
+```text
+entities/product/api/query-schema.ts
+  → 어떤 파라미터가 있는지, 허용값(카테고리·정렬), 인코딩(parser), 요청 직렬화
+
+_pages/product-list/model/search-params.ts
+  → history: 'push' 동작, 한글 라벨, PRODUCT_PAGE_SIZE
+```
+
+```ts
+// 화면은 entities의 parser에 자기 히스토리 동작만 얹는다
+q: productListQueryParsers.q.withOptions(PUSH_HISTORY),
+```
+
+parser 본체가 한 벌이라 URL과 요청이 갈라질 수 없고, 참조는 `_pages → entities` 하향 한 방향이다.
+
+부수 효과로 `SORT_OPTIONS`를 `Record<ProductSort, string>` 라벨맵에서 생성하도록 바꿨다. 이전 `satisfies` 배열은 정렬 옵션을 하나 빠뜨려도 타입 검사를 통과했는데, 이제 라벨 누락이 컴파일 에러가 된다.
+
+### 판단 근거
+
+`eslint-disable`을 몇 개까지 감수할 수 있는가로 판단하지 않으려고 했다. 규칙을 끄면 검사는 통과하지만, 그 disable이 "의도한 예외"인지 "배치가 틀렸다는 신호"인지는 구분되지 않는다. 이번 경우 세 개가 전부 한 디렉터리(`shared/api/`)에 몰려 있었던 게 후자라는 쪽에 무게를 실었다.
+
+"어디에 두면 재사용하기 좋은가"가 아니라 "이 코드가 무엇을 아는가"로 기준을 바꾸니 갈림길이 정리됐다. 상품 목록 조회는 상품 도메인을 알고, 홈 응답은 홈 화면의 구성을 안다.
+
+### 돌아보면
+
+`shared`를 고른 최초 근거가 TanStack Query 일반 관례("공유 쿼리는 공용 폴더에")였는데, 그 관례는 종류별 폴더 구조에서 나온 것이라 `shared`가 "화면 전용이 아닌 것"을 뜻했다. FSD의 `shared`는 정의가 더 좁아서 같은 단어에 다른 뜻이 들어가 있었다.
+
+규칙 문서를 직접 써 놓고도 배치할 때 그 기준을 적용하지 않은 게 걸린다. 검증 규칙을 따로 만든 이유가 이런 걸 잡으려던 것이었는데, 만들어 두는 것과 판단 시점에 꺼내 보는 것은 다른 일이었다.
+
+## 10. 구조를 옮기고 나서야 드러난 것
+
+두 가지가 이번 이동 중에 발견됐다. 둘 다 구조 변경 자체의 결함은 아니고, **파일이 움직이는데 그걸 가리키던 설정과 참조가 따라오지 않은** 경우다.
+
+### `pnpm test`가 0개를 세고 있었다
+
+`vitest.config.ts`의 `include`가 `src/**/*.test.ts`인데, app 디렉터리를 루트로 옮기면서 Route Handler 테스트 3개가 `app/` 아래로 갔다. 0단계 기준선이 36/36이었는데 실제로는 아무것도 실행되지 않는 상태였고, RFC에서 `pnpm test`를 아직 재실행하지 않아 드러나지 않았다.
+
+`include`에 `app/**/*.test.ts`를 더하고 `@app` 별칭을 `tsconfig`와 맞춰 36/36으로 돌아왔다.
+
+기준선을 "숫자가 같은가"로만 보면 이런 건 안 잡힌다. 0개를 실행해도 실패는 아니기 때문이다. 다음부터는 통과 개수뿐 아니라 **수집된 파일 수**도 함께 봐야겠다.
+
+### "미사용"이라고 판단한 자산이 사용 중이었다
+
+`src/examples/week-05-layout/` 네 파일을 미사용으로 보고 삭제했는데, 그중 `week-05-layout.css`는 두 페이지가 import하고 있었다. 나머지 셋(예시 컴포넌트 2개·README)만 참조가 0이었다. 디렉터리 단위로 묶어서 판단하고 파일별로 확인하지 않은 게 원인이다.
+
+4번에서 "소비처가 0인 코드는 삭제한다"고 정했는데, 그 규칙을 적용하려면 **삭제 단위마다 소비처를 세야** 한다는 걸 빠뜨렸다.
+
+삭제 커밋에서 CSS만 복구했고, 이 참에 자리도 옮겼다. 처음에는 `_app/styles`로 보냈는데 `_pages → _app`은 상향이라 `boundaries`가 막았다. 두 페이지가 참조하는 레이아웃 스타일이므로 `shared/styles/layout.css`로 내렸다. 클래스명도 `week05-section`에서 `layout-section`으로 바꿨다 — 주차 번호가 남아 있을 이유가 없었다.
+
 ## 아직 확실하지 않은 것 / 다음에 볼 것
 
 - 현재 `@x` 설정은 교차 참조가 전용 경로를 통하는 것까지 검사한다. `@x/<consumer>`의 파일명과 실제 소비 entity가 일치하는지까지 자동 검증할 필요가 생기면 커스텀 규칙이나 별도 아키텍처 검사 도구를 검토한다.
 - **전환 중에는 lint가 옛 폴더 의존을 잡지 못한다.** `boundaries/include`가 `src/{_app,_pages,widgets,features,entities,shared,app}/**/*`라, `src/components`·`src/service`·`src/store`는 element가 없어 "unknown"이 아니라 "ignored"로 처리된다. 1·2단계에서 `_pages → @/service` 같은 import가 실제로 통과하는 걸 확인했다. 전환이 끝나 옛 폴더가 사라지면 자연히 해소되지만, 그전까지 "lint 통과 = 잔여 참조 없음"으로 읽으면 안 된다. 각 단계에서 grep으로 따로 확인하고 있다.
 - 라우터를 루트 `app/`으로 옮기는 건 전환이 끝나 라우팅 껍질만 남았을 때 하기로 했다. 지금 옮기면 라우터 이동과 레이어 이동이 같은 diff에 섞여 회귀 판정이 흐려진다.
+- `boundaries/include`가 `src/**`만 보므로 루트 `app/`의 Route Handler는 의존성 검사 대상이 아니다. 지금은 응답 타입만 참조해서 문제가 없지만, mock 백엔드가 프론트 레이어를 더 깊이 참조하기 시작하면 검사 범위를 넓힐지 봐야 한다. `eslint/fsd.config.mjs`에 남아 있는 `next-app`(`src/app`) element도 이제 대상이 없어 정리 대상이다.
+- 9번에서 `entities/product`가 `nuqs/server`에 의존하게 됐다. `createSerializer`는 React 없이 도는 순수 직렬화라 지금은 문제가 없다고 봤지만, entity가 URL 라이브러리를 아는 게 맞는지는 계속 걸린다. 조회 파라미터를 나르는 다른 수단(직접 정의한 인코더 등)이 필요해지면 다시 본다.
+- 9번의 배치로 RFC 애매한 파일 결정표의 "상품 목록 queryOptions"와 "`searchParams.ts`" 두 행이 함께 정해졌다. 후자는 후보 A·B 중 하나가 아니라 **조회 계약은 `entities`, URL 동작은 화면**으로 쪼갠 결과라, 표에 그대로 옮기려면 선택지를 다시 써야 한다.
 
 ---
 
 _이 문서는 제가 이번 주 개발하며 내린 판단과 그 이유를 정리한 것입니다. 각 갈림길에서 후보를 정리하고 현재 코드의 import 관계를 대조해 제약(예: `_pages`가 `_app`을 참조할 수 없다는 점, `ProductCard`의 실제 소비처가 하나뿐이라는 점)을 확인한 것은 AI(Claude·Codex)가 했고, 어떤 방식을 택할지의 최종 결정과 문서 서술은 제가 했습니다. 6번은 `entities/product/ui` → `features/product-card` → `widgets/product-card`로 판단이 바뀐 과정을 지우지 않고 남겼습니다. 소비처 실측만으로는 feature의 행위 경계를 설명할 수 없다는 반론을 검토한 뒤, 찜·담기를 별도 feature로 분리하고 widget에서 조합하는 구조로 최종 결정했습니다._
+
+_9번도 `shared/api` → `entities/product/api`·`_pages/home/api`로 판단이 바뀐 과정을 남겼습니다. `shared`가 적절하지 않다는 반론(도메인 무지라는 기준, 소비처 실측, `shared → _pages` 순환)을 제기하고 이동 후 질의 문자열이 이전과 바이트 단위로 같은지 대조한 것은 AI(Claude)가 했고, 옮길지 이번 주에는 근거만 고쳐 둘지를 고르고 nuqs serializer를 유지해야 한다고 판단한 것은 제가 했습니다. 10번의 두 건도 AI가 검사 중 발견해 보고한 것입니다._
