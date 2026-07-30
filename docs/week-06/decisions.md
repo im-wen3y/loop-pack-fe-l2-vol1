@@ -336,7 +336,11 @@ entities/product/api/query-schema.ts
   → 어떤 파라미터가 있는지, 허용값(카테고리·정렬), 인코딩(parser), 요청 직렬화
 
 _pages/product-list/model/search-params.ts
-  → history: 'push' 동작, 한글 라벨, PRODUCT_PAGE_SIZE
+  → history: 'push' 동작, 한글 라벨
+
+PRODUCT_PAGE_SIZE=12
+  → entities/product/api/model.ts
+  → 호출 타입에서는 제외하고 API 직렬화 직전에 고정값으로 추가
 ```
 
 ```ts

@@ -41,7 +41,7 @@
 - [ ] **M6** 조건 전환 중 목록 유지 — 카테고리 변경 → 이전 목록 유지·흐려짐(`aria-busy`) → 교체
 - [ ] **M7** URL 공유 — `/products?q=스탠리&category=home&sort=price-desc` 새 탭 → `총 4개` + 값 복원
 - [ ] **M8** 페이지 이동 중 상태 유지 — 홈에서 찜·담기 → 목록 → 홈 복귀 → 헤더 숫자 유지, `aria-pressed=true`
-- [ ] **M9** 목록 에러와 복구 — `/products?page=0` → `다시 시도` → `page=1` → 에러 노출·재시도 실패·조건 수정 시 복구
+- [ ] **M9** 잘못된 페이지 보정 — `/products?page=0` 직접 진입 → 첫 페이지 데이터·`1 / 3` 노출, 에러 UI 미노출
 
 > **M2·M3 재현 경로 주의**
 > RFC 본문(0단계 각주)은 `service/home/api.ts`에 `?scenario=error`를 임시 추가하라고 적혀 있으나 **그 파일은 존재하지 않는다.** 6단계에서 `shared/api/home`으로, 8단계에서 다시 옮겨 현재 위치는 [`src/_pages/home/api/api.ts`](../../src/_pages/home/api/api.ts)다. 재현 후 반드시 원복하고 **커밋하지 않는다.**
@@ -76,7 +76,8 @@ RFC에 원인까지 규명해두고 "구조 변경 완료 후 별도 `fix:` 커�
 - [x] **홈 queryOptions** → **B** `_pages/home/api` (행 신설)
 - [x] **`searchParams.ts`** → **쪼갬**
   - 조회 계약(parser·허용값·직렬화)은 `entities/product/api/query-schema`
-  - 화면 동작(히스토리·라벨·`PRODUCT_PAGE_SIZE`)은 `_pages/product-list/model`
+  - 화면 동작(히스토리·라벨)은 `_pages/product-list/model`
+  - 고정 `PRODUCT_PAGE_SIZE`는 `entities/product/api`가 소유하고 호출 파라미터 타입에서는 제외
   - 후보 A·B 중 하나가 아니라 한 파일에 두 소유자가 있었다는 결론
 
 > 판단 흐름은 [decisions.md](./decisions.md) 9번에 정리했다.
