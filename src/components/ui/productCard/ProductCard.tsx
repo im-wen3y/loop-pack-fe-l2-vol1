@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { ProductCardActions } from '@/components/ui/productCard/ProductCardActions'
+import { formatPrice } from '@/shared/lib/format-price'
 import styles from './ProductCard.module.css'
 
 export type ProductCardItem = {
@@ -29,7 +30,7 @@ export const ProductCard = ({ product, titleLevel }: ProductCardProps) => {
       />
       <p>{product.brand}</p>
       <ProductTitle>{product.name}</ProductTitle>
-      <strong>{product.price.toLocaleString('ko-KR')}원</strong>
+      <strong>{formatPrice(product.price)}</strong>
       <ProductCardActions productId={product.id} productName={product.name} />
     </article>
   )
