@@ -1,15 +1,16 @@
 'use client'
 
 import { useQueryStates } from 'nuqs'
-import { productListParsers } from '@/_pages/product-list/model/search-params'
-import { useProductListQuery } from '@/shared/api/product/service'
+import { useProductListQuery } from '@/entities/product'
+import { PRODUCT_PAGE_SIZE, productListParsers } from '@/_pages/product-list/model/search-params'
 import { ProductFilters } from '@/_pages/product-list/ui/ProductFilters'
 import { ProductListResults } from '@/_pages/product-list/ui/ProductListResults'
 
 export const ProductListContent = () => {
   const [searchParams] = useQueryStates(productListParsers)
   // 상품 목록은 조건 전환 중 이전 데이터를 유지해야 하므로 useQuery를 사용한다.
-  const query = useProductListQuery(searchParams)
+  // pageSize는 화면이 정하는 값이라 조회 계약에 명시적으로 넘긴다.
+  const query = useProductListQuery({ ...searchParams, pageSize: PRODUCT_PAGE_SIZE })
   // 필터는 조회 "성공"이 아니라 "완료"를 기준으로 노출한다. 실패했을 때 필터까지 사라지면
   // 사용자가 조건을 바꿔 실패 상태를 빠져나갈 방법이 없어진다(이때 카테고리 옵션은 전체만 남는다).
   // 반대로 최초 로딩 중에는 렌더링하지 않는다. 검색 input이 hydration 전 HTML에 먼저 나타나면
@@ -18,11 +19,11 @@ export const ProductListContent = () => {
 
   return (
     <>
-      <section className="week05-section">
+      <section className="layout-section">
         <h1>상품 목록</h1>
         {!query.isPending && <ProductFilters categories={categories} />}
       </section>
-      <section className="week05-section" aria-label="상품 검색 결과">
+      <section className="layout-section" aria-label="상품 검색 결과">
         <ProductListResults query={query} />
       </section>
     </>

@@ -1,5 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query'
-import type { GetProductListResponse } from '@/shared/api/product/model'
+import type { GetProductListResponse } from '@/entities/product'
 import { PRODUCT_PAGE_SIZE } from '@/_pages/product-list/model/search-params'
 import { useProductPagination } from '@/_pages/product-list/model/useProductPagination'
 import { Pagination } from '@/shared/ui/Pagination/Pagination'

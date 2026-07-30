@@ -1,8 +1,8 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { homeQueries } from '@/shared/api/home/queries'
+import { homeQueries } from '@/_pages/home/api/queries'
 import { getServerQueryClient } from '@/shared/api/query-client'
 import { HomeContent } from '@/_pages/home/ui/HomeContent'
-import '../../../examples/week-05-layout/week-05-layout.css'
+import '@/shared/styles/layout.css'
 
 // Server Component: 클라이언트와 동일한 queryOptions(homeQueries.detail)로 서버에서 미리 조회하고,
 // dehydrate로 캐시를 직렬화해 HydrationBoundary로 클라이언트에 넘긴다.

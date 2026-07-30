@@ -1,6 +1,6 @@
 'use client'
 
-import { useSuspenseHomeQuery } from '@/shared/api/home/service'
+import { useSuspenseHomeQuery } from '@/_pages/home/api/service'
 import { HeroBanner } from '@/_pages/home/ui/HeroBanner'
 import { CategorySection } from '@/_pages/home/ui/CategorySection'
 import { Header } from '@/widgets/header'
@@ -30,7 +30,7 @@ export const HomeContent = () => {
       <HeroBanner banner={banner} />
       <CategorySection categories={categories} />
       {productSections.map(({ title, products }) => (
-        <section className="week05-section" key={title}>
+        <section className="layout-section" key={title}>
           <h2>{title}</h2>
           <ProductGrid products={products} titleLevel={3} />
         </section>
