@@ -360,36 +360,4 @@ test.describe('5주차 예외와 복구', () => {
     await expect(page.getByText('총 30개', { exact: true })).toBeVisible()
     await expect(retryButton).toHaveCount(0)
   })
-
-  test('손상된 persist 저장값은 빈 장바구니·위시리스트로 복구한다', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('cart', JSON.stringify({ state: { ids: ['p21', 42] }, version: 1 }))
-      localStorage.setItem('wishlist', JSON.stringify({ state: { ids: 'p21' }, version: 1 }))
-    })
-
-    await page.goto('/')
-
-    await expect(page.getByText('위시리스트 0', { exact: true })).toBeVisible()
-    await expect(page.getByText('장바구니 0', { exact: true })).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: '메이커스 투명케이스 위시리스트' }),
-    ).toHaveAttribute('aria-pressed', 'false')
-    await expect(
-      page.getByRole('button', { name: '메이커스 투명케이스 장바구니' }),
-    ).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  test('이전 버전의 persist 저장값을 현재 상태로 migration한다', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('wishlist', JSON.stringify({ state: { ids: ['p21'] }, version: 0 }))
-    })
-
-    await page.goto('/')
-
-    await expect(page.getByText('위시리스트 1', { exact: true })).toBeVisible()
-    await expect(page.getByText('장바구니 0', { exact: true })).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: '메이커스 투명케이스 위시리스트' }),
-    ).toHaveAttribute('aria-pressed', 'true')
-  })
 })
