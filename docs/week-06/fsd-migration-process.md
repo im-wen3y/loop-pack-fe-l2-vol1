@@ -155,18 +155,33 @@ FSD의 `app` 레이어가 Next.js App Router의 `app` 디렉터리와 충돌하�
 
 **결정할 것**
 
-| 갈림길                              | 후보                                                               | 결정 |
-| ----------------------------------- | ------------------------------------------------------------------ | ---- |
-| query factory 위치                  | `shared/api` 컨트롤러별 / `entities/*/api` / 소비 페이지 `api`     |      |
-| `searchParams.ts`                   | 한 파일 유지 / URL 파서와 요청 직렬화로 분리                       |      |
-| `usePagination`·`useProductFilters` | `features/filter-products` / 페이지 `model`                        |      |
-| 세그먼트 파일명                     | 현재 이름(`api`·`queries`·`service`) / FSD 예시(`get-*`·`*.query`) |      |
-| `HeroBanner`                        | `shared/ui` / `_pages/home/ui`                                     |      |
+| 갈림길                              | 후보                                                               | 결정                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| query factory 위치                  | `shared/api` 컨트롤러별 / `entities/*/api` / 소비 페이지 `api`     | **`shared/api` 컨트롤러별** (`shared/api/home`, `shared/api/product`) — 재사용성 높음, ESLint 경계 위반은 `eslint-disable` 처리 |
+| `searchParams.ts`                   | 한 파일 유지 / URL 파서와 요청 직렬화로 분리                       | **한 파일 유지**, `_pages/product-list/model/search-params.ts` — 페이지 전용 설정이라 상향 의존 허용                            |
+| `usePagination`·`useProductFilters` | `features/filter-products` / 페이지 `model`                        | **split**: `usePagination` → `shared/lib` (props 리팩토링), `useProductFilters` → `_pages/product-list/model` (페이지 전용)     |
+| 세그먼트 파일명                     | 현재 이름(`api`·`queries`·`service`) / FSD 예시(`get-*`·`*.query`) | **현재 이름 유지** — 도메인별 단일 controller 패턴으로 명확함                                                                   |
+| `HeroBanner`                        | `shared/ui` / `_pages/home/ui`                                     | **`_pages/home/ui`** — 홈 전용 presentational component, 재사용 근거 없음                                                       |
+
+**이동 대상**
+
+- `service/home/*` → `shared/api/home/` (api.ts, model.ts, queries.ts, service.ts)
+- `service/products/*` → `shared/api/product/` (api.ts, model.ts, queries.ts, service.ts)
+- `service/products/searchParams.ts` → `_pages/product-list/model/search-params.ts` (한 파일)
+- `hooks/usePagination.ts` → `shared/lib/usePagination.ts` (props 리팩토링: `pageSize` 인자 추가)
+- `_pages/product-list/ui/useProductFilters.ts` → `_pages/product-list/model/useProductFilters.ts`
+- `components/ui/banner/HeroBanner.tsx` → `_pages/home/ui/HeroBanner.tsx`
+
+**확인 포인트**
+
+- ✅ 서버 prefetch와 클라이언트 훅이 **같은 `queryOptions`** 를 참조한다. (`shared/api/*/queries.ts`)
+- ✅ `shared/api/product/api.ts`가 `_pages/product-list/model/search-params.ts`를 참조하는 상향 의존은 `eslint-disable` 처리했고, 이는 page 소유 모듈이기 때문에 의도적이다.
+- ✅ `usePagination`을 `shared/lib`로 옮기면서 `pageSize` prop화로 범용성 확보. 호출처에서 `PRODUCT_PAGE_SIZE` import 후 전달.
+- ✅ 캐시 정책(`staleTime`·`keepPreviousData`) 값 유지. 이동 이외 기능 변경 없음.
 
 **주의**
 
-- 서버 prefetch와 클라이언트 훅이 **같은 `queryOptions`** 를 참조해야 한다. 갈라지면 홈의 hydration이 깨진다.
-- query를 하위 레이어로 내릴 때 그 파일이 페이지 소유 모듈(`searchParams` 등)을 참조하는지 먼저 확인한다. 참조하면 상향 의존이 되어 lint가 막는다.
+- query를 하위 레이어로 내릴 때 그 파일이 페이지 소유 모듈(`searchParams` 등)을 참조하는지 먼저 확인한다. 참조하면 상향 의존이 되어 lint가 막는다. (현재 단계에서 `shared/api/product/api.ts` → `searchParams` 참조로 확인됨, 의도적 eslint-disable)
 - 캐시 정책(`staleTime`·`placeholderData`) 값은 건드리지 않는다. 이동 때문에 생긴 차이인지 구분할 수 없게 된다.
 
 ## 7단계 — 문서 정리
@@ -192,16 +207,15 @@ FSD의 `app` 레이어가 Next.js App Router의 `app` 디렉터리와 충돌하�
 
 ## 커밋 계획
 
-| 순서 | 커밋                                             | 비고                                       |
-| ---- | ------------------------------------------------ | ------------------------------------------ |
-| 1    | `refactor: FSD _app·_pages 레이어 도입`          | 라우팅 진입점 re-export 전환 포함          |
-| 2    | `chore: 소비처 없는 자산 삭제`                   | 이동과 성격이 달라 분리 (삭제를 택한 경우) |
-| 3    | `refactor: 공용 코드를 shared 레이어로 이동`     |                                            |
-| 4    | `refactor: 도메인 상태와 표현을 entities로 이동` |                                            |
-| 5    | `refactor: 사용자 행위를 features로 분리`        |                                            |
-| 6    | `refactor: 복합 UI를 widgets로 분리`             |                                            |
-| 7    | `refactor: 조회 계층을 페이지 슬라이스로 이동`   |                                            |
-| 8    | `docs: 6주차 FSD 전환 판단과 이동 결과 기록`     |                                            |
+| 순서 | 커밋                                                                   | 상태 | 비고                                                                        |
+| ---- | ---------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------- |
+| 1    | `refactor: FSD _app·_pages 레이어 도입`                                | ✅   | 라우팅 진입점 re-export 전환 포함                                           |
+| 2    | `chore: 소비처 없는 자산 삭제`                                         | ✅   | 이동과 성격이 달라 분리 (삭제를 택한 경우)                                  |
+| 3    | `refactor: 공용 코드를 shared 레이어로 이동`                           | ✅   | `43faea2`                                                                   |
+| 4-5  | `refactor: 도메인 상태·타입을 entities로, 상품 카드를 features로 이동` | ✅   | `30f0dc3` (4번과 5번 합쳐짐)                                                |
+| 6    | `refactor: 복합 UI를 widgets로 분리`                                   | ✅   | `Header` 슬라이스화, 기타 파일 위치 정리                                    |
+| 7    | `refactor: 조회 계층을 페이지 슬라이스로 이동`                         | ✅   | query factory, hooks, HeroBanner 이동 완료, `947fdb6` (훅 파일명 camelCase) |
+| 8    | `docs: 6주차 FSD 전환 판단과 이동 결과 기록`                           | ⏳   | RFC/결정사항 최종 정리 (이 단계)                                            |
 
 각 논리적 변경 단위는 staging까지 하고 커밋은 작성자가 직접 실행한다.
 

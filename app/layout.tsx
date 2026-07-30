@@ -9,7 +9,7 @@ import '@/_app/styles/globals.css'
  * next/font/local이 서브셋/프리로드/폴백 메트릭을 자동으로 최적화해준다.
  */
 const pretendard = localFont({
-  src: '../fonts/PretendardVariable.woff2',
+  src: '../src/fonts/PretendardVariable.woff2',
   variable: '--font-pretendard',
   weight: '45 920',
   display: 'swap',

@@ -349,7 +349,7 @@ const normalizeProduct = (seed: ProductSeed): Product => ({
   createdAt: seed.createdAt,
 })
 
-export const products = productSeeds.map(normalizeProduct)
+export const products: Product[] = productSeeds.map(normalizeProduct)
 
 const mockDelayMs = process.env.NODE_ENV === 'test' ? 0 : 500
 
