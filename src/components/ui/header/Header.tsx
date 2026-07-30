@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCartStore } from '@/store/cartStore'
-import { useWishlistStore } from '@/store/wishlistStore'
+import { useCartStore } from '@/entities/cart'
+import { useWishlistStore } from '@/entities/wishlist'
 import styles from './Header.module.css'
 
 export const Header = () => {

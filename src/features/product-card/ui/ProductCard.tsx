@@ -1,21 +1,16 @@
 import Image from 'next/image'
-import { ProductCardActions } from '@/components/ui/productCard/ProductCardActions'
+import type { ProductCardItem } from '@/features/product-card/model/types'
+import { ProductCardActions } from '@/features/product-card/ui/ProductCardActions'
 import { formatPrice } from '@/shared/lib/format-price'
 import styles from './ProductCard.module.css'
-
-export type ProductCardItem = {
-  id: string
-  image: string
-  name: string
-  brand: string
-  price: number
-}
 
 type ProductCardProps = {
   product: ProductCardItem
   titleLevel: 2 | 3
 }
 
+// 상품 정보 표시. Client 경계는 행위 버튼(ProductCardActions)까지만 내려가 있고
+// 이 컴포넌트 자체는 Server Component로 남는다.
 export const ProductCard = ({ product, titleLevel }: ProductCardProps) => {
   const ProductTitle = titleLevel === 2 ? 'h2' : 'h3'
 

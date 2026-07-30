@@ -1,5 +1,5 @@
 import { createSerializer, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs/server'
-import type { CategoryId, ProductSort } from '@/types/commerce'
+import type { CategoryId, ProductSort } from '@/entities/product'
 
 const CATEGORY_FILTERS = [
   'all',

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { categories, products, waitForMockApi } from '@/app/api/_data/commerce'
-import type {
-  ApiErrorResponse,
-  MockApiScenario,
-  ProductListResponse,
-  ProductSort,
-} from '@/types/commerce'
+import type { ApiErrorResponse, MockApiScenario } from '@/app/api/_types'
+import type { ProductSort } from '@/entities/product'
+import type { GetProductListResponse } from '@/service/products/model'
 
 const sortValues = [
   'latest',
@@ -25,7 +22,7 @@ const isPositiveInteger = (value: string | null) => value !== null && /^[1-9]\d*
 
 export async function GET(
   request: NextRequest,
-): Promise<NextResponse<ProductListResponse | ApiErrorResponse>> {
+): Promise<NextResponse<GetProductListResponse | ApiErrorResponse>> {
   const params = request.nextUrl.searchParams
   const scenario = params.get('scenario')
   const q = params.get('q')?.trim().toLocaleLowerCase('ko') ?? ''
