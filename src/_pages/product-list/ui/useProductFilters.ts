@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useQueryStates } from 'nuqs'
 import { productListParsers } from '@/service/products/searchParams'
-import { useDebouncedCallback } from '@/shared/lib/use-debounced-callback'
-import type { CategoryId, ProductSort } from '@/types/commerce'
+import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback'
+import type { CategoryId, ProductSort } from '@/entities/product'
 
 const SEARCH_DEBOUNCE_DELAY = 300
 

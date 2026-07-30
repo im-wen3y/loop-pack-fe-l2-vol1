@@ -2,8 +2,8 @@
 
 ## 파일 / 이름
 
-- 커스텀 훅 이름: `use` 접두사 + `camelCase`, 파일명은 kebab-case (`useProductFilters` → `use-product-filters.ts`)
-- 컴포넌트는 파일명과 내보내기 이름을 일치시킨다 (`ProductCard.tsx` → `ProductCard`)
+- 커스텀 훅: `use` 접두사 + `camelCase`, 파일명도 동일 (`useProductFilters.ts`)
+- 컴포넌트도 파일명과 내보내기 이름을 일치시킨다 (`ProductCard.tsx` → `ProductCard`)
 
 ## Server/Client Component 경계
 

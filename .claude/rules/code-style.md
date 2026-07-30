@@ -14,9 +14,10 @@
 
 ### 파일명
 
-- 컴포넌트 파일: `PascalCase` — `ProductCard.tsx`, `ProductCard.module.css`
-- 그 외 전부(훅·유틸·설정·타입·query factory): `kebab-case` — `use-pagination.ts`, `format-price.ts`, `search-params.ts`, `cart-store.ts`
-- 기준은 "무엇을 내보내는가"다. default가 컴포넌트면 PascalCase, 아니면 kebab-case
+- 컴포넌트: `PascalCase` — `RootProvider.tsx`, `ProductCard.tsx`, `ProductCard.module.css`
+- 훅: `camelCase` — `usePostLike.ts`, `usePagination.ts` (파일명과 훅 이름 일치)
+- 유틸 / API / 설정 / 타입: `kebab-case` — `post-like.api.ts`, `format-price.ts`, `cart-store.ts`
+- 기준은 "무엇을 내보내는가"다. 컴포넌트면 PascalCase, 훅이면 camelCase, 나머지는 kebab-case
 
 ### 식별자
 

@@ -1,6 +1,6 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { GetProductListResponse } from '@/service/products/model'
-import { usePagination } from '@/_pages/product-list/ui/use-pagination'
+import { usePagination } from '@/_pages/product-list/ui/usePagination'
 import { Pagination } from '@/shared/ui/Pagination/Pagination'
 import { ProductGrid } from '@/components/ui/productGrid/ProductGrid'
 import { ProductGridSkeleton } from '@/components/ui/productGrid/ProductGridSkeleton'

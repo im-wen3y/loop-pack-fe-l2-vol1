@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useProductFilters } from '@/_pages/product-list/ui/use-product-filters'
+import { useProductFilters } from '@/_pages/product-list/ui/useProductFilters'
 import { SORT_OPTIONS } from '@/service/products/searchParams'
-import type { Category } from '@/types/commerce'
+import type { Category } from '@/entities/product'
 import styles from './ProductFilters.module.css'
 
 type ProductFiltersProps = {
