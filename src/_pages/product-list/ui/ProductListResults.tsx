@@ -3,7 +3,7 @@ import type { GetProductListResponse } from '@/shared/api/product/model'
 import { PRODUCT_PAGE_SIZE } from '@/_pages/product-list/model/search-params'
 import { usePagination } from '@/shared/lib/usePagination'
 import { Pagination } from '@/shared/ui/Pagination/Pagination'
-import { ProductGrid, ProductGridSkeleton } from '@/features/product-card'
+import { ProductGrid, ProductGridSkeleton } from '@/widgets/product-card'
 
 type ProductListResultsProps = {
   query: UseQueryResult<GetProductListResponse>

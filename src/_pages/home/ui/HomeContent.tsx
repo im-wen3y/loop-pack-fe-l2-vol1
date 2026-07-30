@@ -5,7 +5,7 @@ import { HeroBanner } from '@/_pages/home/ui/HeroBanner'
 import { CategorySection } from '@/_pages/home/ui/CategorySection'
 import { Header } from '@/widgets/header'
 import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
-import { ProductGrid } from '@/features/product-card'
+import { ProductGrid } from '@/widgets/product-card'
 
 // useQuery 대신 useSuspenseQuery를 쓴 이유:
 // - useQuery는 data가 로딩·에러 중 undefined라 본문마다 `!data` 가드가 필요했다.
