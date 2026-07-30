@@ -50,6 +50,8 @@ Client Component 경계는 가능한 한 하위에 두고, 컴포넌트는 하�
 
 비동기 작업은 Server Component 또는 Server Action을 우선 고려하고, 불가피할 때만 클라이언트 effect를 사용한다. React `key`에는 안정적인 도메인 식별자를 사용하며 배열 인덱스, `Math.random()`, `Date.now()`를 사용하지 않는다. 세부 규칙은 `.claude/rules/code-style.md`와 `.claude/rules/component-design.md`를 따른다.
 
+FSD 구조를 설계·변경·리뷰하거나 PR 전 셀프 리뷰를 수행할 때는 `.claude/rules/fsd-verification.md`의 파일 배치, Public API, 슬라이스 경계, 상향 의존 점검 기준을 함께 적용한다.
+
 ### `useSyncExternalStore` 선택 기준
 
 - 실제 외부 store 또는 변경 가능한 브라우저 API를 구독할 때만 `useSyncExternalStore`를 사용한다.
