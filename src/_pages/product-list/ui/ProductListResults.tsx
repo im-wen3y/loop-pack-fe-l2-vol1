@@ -10,8 +10,8 @@ type ProductListResultsProps = {
 
 // 상품 목록의 로딩·에러·빈 상태·목록을 단계별로 그리는 라우트 전용 컴포넌트.
 // - isPending(최초 로드, 표시할 데이터 없음): skeleton 뼈대.
-// - isError: useQuery는 에러 시 throw가 아니라 isError로 알리므로 루트 error.tsx가 못 잡는다.
-//   목록 안에서 직접 에러 UI와 재시도(refetch)를 제공한다.
+// - isError: 예상 가능한 HTTP·네트워크 오류는 목록 안에서 재시도(refetch)를 제공한다.
+//   응답 파싱 오류 등 API 계약 밖의 예외는 queryOptions가 루트 error.tsx로 보낸다.
 // - isPlaceholderData(조건 전환, 이전 목록 유지 중): 목록을 갈아끼우지 않고 흐리게만 처리해 깜빡임을 막는다.
 export const ProductListResults = ({ query }: ProductListResultsProps) => {
   const { data, isPending, isError, isPlaceholderData, refetch } = query
