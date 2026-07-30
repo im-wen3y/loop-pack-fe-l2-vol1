@@ -1,5 +1,5 @@
 import type { GetHomeResponse } from '@/service/home/model'
-import { getApiBaseUrl } from '@/utils/getApiBaseUrl'
+import { getApiBaseUrl } from '@/shared/api/get-api-base-url'
 
 // 서버 프리패치(Advanced B) 시 서버에서도 호출되므로 절대 URL 기반으로 요청한다.
 export const getHome = async (): Promise<GetHomeResponse> => {

@@ -4,7 +4,7 @@ import { useSuspenseHomeQuery } from '@/service/home/service'
 import { HeroBanner } from '@/components/ui/banner/HeroBanner'
 import { CategorySection } from '@/components/ui/categorySection/CategorySection'
 import { Header } from '@/components/ui/header/Header'
-import { PageContainer } from '@/components/ui/pageContainer/PageContainer'
+import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import { ProductGrid } from '@/components/ui/productGrid/ProductGrid'
 
 // useQuery 대신 useSuspenseQuery를 쓴 이유:

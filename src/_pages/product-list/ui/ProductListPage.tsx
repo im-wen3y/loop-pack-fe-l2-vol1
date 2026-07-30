@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { ProductListContent } from '@/_pages/product-list/ui/ProductListContent'
 import { Header } from '@/components/ui/header/Header'
-import { PageContainer } from '@/components/ui/pageContainer/PageContainer'
+import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import { ProductGridSkeleton } from '@/components/ui/productGrid/ProductGridSkeleton'
 import '../../../examples/week-05-layout/week-05-layout.css'
 

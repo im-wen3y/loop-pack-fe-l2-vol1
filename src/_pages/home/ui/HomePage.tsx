@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
 import { homeQueries } from '@/service/home/queries'
-import { getServerQueryClient } from '@/service/queryClient'
+import { getServerQueryClient } from '@/shared/api/query-client'
 import { HomeContent } from '@/_pages/home/ui/HomeContent'
 import '../../../examples/week-05-layout/week-05-layout.css'
 
