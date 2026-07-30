@@ -1,7 +1,7 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { GetProductListResponse } from '@/shared/api/product/model'
 import { PRODUCT_PAGE_SIZE } from '@/_pages/product-list/model/search-params'
-import { usePagination } from '@/shared/lib/usePagination'
+import { useProductPagination } from '@/_pages/product-list/model/useProductPagination'
 import { Pagination } from '@/shared/ui/Pagination/Pagination'
 import { ProductGrid, ProductGridSkeleton } from '@/widgets/product-card'
 
@@ -17,7 +17,7 @@ type ProductListResultsProps = {
 export const ProductListResults = ({ query }: ProductListResultsProps) => {
   const { data, isPending, isError, isPlaceholderData, refetch } = query
   // 훅은 early return보다 위에서 호출한다(훅 규칙).
-  const { currentPage, totalPages, pageSize, goToPage } = usePagination(
+  const { currentPage, totalPages, pageSize, goToPage } = useProductPagination(
     data?.totalCount ?? 0,
     PRODUCT_PAGE_SIZE,
   )
