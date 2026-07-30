@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { Providers } from '@/app/providers'
-import './globals.css'
+import { Providers } from '@/_app/providers/Providers'
+import '@/_app/styles/globals.css'
 
 /*
  * 가변 폰트 파일 하나가 45~920 굵기를 전부 커버한다 (pretendard 패키지의

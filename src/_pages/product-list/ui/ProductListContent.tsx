@@ -3,8 +3,8 @@
 import { useQueryStates } from 'nuqs'
 import { productListParsers } from '@/service/products/searchParams'
 import { useProductListQuery } from '@/service/products/service'
-import { ProductFilters } from '@/app/products/_components/ProductFilters'
-import { ProductListResults } from '@/app/products/_components/ProductListResults'
+import { ProductFilters } from '@/_pages/product-list/ui/ProductFilters'
+import { ProductListResults } from '@/_pages/product-list/ui/ProductListResults'
 
 export const ProductListContent = () => {
   const [searchParams] = useQueryStates(productListParsers)
