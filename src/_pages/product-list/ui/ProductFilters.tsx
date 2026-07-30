@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useProductFilters } from '@/_pages/product-list/model/useProductFilters'
 import { SORT_OPTIONS } from '@/_pages/product-list/model/search-params'
 import type { Category } from '@/entities/product'
@@ -14,14 +14,15 @@ type ProductFiltersProps = {
 
 export const ProductFilters = ({ categories }: ProductFiltersProps) => {
   const { q, category, sort, setQuery, setCategory, setSort } = useProductFilters()
-  const queryInputRef = useRef<HTMLInputElement>(null)
+  const [draft, setDraft] = useState(q)
+  const [syncedQ, setSyncedQ] = useState(q)
 
-  // input은 타이핑 중인 값을 자체 보유하고, URL이 뒤로·앞으로 바뀔 때만 복원한다.
-  useEffect(() => {
-    if (queryInputRef.current && queryInputRef.current.value !== q) {
-      queryInputRef.current.value = q
-    }
-  }, [q])
+  // debounce 중인 입력은 draft가 보존한다. 뒤로·앞으로 가기처럼 URL이 외부에서
+  // 변경된 경우에만 URL 검색어를 새 기준으로 삼아 입력값도 함께 복원한다.
+  if (q !== syncedQ) {
+    setSyncedQ(q)
+    setDraft(q)
+  }
 
   // select가 주는 event.target.value는 string이라, 유효한 리터럴 값으로 좁힌 뒤 세터에 넘긴다.
   const handleCategoryChange = (value: string) => {
@@ -41,11 +42,14 @@ export const ProductFilters = ({ categories }: ProductFiltersProps) => {
       <label>
         검색
         <input
-          ref={queryInputRef}
           name="q"
           placeholder="상품명 또는 브랜드"
-          defaultValue={q}
-          onChange={(event) => setQuery(event.target.value)}
+          value={draft}
+          onChange={(event) => {
+            const nextQuery = event.target.value
+            setDraft(nextQuery)
+            setQuery(nextQuery)
+          }}
         />
       </label>
       <label>
