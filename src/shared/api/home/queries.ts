@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { getHome } from '@/service/home/api'
+import { getHome } from './api'
 
 export const homeQueryKeys = {
   all: ['home'] as const,

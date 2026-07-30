@@ -1,4 +1,4 @@
-import gridStyles from '@/components/ui/productGrid/ProductGrid.module.css'
+import gridStyles from '@/features/product-card/ui/ProductGrid.module.css'
 import styles from './ProductGridSkeleton.module.css'
 
 type ProductGridSkeletonProps = {

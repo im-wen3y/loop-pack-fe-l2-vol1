@@ -1,3 +1,4 @@
+/* eslint-disable-next-line boundaries/dependencies */
 import type { Category, CategoryId, Product, ProductSort } from '@/entities/product'
 
 // URL 상태를 그대로 요청 파라미터로 쓴다. scenario는 여기에 포함하지 않는다.

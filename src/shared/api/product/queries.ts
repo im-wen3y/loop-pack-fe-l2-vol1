@@ -1,6 +1,6 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
-import { getProductList } from '@/service/products/api'
-import type { GetProductListParams } from '@/service/products/model'
+import { getProductList } from './api'
+import type { GetProductListParams } from './model'
 
 export const productQueryKeys = {
   all: ['product'] as const,

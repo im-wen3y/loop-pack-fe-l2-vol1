@@ -1,4 +1,5 @@
-import { ProductCard, type ProductCardItem } from '@/features/product-card'
+import type { ProductCardItem } from '@/features/product-card/model/types'
+import { ProductCard } from '@/features/product-card/ui/ProductCard'
 import styles from './ProductGrid.module.css'
 
 type ProductGridProps = {

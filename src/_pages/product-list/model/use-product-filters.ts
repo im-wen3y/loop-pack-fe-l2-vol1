@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useQueryStates } from 'nuqs'
-import { productListParsers } from '@/service/products/searchParams'
+import { productListParsers } from './search-params'
 import { useDebouncedCallback } from '@/shared/lib/useDebouncedCallback'
 import type { CategoryId, ProductSort } from '@/entities/product'
 

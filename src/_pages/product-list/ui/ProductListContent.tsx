@@ -1,8 +1,8 @@
 'use client'
 
 import { useQueryStates } from 'nuqs'
-import { productListParsers } from '@/service/products/searchParams'
-import { useProductListQuery } from '@/service/products/service'
+import { productListParsers } from '@/_pages/product-list/model/search-params'
+import { useProductListQuery } from '@/shared/api/product/service'
 import { ProductFilters } from '@/_pages/product-list/ui/ProductFilters'
 import { ProductListResults } from '@/_pages/product-list/ui/ProductListResults'
 

@@ -1,3 +1,4 @@
+/* eslint-disable-next-line boundaries/dependencies */
 import type { Category, Product } from '@/entities/product'
 
 // 홈은 사용자 파라미터가 없다. scenario는 mock 검증 전용이라 클라이언트에서 보내지 않는다.

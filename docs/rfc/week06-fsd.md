@@ -2,7 +2,7 @@
 
 - 작성일: 2026-07-28
 - 브랜치: `feat/week-06`
-- 상태: Draft (구조 변경 전 · 기준선 측정 완료)
+- 상태: 진행 중 (0~2단계 완료 · 3단계 `entities`부터 남음)
 
 > 채움 규칙: **사실**(측정값·현재 코드에서 읽어낸 것)은 지금 채웠고, **결정**(목표 구조·슬라이스 배치·Public API)은 비워 뒀다. `_(미정)_` 표시가 있는 칸이 구조 변경과 함께 결정할 자리다.
 
@@ -43,6 +43,7 @@
 
 - `pnpm test` — Test Files 3/3, Tests 36/36. API 입력 검증과 fixture 계약을 보호한다.
 - `pnpm build` — 라우트 6개. 동적 `/`·`/api/home`·`/api/products`, 정적 `/products`·`/hydration-demo`·`/_not-found`. **라우트 구성과 동적/정적 구분이 구조 변경 후에도 같아야 한다.**
+  - 예외: 1단계에서 `hydration-demo`를 삭제하기로 결정했으므로 구조 변경 후 기대값은 **라우트 5개**다. 이건 이동 때문에 라우트가 사라진 회귀가 아니라 명시적 삭제 결정의 결과이고, 나머지 5개의 구성과 동적/정적 구분은 그대로여야 한다.
 - `pnpm test:e2e` — 재확인 실행에서 Chromium·WebKit 40/40 통과. 최초 측정에서 실패했던 아래 WebKit 테스트도 이번 전체 실행과 단독 3회 반복에서 모두 통과했다.
 
 #### 최초 측정에서 관찰된 E2E 플레이키 1건
@@ -92,9 +93,9 @@
 
 구조 변경 커밋과 분리해서 기록한다. 없으면 "해당 없음".
 
-| 재현 방법                                                                             | 원인                                                                                                        | 수정 위치                              | 검증 결과             |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------- |
-| M2 상태(`?scenario=error`)에서 홈 에러 화면의 `다시 시도` 클릭 → 화면이 그대로 유지됨 | `reset()`이 react-query의 `errorResetBoundary`를 초기화하지 않아 `retryOnMount: false` → 재요청이 안 일어남 | `app/error.tsx` _(수정 전, 아래 참조)_ | _(구조 변경 후 확인)_ |
+| 재현 방법                                                                             | 원인                                                                                                        | 수정 위치                                                                        | 검증 결과             |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------- |
+| M2 상태(`?scenario=error`)에서 홈 에러 화면의 `다시 시도` 클릭 → 화면이 그대로 유지됨 | `reset()`이 react-query의 `errorResetBoundary`를 초기화하지 않아 `retryOnMount: false` → 재요청이 안 일어남 | `_app/ui/RootErrorFallback.tsx` _(1단계 이동 후 경로. 수정은 구조 변경 완료 후)_ | _(구조 변경 후 확인)_ |
 
 #### 홈 에러 재시도 버그 상세
 
@@ -172,14 +173,14 @@
 
 _(AI 초안 — 검토 후 본인 결정으로 확정할 것)_
 
-| 하지 않을 것                                         | 이유                                                                                                   |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 기능 추가·UI 변경                                    | 이번 주는 리팩토링이다. 기능이 섞이면 "동작 보존"을 검증할 기준선이 무의미해진다.                      |
-| 상품 목록의 서버 prefetch 적용                       | URL 조건마다 결과가 달라 이득을 따져야 하는 별개 주제다(5주차에도 보류).                               |
-| 미사용 자산(`components/ui/select`·`dialog` 등) 삭제 | 삭제는 구조 이동과 다른 종류의 변경이다. 이번엔 **배치만** 정하고 삭제 여부는 근거와 함께 따로 남긴다. |
-| Advanced A(의존성 하네스)·B(변경 반경 실험)          | 기본 과제 완료 후 여유가 있을 때만 착수한다. _(선택 여부 미정)_                                        |
-| E2E 플레이키 1건 수정                                | 구조 변경과 무관한 타이밍 이슈다. 같은 커밋에 섞으면 회귀 판정이 흐려진다.                             |
-| 캐시 정책(staleTime) 변경                            | 폴더 위치와 무관하다. 옮기기만 하고 값은 그대로 둔다.                                                  |
+| 하지 않을 것                                             | 이유                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 기능 추가·UI 변경                                        | 이번 주는 리팩토링이다. 기능이 섞이면 "동작 보존"을 검증할 기준선이 무의미해진다.                                                                                                                                                                                                                                                                       |
+| 상품 목록의 서버 prefetch 적용                           | URL 조건마다 결과가 달라 이득을 따져야 하는 별개 주제다(5주차에도 보류).                                                                                                                                                                                                                                                                                |
+| ~~미사용 자산(`components/ui/select`·`dialog` 등) 삭제~~ | ~~삭제는 구조 이동과 다른 종류의 변경이다. 이번엔 **배치만** 정하고 삭제 여부는 근거와 함께 따로 남긴다.~~ → **2단계에서 삭제로 결정을 바꿨다.** 배치를 정하려면 재사용 범위를 봐야 하는데 소비처가 0이라 근거가 없었다. 이동과 성격이 다르다는 판단은 유지해서 별도 `chore` 커밋으로 분리했다. 판단 흐름은 [decisions.md](../week-06/decisions.md) 4번 |
+| Advanced A(의존성 하네스)·B(변경 반경 실험)              | 기본 과제 완료 후 여유가 있을 때만 착수한다. _(선택 여부 미정)_                                                                                                                                                                                                                                                                                         |
+| E2E 플레이키 1건 수정                                    | 구조 변경과 무관한 타이밍 이슈다. 같은 커밋에 섞으면 회귀 판정이 흐려진다.                                                                                                                                                                                                                                                                              |
+| 캐시 정책(staleTime) 변경                                | 폴더 위치와 무관하다. 옮기기만 하고 값은 그대로 둔다.                                                                                                                                                                                                                                                                                                   |
 
 ---
 
@@ -294,35 +295,75 @@ _(미정 — 구조 변경과 함께 확정)_
 
 ### 파일 매핑표
 
-| 현재 위치 | 목표 위치 | 레이어 / 슬라이스 / 세그먼트 | 이동 또는 유지하는 이유 |
-| --------- | --------- | ---------------------------- | ----------------------- |
+1단계에서 이동을 마친 것만 채운다. 나머지는 해당 레이어 단계에서 추가한다.
+
+| 현재 위치                                                                                                                  | 목표 위치                                                      | 레이어 / 슬라이스 / 세그먼트          | 이동 또는 유지하는 이유                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `app/providers.tsx`                                                                                                        | `_app/providers/Providers.tsx`                                 | `_app` / — / `providers`              | QueryClient·NuqsAdapter 배선은 특정 화면이 아니라 앱 전체의 초기화다                                             |
+| `app/globals.css`                                                                                                          | `_app/styles/globals.css`                                      | `_app` / — / `styles`                 | 전역 스타일도 앱 배선. 배럴을 통과할 수 없어 직접 경로로 import한다                                              |
+| `app/error.tsx`(구현)                                                                                                      | `_app/ui/RootErrorFallback.tsx`                                | `_app` / — / `ui`                     | 루트 에러 화면은 특정 페이지가 아니라 앱 전체의 fallback이다                                                     |
+| `app/page.module.css`                                                                                                      | `_app/ui/RootErrorFallback.module.css`                         | `_app` / — / `ui`                     | 유일 소비자가 error fallback이라 이름을 소비자에 맞췄다                                                          |
+| `app/(home)/page.tsx`(본문)                                                                                                | `_pages/home/ui/HomePage.tsx`                                  | `_pages` / `home` / `ui`              | prefetch + HydrationBoundary 조립은 화면 구현이다. `dynamic` 세그먼트 설정만 라우팅 파일에 남겼다                |
+| `app/(home)/loading.tsx`(구현)                                                                                             | `_pages/home/ui/HomeLoading.tsx`                               | `_pages` / `home` / `ui`              | 홈 전용 로딩 UI                                                                                                  |
+| `app/(home)/_components/HomeContent.tsx`                                                                                   | `_pages/home/ui/HomeContent.tsx`                               | `_pages` / `home` / `ui`              | 홈 화면 본문                                                                                                     |
+| `app/products/page.tsx`(본문)                                                                                              | `_pages/product-list/ui/ProductListPage.tsx`                   | `_pages` / `product-list` / `ui`      | Suspense 경계와 fallback 조립은 화면 구현이다                                                                    |
+| `app/products/_components/ProductFilters.tsx`(+css)                                                                        | `_pages/product-list/ui/`                                      | `_pages` / `product-list` / `ui`      | 목록 화면 전용 필터 UI                                                                                           |
+| `app/products/_components/ProductListContent.tsx`                                                                          | `_pages/product-list/ui/`                                      | `_pages` / `product-list` / `ui`      | 목록 화면 본문                                                                                                   |
+| `app/products/_components/ProductListResults.tsx`                                                                          | `_pages/product-list/ui/`                                      | `_pages` / `product-list` / `ui`      | 목록의 로딩·에러·빈 상태 분기                                                                                    |
+| `app/products/_components/usePagination.ts`                                                                                | `_pages/product-list/ui/` **(임시)**                           | `_pages` / `product-list` / `ui`      | 최종 세그먼트는 6단계 결정. `model`에 두면 "feature인가 페이지 로직인가"를 미리 확정하게 되어 현 배치를 유지했다 |
+| `app/products/_components/useProductFilters.ts`                                                                            | `_pages/product-list/ui/` **(임시)**                           | `_pages` / `product-list` / `ui`      | 위와 같음                                                                                                        |
+| `app/hydration-demo/page.tsx`                                                                                              | 삭제                                                           | —                                     | 5주차 실험용 라우트. 결론이 문서와 주석에 남아 역할을 다했다                                                     |
+| `service/queryClient.ts`                                                                                                   | `shared/api/query-client.ts`                                   | `shared` / — / `api`                  | 소비처가 `_pages/home`이라 `_app`에 둘 수 없다                                                                   |
+| `utils/getApiBaseUrl.ts`                                                                                                   | `shared/api/get-api-base-url.ts`                               | `shared` / — / `api`                  | 서버·클라이언트 origin 분기. 도메인 지식 없음                                                                    |
+| `store/createCollectionStore.ts`                                                                                           | `shared/lib/create-collection-store.ts`                        | `shared` / — / `lib`                  | cart·wishlist 두 entity의 공통 구현이라 어느 한쪽에 둘 수 없다                                                   |
+| `utils/formatPrice.ts`                                                                                                     | `shared/lib/format-price.ts`                                   | `shared` / — / `lib`                  | 통화·등급 정책이 없는 순수 표시 포맷. 이동과 함께 `ProductCard`의 인라인 포맷을 교체했다                         |
+| `hooks/useDebouncedCallback.ts`                                                                                            | `shared/lib/use-debounced-callback.ts`                         | `shared` / — / `lib`                  | 도메인 비종속 타이밍 유틸                                                                                        |
+| `components/ui/pageContainer/*`                                                                                            | `shared/ui/PageContainer/*`                                    | `shared` / — / `ui`                   | 레이아웃 셸. props가 children뿐                                                                                  |
+| `components/ui/pagination/*`                                                                                               | `shared/ui/Pagination/*`                                       | `shared` / — / `ui`                   | 표시와 경계 계산만 하고 이동은 `onPageChange`로 위임                                                             |
+| `components/ui/select/*`, `components/ui/dialog/*`, `hooks/useSelect.ts`, `types/product-options.ts`, `utils/isSoldOut.ts` | 삭제                                                           | —                                     | 서로만 참조하는 닫힌 섬. 라우트에서 도달 불가                                                                    |
+| `types/commerce.ts`의 `CategoryId`·`Category`                                                                              | `entities/product/model/category.ts`                           | `entities` / `product` / `model`      | 카테고리는 상품 분류값이라 별도 슬라이스로 나누지 않았다                                                         |
+| `types/commerce.ts`의 `Product`·`ProductSort`                                                                              | `entities/product/model/product.ts`                            | `entities` / `product` / `model`      | 상품 도메인 타입                                                                                                 |
+| `types/commerce.ts`의 `HomeResponse`                                                                                       | `service/home/model.ts`(6단계에 `_pages/home/api`)             | 조회하는 쪽                           | 응답 봉투는 도메인이 아니라 화면의 조회 계약                                                                     |
+| `types/commerce.ts`의 `ProductListResponse`·`ProductListQuery`                                                             | `service/products/model.ts`(6단계에 `_pages/product-list/api`) | 조회하는 쪽                           | 위와 같음                                                                                                        |
+| `types/commerce.ts`의 `MockApiScenario`·`ApiErrorResponse`                                                                 | `src/app/api/_types.ts`                                        | 전환 범위 밖                          | mock 백엔드의 내부 계약                                                                                          |
+| `components/ui/productCard/ProductCard.tsx`(+css)                                                                          | `features/product-card/ui/ProductCard.tsx`(+css)               | `features` / `product-card` / `ui`    | 카드를 쓰는 두 곳이 모두 찜·담기를 함께 그려서, 표시와 행위를 한 슬라이스가 소유한다                             |
+| `components/ui/productCard/ProductCardActions.tsx`                                                                         | `features/product-card/ui/ProductCardActions.tsx`              | `features` / `product-card` / `ui`    | 행위 UI. store 구독은 `model/useProductCardActions.ts`로 뺐다                                                    |
+| `ProductCard.tsx`의 `ProductCardItem`                                                                                      | `features/product-card/model/types.ts`                         | `features` / `product-card` / `model` | 카드가 실제로 그리는 5개 필드만 받는 뷰 타입                                                                     |
+| `store/cartStore.ts`                                                                                                       | `entities/cart/model/cart-store.ts`                            | `entities` / `cart` / `model`         | 상태는 entity, 상태를 바꾸는 행위는 feature                                                                      |
+| `store/wishlistStore.ts`                                                                                                   | `entities/wishlist/model/wishlist-store.ts`                    | `entities` / `wishlist` / `model`     | 위와 같음                                                                                                        |
+| `components/ui/header/*`                                                                                                   | `widgets/header/*`                                             | `widgets` / `header` / —              | cart·wishlist 두 슬라이스를 조합하는 독립 블록                                                                   |
+| `components/ui/productGrid/ProductGrid.tsx`(+css)                                                                          | `features/product-card/ui/ProductGrid.tsx`(+css)               | `features` / `product-card` / `ui`    | 카드 하나를 격자로 뿌리는 map. 조합 슬라이스가 하나라 widget 기준에 미달                                         |
+| `components/ui/productGrid/ProductGridSkeleton.tsx`(+css)                                                                  | `features/product-card/ui/`                                    | `features` / `product-card` / `ui`    | `ProductGrid.module.css`의 격자 레이아웃을 참조한다                                                              |
+| `components/ui/categorySection/*`                                                                                          | `_pages/home/ui/CategorySection.tsx`(+css)                     | `_pages` / `home` / `ui`              | 소비처가 홈 하나뿐                                                                                               |
 
 ### 애매한 파일 결정표 (5개 이상)
 
 과제가 지정한 4개 + 이 프로젝트에서 실제로 갈리는 것들. 후보만 적어두고 **최종 결정과 기준은 직접 채운다.**
 
-| 대상                                                                                        | 후보 A                       | 후보 B                          | 최종 결정 | 기준                                         |
-| ------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------- | --------- | -------------------------------------------- |
-| `ProductCard`                                                                               | `entities/product/ui`        | `widgets/product-card`          |           | 재사용 범위와 포함한 비즈니스 행위           |
-| 상품 목록 queryOptions                                                                      | `entities/product/api`       | 상품 목록 페이지의 `api`        |           | 여러 페이지에서 재사용되는가                 |
-| 장바구니 store                                                                              | `entities/cart/model`        | 장바구니 행위 feature의 `model` |           | 상태가 나타내는 도메인과 행위의 경계         |
-| `types/commerce.ts`의 `Product` 타입                                                        | `entities/product/model`     | `shared/types` 유지             |           | 도메인 타입을 한 창고에 모을 때 생기는 결합  |
-| `createCollectionStore` (cart·wishlist 공통 팩토리)                                         | `shared/lib`                 | 두 entity 중 한쪽에 두고 공유   |           | 두 도메인이 같은 구현을 나눠 쓸 때의 소유자  |
-| `service/products/searchParams.ts` (nuqs parser + SORT_OPTIONS)                             | `_pages/product-list/model`  | `shared/config`                 |           | URL 스키마가 화면 고유인가 공통 계약인가     |
-| `usePagination` / `useProductFilters`                                                       | `features/filter-products`   | `_pages/product-list/model`     |           | 한 페이지 전용 로직도 feature여야 하는가     |
-| `Header` (store 2개 구독 + 내비게이션)                                                      | `widgets/header`             | `shared/ui` + 조합              |           | 공용 UI에 비즈니스 로직을 넣지 않는다는 규칙 |
-| `getApiBaseUrl` / `queryClient.ts`                                                          | `shared/api`                 | `_app`                          |           | 앱 배선인가 재사용 유틸인가                  |
-| 미사용 자산 (`select` 3종·`dialog`·`useSelect`·`product-options`·`formatPrice`·`isSoldOut`) | `shared`로 이동              | 삭제 또는 현 위치 보류          |           | 소비처가 0인 코드의 소유자는 누구인가        |
-| `app/api/**` (mock 백엔드)                                                                  | 전환 범위 제외(현 위치 유지) | `shared/api`로 이동             |           | 프론트엔드와 mock 백엔드의 경계              |
-| `hydration-demo` 라우트                                                                     | 유지                         | 삭제                            |           | 5주차 실험용 라우트를 계속 둘 것인가         |
+| 대상                                                                                        | 후보 A                       | 후보 B                          | 최종 결정                                                                                                    | 기준                                                         |
+| ------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `ProductCard`                                                                               | `entities/product/ui`        | `widgets/product-card`          | **둘 다 아님 — `features/product-card`**                                                                     | 카드 없이 행위만, 행위 없이 카드만 쓰는 자리가 실제로 있는가 |
+| 상품 목록 queryOptions                                                                      | `entities/product/api`       | 상품 목록 페이지의 `api`        |                                                                                                              | 여러 페이지에서 재사용되는가                                 |
+| 장바구니 store                                                                              | `entities/cart/model`        | 장바구니 행위 feature의 `model` | **A**                                                                                                        | 상태가 나타내는 도메인과 행위의 경계                         |
+| `types/commerce.ts`의 `Product` 타입                                                        | `entities/product/model`     | `shared/types` 유지             | **A** (3단계에서 분해)                                                                                       | 도메인 타입을 한 창고에 모을 때 생기는 결합                  |
+| `createCollectionStore` (cart·wishlist 공통 팩토리)                                         | `shared/lib`                 | 두 entity 중 한쪽에 두고 공유   | **A**                                                                                                        | 두 도메인이 같은 구현을 나눠 쓸 때의 소유자                  |
+| `service/products/searchParams.ts` (nuqs parser + SORT_OPTIONS)                             | `_pages/product-list/model`  | `shared/config`                 |                                                                                                              | URL 스키마가 화면 고유인가 공통 계약인가                     |
+| `usePagination` / `useProductFilters`                                                       | `features/filter-products`   | `_pages/product-list/model`     |                                                                                                              | 한 페이지 전용 로직도 feature여야 하는가                     |
+| `Header` (store 2개 구독 + 내비게이션)                                                      | `widgets/header`             | `shared/ui` + 조합              | **A**                                                                                                        | 공용 UI에 비즈니스 로직을 넣지 않는다는 규칙                 |
+| `getApiBaseUrl` / `queryClient.ts`                                                          | `shared/api`                 | `_app`                          | **A**                                                                                                        | 앱 배선인가 재사용 유틸인가                                  |
+| 미사용 자산 (`select` 3종·`dialog`·`useSelect`·`product-options`·`formatPrice`·`isSoldOut`) | `shared`로 이동              | 삭제 또는 현 위치 보류          | **B 삭제** (단 `formatPrice`는 제외 — `shared/lib`로 옮기고 `ProductCard` 호출부를 교체해 소비처를 만들었다) | 소비처가 0인 코드의 소유자는 누구인가                        |
+| `app/api/**` (mock 백엔드)                                                                  | 전환 범위 제외(현 위치 유지) | `shared/api`로 이동             | **A** (`MockApiScenario`도 여기 남긴다)                                                                      | 프론트엔드와 mock 백엔드의 경계                              |
+| `hydration-demo` 라우트                                                                     | 유지                         | 삭제                            | **B 삭제**                                                                                                   | 5주차 실험용 라우트를 계속 둘 것인가                         |
 
 ### 마이그레이션 단계와 검증
 
-| 단계 | 옮기는 대상 | 검증 방법 | 결과 |
-| ---- | ----------- | --------- | ---- |
-| 1    |             |           |      |
-| 2    |             |           |      |
-| 3    |             |           |      |
+| 단계 | 옮기는 대상                                                                                                                                                                                                                                    | 검증 방법                                                                                        | 결과                                                                                                                                                                           |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | `_app`(providers·globals.css·root error fallback), `_pages/home`, `_pages/product-list`. 라우팅 파일은 default re-export만 남김. `hydration-demo` 삭제                                                                                         | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep       | 정적 검사 둘 다 통과. 규칙 검증에서 `entities → _pages`와 `_pages/home → _pages/product-list` 두 위반 모두 레이어·슬라이스가 찍힌 에러로 잡힘. 런타임 검증은 미실행(승인 대기) |
+| 2    | `shared/api`(query-client·get-api-base-url), `shared/lib`(create-collection-store·format-price·use-debounced-callback), `shared/ui`(PageContainer·Pagination). 도달 불가 자산 삭제, `ProductCard`의 인라인 가격 포맷을 `formatPrice`로 교체    | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, 잔여 참조 grep       | 정적 검사 둘 다 통과. `shared → _pages` 위반이 레이어명이 찍힌 에러로 잡힘. `@/utils`·`@/hooks`·`@/service/queryClient` 잔여 참조 0건. 런타임 검증은 미실행(승인 대기)         |
+| 3    | `entities/product`(타입 2개), `entities/cart`·`entities/wishlist`의 store. `types/commerce.ts` 분해 후 삭제                                                                                                                                    | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, persist 키 grep      | 정적 검사 둘 다 통과. `entities/product → entities/cart` 교차 참조가 슬라이스명까지 찍힌 에러로 잡힘. persist 키 `cart`·`wishlist` 그대로. 런타임 검증은 미실행(승인 대기)     |
+| 4    | `features/product-card`(ProductCard·ProductCardActions·useProductCardActions·types). 3단계와 한 커밋으로 합쳤다 — ProductCard가 entities를 거치지 않고 바로 features로 가서, 나누면 ProductGrid가 없는 경로를 가리키는 깨진 중간 커밋이 생긴다 | 위와 같음 + `entities → features` 역방향 확인                                                    | 정적 검사 통과. `entities/product → features/product-card`가 레이어·슬라이스가 찍힌 에러로 막힘. `features`·`entities` 안에서 상위 레이어·옛 폴더 참조 0건                     |
+| 5    | `widgets/header`. `ProductGrid`·`ProductGridSkeleton`은 widget 기준에 미달해 `features/product-card`로, `CategorySection`은 `_pages/home/ui`로                                                                                                 | `pnpm lint`, `pnpm exec tsc --noEmit`, `boundaries/dependencies` 발동 확인, Public API 우회 grep | 정적 검사 둘 다 통과. `features → widgets` 역방향이 레이어·슬라이스가 찍힌 에러로 막힘. Public API 우회 0건. 옛 `src/components`에는 `HeroBanner`만 남음(6단계)                |
 
 ---
 
@@ -376,12 +417,12 @@ Source of Truth와 소비처는 5주차 결정을 유지한다(폴더 이동으�
 
 **로딩 경계 범위** — 현재 세 층이 각각 다른 범위를 맡는다.
 
-| 수단                | 담당 범위                                | 현재 위치                |
-| ------------------- | ---------------------------------------- | ------------------------ |
-| `loading.tsx`       | 홈 라우트 전체(서버 렌더 대기)           | `app/(home)/loading.tsx` |
-| `<Suspense>`        | 상품 목록에서 URL을 읽는 Client 서브트리 | `app/products/page.tsx`  |
-| Query `isPending`   | 목록 데이터의 최초 로드(스켈레톤)        | `ProductListResults.tsx` |
-| `isPlaceholderData` | 조건 전환 중(이전 목록 유지, 흐리게)     | `ProductListResults.tsx` |
+| 수단                | 담당 범위                                | 현재 위치                                                   |
+| ------------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| `loading.tsx`       | 홈 라우트 전체(서버 렌더 대기)           | `app/(home)/loading.tsx` → `_pages/home/ui/HomeLoading.tsx` |
+| `<Suspense>`        | 상품 목록에서 URL을 읽는 Client 서브트리 | `_pages/product-list/ui/ProductListPage.tsx`                |
+| Query `isPending`   | 목록 데이터의 최초 로드(스켈레톤)        | `_pages/product-list/ui/ProductListResults.tsx`             |
+| `isPlaceholderData` | 조건 전환 중(이전 목록 유지, 흐리게)     | `_pages/product-list/ui/ProductListResults.tsx`             |
 
 목록에 `loading.tsx`가 없는 이유: 목록은 URL 조건이 바뀔 때마다 재조회되는데 라우트 로딩 UI를 쓰면 조건을 바꿀 때마다 화면이 통째로 스켈레톤으로 바뀐다. 이전 목록을 유지하는 편이 낫다고 판단해 컴포넌트 단위(`isPending`/`isPlaceholderData`)로 처리한다. `products/page.tsx`의 `<Suspense>`는 로딩 표현이 아니라 `useSearchParams`에 필요한 **경계**다.
 
@@ -402,22 +443,22 @@ _(AI 초안 — 검토 후 확정할 것)_
 
 ### 에러 처리 표
 
-아래는 **현재(구조 변경 전) 구현이 실제로 하는 동작**이다. 목표 구조에서 이 경계를 유지할지는 이동과 함께 확정한다.
+구조 변경 후 기준이다. 경계 **자체**는 5주차와 같고 위치만 새 레이어로 옮겼다. 상태 코드로 경계를 가를지는 과제 4단계에서 정한다.
 
-| 실패 유형                     | 처리 위치                                              | Error Boundary로 전파하는가                    | 사용자 UI                                               | 재시도 방법                      | 이 경계를 선택한 이유                                                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 상품 목록 조회 실패           | `ProductListResults.tsx`의 `isError` 분기              | 아니오 (`useQuery`는 throw하지 않고 `isError`) | `상품 목록을 불러오지 못했어요.` + `다시 시도`          | `refetch()` (전체 새로고침 없음) | 필터 UI를 남겨야 사용자가 조건을 바꿔 실패에서 빠져나갈 수 있다. 목록만 실패했는데 화면 전체를 덮지 않는다.                                                                  |
-| 잘못된 검색 조건(4xx)         | 1차는 nuqs parser, 그래도 뚫리면 위와 같은 인라인 경로 | 아니오                                         | 허용 밖 `category`·`sort`는 기본값으로 조용히 복구      | 조건 변경                        | 사용자가 URL을 직접 고칠 수 있는 값이라, 에러 화면보다 기본값 복구가 낫다. 숫자 범위 위반(`page=0`)만 400 → 인라인 에러로 노출.                                              |
-| 예상하지 못한 렌더링 오류     | `app/error.tsx` (루트)                                 | 예                                             | `문제가 발생했어요` + `오류 코드`(digest) + `다시 시도` | `reset()`                        | 어디서 날지 모르는 오류라 라우트 경계에서 받는다. 홈은 `useSuspenseQuery`라 조회 실패도 여기로 온다.                                                                         |
-| 홈 데이터 조회 실패           | `app/error.tsx` (루트)                                 | 예 (`useSuspenseQuery`가 throw)                | 위와 동일                                               | `reset()`                        | 홈은 라우트 전체가 이 데이터에 의존해 부분 표시가 의미 없다. 목록과 정반대 선택이고, 그 이유가 "화면이 데이터에 얼마나 의존하는가"다.                                        |
-| 장바구니 행위의 비즈니스 오류 | **해당 없음**                                          | —                                              | —                                                       | —                                | 현재 장바구니·위시리스트는 서버 통신 없이 로컬 상태만 토글한다. 실패 경로가 존재하지 않는다. **서버 저장이나 재고 검증이 생기면** 그때 이벤트 핸들러에서 처리할 대상이 된다. |
+| 실패 유형                     | 처리 위치                                                          | Error Boundary로 전파하는가                    | 사용자 UI                                               | 재시도 방법                      | 이 경계를 선택한 이유                                                                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 상품 목록 조회 실패           | `_pages/product-list/ui/ProductListResults.tsx`의 `isError` 분기   | 아니오 (`useQuery`는 throw하지 않고 `isError`) | `상품 목록을 불러오지 못했어요.` + `다시 시도`          | `refetch()` (전체 새로고침 없음) | 필터 UI를 남겨야 사용자가 조건을 바꿔 실패에서 빠져나갈 수 있다. 목록만 실패했는데 화면 전체를 덮지 않는다.                                                                  |
+| 잘못된 검색 조건(4xx)         | 1차는 nuqs parser, 그래도 뚫리면 위와 같은 인라인 경로             | 아니오                                         | 허용 밖 `category`·`sort`는 기본값으로 조용히 복구      | 조건 변경                        | 사용자가 URL을 직접 고칠 수 있는 값이라, 에러 화면보다 기본값 복구가 낫다. 숫자 범위 위반(`page=0`)만 400 → 인라인 에러로 노출.                                              |
+| 예상하지 못한 렌더링 오류     | `_app/ui/RootErrorFallback.tsx` (루트 `app/error.tsx`가 re-export) | 예                                             | `문제가 발생했어요` + `오류 코드`(digest) + `다시 시도` | `reset()`                        | 어디서 날지 모르는 오류라 라우트 경계에서 받는다. 홈은 `useSuspenseQuery`라 조회 실패도 여기로 온다.                                                                         |
+| 홈 데이터 조회 실패           | `_app/ui/RootErrorFallback.tsx` (루트 `app/error.tsx`가 re-export) | 예 (`useSuspenseQuery`가 throw)                | 위와 동일                                               | `reset()`                        | 홈은 라우트 전체가 이 데이터에 의존해 부분 표시가 의미 없다. 목록과 정반대 선택이고, 그 이유가 "화면이 데이터에 얼마나 의존하는가"다.                                        |
+| 장바구니 행위의 비즈니스 오류 | **해당 없음**                                                      | —                                              | —                                                       | —                                | 현재 장바구니·위시리스트는 서버 통신 없이 로컬 상태만 토글한다. 실패 경로가 존재하지 않는다. **서버 저장이나 재고 검증이 생기면** 그때 이벤트 핸들러에서 처리할 대상이 된다. |
 
 ### `throwOnError` 기준
 
 - 현재 코드에는 `throwOnError` 설정이 **없다.** 대신 훅 종류로 경계가 갈린다.
-  - 경계로 전파: 홈 — `useSuspenseQuery`가 실패 시 throw → `app/error.tsx`
+  - 경계로 전파: 홈 — `useSuspenseQuery`가 실패 시 throw → 루트 `error.tsx`
   - 인라인 처리: 상품 목록 — `useQuery`의 `isError`를 컴포넌트가 직접 그림
-- 과제가 요구하는 `5xx는 경계로 / 4xx·빈 결과는 화면 안에서` 기준을 적용하려면 목록 쪽에 상태 코드 구분이 필요하다. 현재 `getProductList`는 `!response.ok`를 **하나의 `Error`로 뭉쳐서** 던지므로(`상품 목록을 불러오지 못했습니다 (status: N)`), 상태 코드로 갈라내려면 에러 타입 분리가 선행되어야 한다. _(적용 여부 미정)_
+- 과제가 요구하는 `5xx는 경계로 / 4xx·빈 결과는 화면 안에서` 기준을 적용하려면 목록 쪽에 상태 코드 구분이 필요하다. 현재 `getProductList`는 `!response.ok`를 **하나의 `Error`로 뭉쳐서** 던지므로(`상품 목록을 불러오지 못했습니다 (status: N)`), 상태 코드로 갈라내려면 에러 타입 분리가 선행되어야 한다. _(적용 여부 미정 — 과제 4단계에서 다룬다)_
 
 ### 이벤트 핸들러·비동기 콜백 오류
 

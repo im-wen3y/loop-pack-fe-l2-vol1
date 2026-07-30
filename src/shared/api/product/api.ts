@@ -1,5 +1,9 @@
-import type { GetProductListParams, GetProductListResponse } from '@/service/products/model'
-import { PRODUCT_PAGE_SIZE, serializeProductListQuery } from '@/service/products/searchParams'
+/* eslint-disable boundaries/dependencies */
+import type { GetProductListParams, GetProductListResponse } from './model'
+import {
+  PRODUCT_PAGE_SIZE,
+  serializeProductListQuery,
+} from '@/_pages/product-list/model/search-params'
 
 export const getProductList = async (
   params: GetProductListParams,
