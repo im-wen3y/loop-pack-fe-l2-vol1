@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { categories, homeBanner, products, waitForMockApi } from '@app/api/_data/commerce'
-import type { ApiErrorResponse, MockApiScenario } from '@app/api/_types'
-import type { GetHomeResponse } from '@/_pages/home/api/model'
+import type { ApiErrorResponse, HomeApiResponse, MockApiScenario } from '@app/api/_types'
 
 const scenarioValues = ['empty', 'error'] as const satisfies readonly MockApiScenario[]
 
@@ -10,7 +9,7 @@ const isMockApiScenario = (value: string): value is MockApiScenario =>
 
 export async function GET(
   request: NextRequest,
-): Promise<NextResponse<GetHomeResponse | ApiErrorResponse>> {
+): Promise<NextResponse<HomeApiResponse | ApiErrorResponse>> {
   const scenario = request.nextUrl.searchParams.get('scenario')
 
   if (scenario !== null && !isMockApiScenario(scenario)) {
