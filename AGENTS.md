@@ -54,6 +54,13 @@ Client Component 경계는 가능한 한 하위에 두고, 컴포넌트는 하�
 
 FSD 구조를 설계·변경·리뷰하거나 PR 전 셀프 리뷰를 수행할 때는 `.claude/rules/fsd-verification.md`의 파일 배치, Public API, 슬라이스 경계, 상향 의존 점검 기준을 함께 적용한다.
 
+### Zustand store 공개·소비 기준
+
+- entity는 `useCartStore`처럼 Zustand store hook을 Public API로 공개할 수 있다. 목적별 wrapper hook은 동일한 selector가 반복되거나 도메인 계산·정책을 캡슐화할 필요가 생길 때만 만든다.
+- React 소비처는 `useStore((state) => state.value)` 형태의 selector로 필요한 상태나 action만 구독한다. selector 없이 store 전체를 구독하거나 전체 state를 구조 분해하지 않는다.
+- action도 `useStore((state) => state.action)`으로 선택한다. 여러 값을 선택할 때는 불필요한 새 객체 생성과 리렌더를 피하도록 selector의 반환값과 equality 전략을 검토한다.
+- `getState()`는 React 렌더링 밖의 명령형 경계에서만 사용한다. 소비처의 임의 `setState()`는 금지하고, 상태 변경은 store가 공개한 action을 통한다.
+
 ### `useSyncExternalStore` 선택 기준
 
 - 실제 외부 store 또는 변경 가능한 브라우저 API를 구독할 때만 `useSyncExternalStore`를 사용한다.
