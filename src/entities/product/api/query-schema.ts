@@ -1,4 +1,10 @@
-import { createSerializer, parseAsInteger, parseAsString, parseAsStringLiteral } from 'nuqs/server'
+import {
+  createParser,
+  createSerializer,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringLiteral,
+} from 'nuqs/server'
 import type { CategoryId } from '@/entities/product/model/category'
 import type { ProductSort } from '@/entities/product/model/product'
 
@@ -19,6 +25,15 @@ export const PRODUCT_SORT_VALUES = [
   'price-desc',
 ] as const satisfies readonly ProductSort[]
 
+const parseAsPositiveInteger = createParser({
+  parse: (value) => {
+    const parsedValue = Number(value)
+
+    return Number.isSafeInteger(parsedValue) && parsedValue >= 1 ? parsedValue : 1
+  },
+  serialize: String,
+})
+
 // 조회 파라미터의 단일 정의. 화면의 URL 상태와 API 요청 직렬화가 같은 parser에서 나온다.
 // (parser를 두 벌 두면 인코딩 규칙이 갈라져 URL과 요청이 어긋난다.)
 // 히스토리 동작처럼 화면에 따라 달라지는 옵션은 여기서 정하지 않고 소비하는 화면이 얹는다.
@@ -26,10 +41,10 @@ export const productListQueryParsers = {
   q: parseAsString.withDefault(''),
   category: parseAsStringLiteral(PRODUCT_CATEGORY_FILTERS).withDefault('all'),
   sort: parseAsStringLiteral(PRODUCT_SORT_VALUES).withDefault('latest'),
-  page: parseAsInteger.withDefault(1),
+  page: parseAsPositiveInteger.withDefault(1),
 }
 
-// pageSize는 URL 상태가 아니라 요청에만 실린다. 기본값은 화면이 정하므로 여기서 두지 않는다.
+// pageSize는 URL 상태가 아니라 API 함수가 고정값으로 붙여 요청에만 싣는다.
 const productListRequestParsers = {
   ...productListQueryParsers,
   pageSize: parseAsInteger,
