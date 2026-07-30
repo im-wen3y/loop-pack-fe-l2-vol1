@@ -15,10 +15,6 @@ export const SORT_OPTIONS = PRODUCT_SORT_VALUES.map((value) => ({
   label: SORT_LABELS[value],
 }))
 
-// 화면에 페이지 크기 변경 UI가 없으므로 URL 상태가 아니라 고정 상수다.
-// URL에 두면 사용자가 임의 값을 넣어 API 400을 만들 수 있는 표면만 늘어난다.
-export const PRODUCT_PAGE_SIZE = 12
-
 // 카테고리·정렬·페이지처럼 "한 번의 명시적 변경"은 히스토리에 쌓아 뒤로/앞으로로 복원하게 한다.
 // 히스토리 동작은 화면마다 다를 수 있어 parser 정의가 아니라 이 화면이 얹는다.
 const PUSH_HISTORY = { history: 'push' } as const
