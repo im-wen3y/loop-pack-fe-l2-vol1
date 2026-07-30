@@ -384,6 +384,45 @@ parser 본체가 한 벌이라 URL과 요청이 갈라질 수 없고, 참조는 
 
 삭제 커밋에서 CSS만 복구했고, 이 참에 자리도 옮겼다. 처음에는 `_app/styles`로 보냈는데 `_pages → _app`은 상향이라 `boundaries`가 막았다. 두 페이지가 참조하는 레이아웃 스타일이므로 `shared/styles/layout.css`로 내렸다. 클래스명도 `week05-section`에서 `layout-section`으로 바꿨다 — 주차 번호가 남아 있을 이유가 없었다.
 
+## 11. 구조 변경 후 남은 오류·테스트 책임을 어떻게 닫을 것인가
+
+### mock Route Handler가 화면 응답 타입을 가져와도 되는가
+
+홈 Route Handler가 `_pages/home/api/model`의 응답 타입을 가져오고 있었다. 화면 API의 adapter로 보면 허용할 수도 있지만, 이 프로젝트의 `app/api`는 fixture와 오류 시나리오를 제공하는 독립된 mock 백엔드에 가깝다. 백엔드 역할의 코드가 화면 내부 계약에 의존하면 라우트 검사 범위 밖에서 `app/api → _pages` 결합이 생긴다.
+
+그래서 `HomeApiResponse`는 `app/api/_types.ts`가 소유하도록 분리했다. 상품과 카테고리의 기본 도메인 타입은 `entities/product`에서 재사용하되, 홈 화면이 이를 어떻게 묶어 응답하는지는 mock API와 화면이 각자 자기 경계에서 명시한다. 구조가 우연히 같은 것과 소유권이 같은 것은 구분하기로 했다.
+
+### 홈 Error Boundary의 재시도는 무엇을 reset해야 하는가
+
+App Router의 `reset()`만 호출하면 라우트 세그먼트는 다시 렌더되지만 TanStack Query의 오류 상태는 초기화되지 않는다. `useSuspenseQuery`는 초기화되지 않은 오류를 다시 던지므로 새 요청 자체가 발생하지 않았다.
+
+`RootErrorFallback`에서 `useQueryErrorResetBoundary()`의 reset을 먼저 호출하고 App Router reset을 이어서 호출하도록 결정했다.
+
+런타임 확인은 `?scenario=error`를 홈 API에 붙이는 방식으로는 되지 않았다. 홈 조회는 서버 컴포넌트의 prefetch라 실패가 서버 프로세스 안에서 일어나고, TanStack Query의 기본 `retry: 3`이 단발성 500 하나는 내부에서 조용히 재시도해 버려 에러 화면 자체가 뜨지 않았다. 재시도 횟수를 맞춰 4회 실패시켜도 dev 서버의 라우트 워밍업 트래픽이 같은 카운터를 먼저 소모해 값이 흔들렸다.
+
+결국 파일 존재 여부로 실패를 강제하는 임시 플래그(`/tmp/r2-force-fail`)로 바꿨다. 요청 횟수를 세지 않고 "플래그가 있으면 무조건 실패"로 만들어 워밍업 트래픽과 무관하게 결정적으로 재현했다. E2E가 플래그를 만들고 → 에러 화면을 확인하고 → 플래그를 지운 뒤 재시도 버튼을 클릭해 → 새 요청이 실제로 나가 정상 화면으로 복구되는지 확인했다. 캐시된 오류를 재사용했다면 플래그를 지워도 에러 화면에 머물렀을 것이다. Chromium·WebKit에서 각 통과했고 Chromium은 `--repeat-each=3`으로 재확인했다. 검증에 쓴 코드는 모두 되돌렸다.
+
+### 상품 목록 오류를 HTTP status로 나눌 것인가
+
+4xx는 인라인, 5xx는 전체 Error Boundary로 보내는 방식도 검토했다. 하지만 상품 목록은 실패하더라도 검색·필터를 남겨야 사용자가 조건을 바꾸거나 같은 자리에서 재시도할 수 있다. status보다 **현재 화면에서 복구할 수 있는가**가 경계를 더 잘 설명한다고 판단했다.
+
+공통 `ApiError`가 HTTP status와 네트워크 오류 종류를 보존하고, 상품 query의 `throwOnError`는 다음처럼 동작한다.
+
+- HTTP·네트워크처럼 예상 가능한 조회 실패: 인라인 오류와 `refetch()`로 복구
+- 응답 파싱 실패처럼 API 계약 밖의 예외: 루트 Error Boundary로 전파
+
+status는 관측과 향후 정책 변경을 위해 잃지 않되, 지금은 4xx·5xx를 서로 다른 화면으로 나누지 않는다. 변환과 분기 자체는 Vitest로 확인하고, 필터 유지·전체 새로고침 없는 복구는 E2E에 남긴다.
+
+### Zustand 검증을 어디까지 E2E로 둘 것인가
+
+기존 E2E는 화면 흐름뿐 아니라 store의 손상값 복구와 migration까지 브라우저에서 확인했다. 이 동작은 DOM이나 History API가 필요하지 않아 실행 비용이 큰 계층에 둘 이유가 없었다.
+
+`createCollectionStore`의 추가·제거, 중복·빈 상태, `ids.includes`·`ids.length`·action selector, persist 손상값과 이전 버전 migration을 Vitest로 옮겼다. E2E에서는 내부 복구 테스트 2개를 제거하고 홈·목록 사이 동기화와 새로고침 후 복원처럼 실제 브라우저 경계만 남겼다.
+
+store 공개 방식은 기존 결정대로 유지한다. `useCartStore`·`useWishlistStore`를 공개하되 소비처가 selector로 필요한 상태와 action만 선택한다. 단순 전달만 하는 목적별 wrapper hook은 추가하지 않는다.
+
+- WebKit debounce 이탈 플레이키(`debounce 대기 중 페이지를 떠나면…`)를 격리 재현했더니 이전 관찰(단독 3/3)보다 실패가 잦았다(`--repeat-each=3` 2/3, `--repeat-each=5` 2/5). 기본 병렬 스위트는 4회 모두 36/36으로 깨끗해 V2 판정에는 반영하지 않았지만, 격리 시 실패율이 오른 이유는 아직 설명하지 못한다. 홈의 서버 prefetch 지연(mock 약 500ms)이 검색 debounce(300ms)보다 길어 두 네비게이션이 경합할 수 있다는 가설만 세워뒀다. 이번 주 범위 밖이라 원인 조사는 다음으로 미룬다.
+
 ## 아직 확실하지 않은 것 / 다음에 볼 것
 
 - 현재 `@x` 설정은 교차 참조가 전용 경로를 통하는 것까지 검사한다. `@x/<consumer>`의 파일명과 실제 소비 entity가 일치하는지까지 자동 검증할 필요가 생기면 커스텀 규칙이나 별도 아키텍처 검사 도구를 검토한다.
