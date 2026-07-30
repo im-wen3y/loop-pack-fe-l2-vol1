@@ -32,8 +32,10 @@
 
 들여쓰기는 공백 두 칸을 사용하고, `src` 내부 import에는 `@/` 별칭을 활용한다. 포맷은 Prettier에 맡긴다. `any`, `@ts-ignore`, non-null assertion(`!`), 빈 `catch`, `debugger`, 처리하지 않은 Promise, 배럴 파일을 사용하지 않는다. 기존 유틸을 먼저 찾아 재사용하고, 공통 도메인 값과 타입은 `_types.ts` 등 한곳에서 관리한다.
 
-- 컴포넌트와 파일: `PascalCase`
-- 커스텀 훅: `useCamelCase`
+- 컴포넌트 파일: `PascalCase` (`ProductCard.tsx`, `ProductCard.module.css`)
+- 그 외 파일(훅·유틸·설정·타입): `kebab-case` (`use-pagination.ts`, `format-price.ts`, `search-params.ts`)
+- 컴포넌트: `PascalCase`
+- 커스텀 훅: `useCamelCase` (파일명은 `use-camel-case.ts`)
 - 내부 이벤트 핸들러: `handleX`
 - 콜백 props: `onX`
 - boolean: `is`, `has`, `should`, `can` 접두사

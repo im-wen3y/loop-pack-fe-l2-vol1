@@ -12,6 +12,14 @@
 
 ## 네이밍
 
+### 파일명
+
+- 컴포넌트 파일: `PascalCase` — `ProductCard.tsx`, `ProductCard.module.css`
+- 그 외 전부(훅·유틸·설정·타입·query factory): `kebab-case` — `use-pagination.ts`, `format-price.ts`, `search-params.ts`, `cart-store.ts`
+- 기준은 "무엇을 내보내는가"다. default가 컴포넌트면 PascalCase, 아니면 kebab-case
+
+### 식별자
+
 - 컴포넌트: `PascalCase`
 - 함수: 동사 + 목적어 (`fetchUser`, `formatDate`)
 - 이벤트 핸들러: props 콜백 `onX` / 내부 함수 `handleX`
