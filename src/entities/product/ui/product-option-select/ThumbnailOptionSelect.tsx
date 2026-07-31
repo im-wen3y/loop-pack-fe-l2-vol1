@@ -2,31 +2,34 @@
 
 import Image from 'next/image'
 import { formatPrice } from '@/shared/lib/format-price'
-import { isSoldOut as checkIsSoldOut } from '@/shared/lib/is-sold-out'
-import type { ThumbnailSelectOption } from '@/shared/ui/select/select.model'
+import {
+  isProductOptionSoldOut,
+  type ThumbnailSelectOption,
+} from '@/entities/product/model/product-option'
 import { SelectToggleIcon } from '@/shared/ui/select/SelectToggleIcon'
-import { useSelect } from '@/shared/ui/select/useSelect'
+import { useControlledSelect } from '@/shared/ui/select/useControlledSelect'
 import styles from './ThumbnailOptionSelect.module.css'
 
 type ThumbnailOptionSelectProps = {
   title: string
   options: ThumbnailSelectOption[]
-  defaultValue?: ThumbnailSelectOption
-  onChange?: (option: ThumbnailSelectOption | undefined) => void
+  value?: ThumbnailSelectOption
+  onValueChange: (option: ThumbnailSelectOption | undefined) => void
 }
 
 export const ThumbnailOptionSelect = ({
   title,
   options,
-  defaultValue,
-  onChange,
+  value,
+  onValueChange,
 }: ThumbnailOptionSelectProps) => {
   const { containerRef, isOpen, selected, items, onTriggerClick, selectIndex, onClear, onKeyDown } =
-    useSelect({
+    useControlledSelect({
       options,
-      defaultValue,
-      isOptionDisabled: (option) => checkIsSoldOut(option.stock),
-      onChange,
+      value,
+      getOptionKey: (option) => option.id,
+      isOptionDisabled: (option) => isProductOptionSoldOut(option.stock),
+      onValueChange,
     })
 
   return (

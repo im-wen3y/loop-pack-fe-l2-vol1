@@ -61,7 +61,7 @@ type DialogCloseProps = ComponentPropsWithoutRef<'button'>
 const DialogContext = createContext<DialogContextValue | null>(null)
 
 /*
- * useSelect와 달리 Dialog는 상태를 custom hook으로 빼지 않고 Context로 둔다 — Select는
+ * useControlledSelect와 달리 Dialog는 상태를 custom hook으로 빼지 않고 Context로 둔다 — Select는
  * "하나의 동작을 여러 마크업이 공유"하는 문제라 훅이 맞고, Dialog는 "여러 조각(Trigger/
  * Overlay/Content/Close)이 같은 상태 일부씩만 구독"하는 문제라 Context가 맞는 도구다.
  */

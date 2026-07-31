@@ -4,6 +4,8 @@ export type SizeSelectOption = {
   deliveryText?: string
 }
 
+export const isProductOptionSoldOut = (stock: number) => stock === 0
+
 export type TextSelectOption = {
   id: string
   label: string

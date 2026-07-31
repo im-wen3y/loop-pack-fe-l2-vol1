@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 
-// 선택 여부는 객체 참조로 비교하므로 options와 defaultValue는 같은 옵션 객체를 사용해야 한다.
-type UseSelectParams<T> = {
-  options: T[]
-  defaultValue?: T
+type UseControlledSelectParams<T> = {
+  options: readonly T[]
+  value?: T
+  getOptionKey: (option: T) => string | number
   isOptionDisabled?: (option: T) => boolean
-  onChange?: (value: T | undefined) => void
+  onValueChange: (value: T | undefined) => void
 }
 
 type SelectItem<T> = {
@@ -15,18 +15,19 @@ type SelectItem<T> = {
   disabled: boolean
 }
 
-export const useSelect = <T>({
+export const useControlledSelect = <T>({
   options,
-  defaultValue,
+  value,
+  getOptionKey,
   isOptionDisabled = () => false,
-  onChange,
-}: UseSelectParams<T>) => {
+  onValueChange,
+}: UseControlledSelectParams<T>) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [selected, setSelected] = useState<T | undefined>(defaultValue)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const selectedIndex = options.findIndex((option) => option === selected)
+  const selectedKey = value === undefined ? undefined : getOptionKey(value)
+  const selectedIndex = options.findIndex((option) => getOptionKey(option) === selectedKey)
 
   const items: SelectItem<T>[] = options.map((option, index) => ({
     option,
@@ -35,7 +36,7 @@ export const useSelect = <T>({
     disabled: isOptionDisabled(option),
   }))
 
-  // 전부 품절이어도 options.length번을 넘겨 순회하지 않으므로 무한루프 없이 -1로 끝난다.
+  // 모든 옵션이 비활성화되어도 options.length번을 넘겨 순회하지 않아 -1로 끝난다.
   const stepToEnabled = (from: number, direction: 1 | -1): number => {
     if (options.length === 0) return -1
     let index = from
@@ -97,19 +98,17 @@ export const useSelect = <T>({
   const selectIndex = (index: number) => {
     const option = options[index]
     if (!option || isOptionDisabled(option)) return
-    if (option !== selected) {
-      setSelected(option)
-      onChange?.(option)
+    if (getOptionKey(option) !== selectedKey) {
+      onValueChange(option)
     }
     setHighlightedIndex(index)
     close()
   }
 
   const onClear = () => {
-    if (selected === undefined) return
-    setSelected(undefined)
+    if (value === undefined) return
     setHighlightedIndex(-1)
-    onChange?.(undefined)
+    onValueChange(undefined)
   }
 
   /*
@@ -141,7 +140,7 @@ export const useSelect = <T>({
   return {
     containerRef,
     isOpen,
-    selected,
+    selected: value,
     items,
     onTriggerClick,
     selectIndex,

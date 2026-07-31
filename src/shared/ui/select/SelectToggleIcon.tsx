@@ -6,8 +6,7 @@ type SelectToggleIconProps = {
 }
 
 /*
- * 3개 select 컴포넌트가 이 아이콘 마크업을 글자 그대로 복붙하고 있었다 — "마크업은 서로
- * 독립적"이라는 근거와 실제로 어긋나는 부분이라 여기로 뽑았다.
+ * Select 표현이 달라도 공통으로 사용하는 열림 상태 아이콘이다.
  * next/image's optimizer rejects local SVGs by default; unoptimized serves it as-is.
  */
 export const SelectToggleIcon = ({ isOpen }: SelectToggleIconProps) => (

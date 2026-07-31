@@ -1,31 +1,34 @@
 'use client'
 
 import { formatPrice } from '@/shared/lib/format-price'
-import { isSoldOut as checkIsSoldOut } from '@/shared/lib/is-sold-out'
-import type { TextSelectOption } from '@/shared/ui/select/select.model'
+import {
+  isProductOptionSoldOut,
+  type TextSelectOption,
+} from '@/entities/product/model/product-option'
 import { SelectToggleIcon } from '@/shared/ui/select/SelectToggleIcon'
-import { useSelect } from '@/shared/ui/select/useSelect'
+import { useControlledSelect } from '@/shared/ui/select/useControlledSelect'
 import styles from './TextOptionSelect.module.css'
 
 type TextOptionSelectProps = {
   title: string
   options: TextSelectOption[]
-  defaultValue?: TextSelectOption
-  onChange?: (option: TextSelectOption | undefined) => void
+  value?: TextSelectOption
+  onValueChange: (option: TextSelectOption | undefined) => void
 }
 
 export const TextOptionSelect = ({
   title,
   options,
-  defaultValue,
-  onChange,
+  value,
+  onValueChange,
 }: TextOptionSelectProps) => {
   const { containerRef, isOpen, selected, items, onTriggerClick, selectIndex, onClear, onKeyDown } =
-    useSelect({
+    useControlledSelect({
       options,
-      defaultValue,
-      isOptionDisabled: (option) => checkIsSoldOut(option.stock),
-      onChange,
+      value,
+      getOptionKey: (option) => option.id,
+      isOptionDisabled: (option) => isProductOptionSoldOut(option.stock),
+      onValueChange,
     })
 
   return (

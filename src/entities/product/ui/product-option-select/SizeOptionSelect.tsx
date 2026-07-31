@@ -1,9 +1,11 @@
 'use client'
 
-import { isSoldOut as checkIsSoldOut } from '@/shared/lib/is-sold-out'
-import type { SizeSelectOption } from '@/shared/ui/select/select.model'
+import {
+  isProductOptionSoldOut,
+  type SizeSelectOption,
+} from '@/entities/product/model/product-option'
 import { SelectToggleIcon } from '@/shared/ui/select/SelectToggleIcon'
-import { useSelect } from '@/shared/ui/select/useSelect'
+import { useControlledSelect } from '@/shared/ui/select/useControlledSelect'
 import styles from './SizeOptionSelect.module.css'
 
 const DeliveryTruckIcon = () => (
@@ -25,22 +27,23 @@ const DeliveryTruckIcon = () => (
 type SizeOptionSelectProps = {
   title: string
   options: SizeSelectOption[]
-  defaultValue?: SizeSelectOption
-  onChange?: (option: SizeSelectOption | undefined) => void
+  value?: SizeSelectOption
+  onValueChange: (option: SizeSelectOption | undefined) => void
 }
 
 export const SizeOptionSelect = ({
   title,
   options,
-  defaultValue,
-  onChange,
+  value,
+  onValueChange,
 }: SizeOptionSelectProps) => {
   const { containerRef, isOpen, selected, items, onTriggerClick, selectIndex, onClear, onKeyDown } =
-    useSelect({
+    useControlledSelect({
       options,
-      defaultValue,
-      isOptionDisabled: (option) => checkIsSoldOut(option.stock),
-      onChange,
+      value,
+      getOptionKey: (option) => option.value,
+      isOptionDisabled: (option) => isProductOptionSoldOut(option.stock),
+      onValueChange,
     })
 
   return (
@@ -95,7 +98,7 @@ export const SizeOptionSelect = ({
         <div className={styles.selected} data-testid="selected">
           <div className={styles.selectedInfo}>
             <span className={styles.value}>{selected.value}</span>
-            {checkIsSoldOut(selected.stock) ? (
+            {isProductOptionSoldOut(selected.stock) ? (
               <span className={styles.soldOut}>품절</span>
             ) : (
               selected.deliveryText && (
