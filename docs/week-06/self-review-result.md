@@ -1,6 +1,6 @@
 # 6주차 Self Review 결과
 
-> `/self-review` 실행 결과 기록. `git diff origin/main...HEAD` 기준, `pnpm build`·`pnpm lint`·`pnpm test`·`pnpm exec tsc --noEmit` 실행.
+> `/self-review` 실행 결과 기록. `git diff origin/develop...HEAD` 기준, `pnpm build`·`pnpm lint`·`pnpm test`·`pnpm exec tsc --noEmit` 실행.
 
 **판정: PASS**
 
