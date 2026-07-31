@@ -142,6 +142,12 @@ Dialog는 사정이 다르다. 지금도 딱히 쓸 자리를 짚어두진 않�
 
 상품 옵션 UI는 현재 소비처가 없으므로 `entities/product/index.ts`에서 공개하지 않는다. 실제 상품 상세나 옵션 선택 조합 위치가 생기면 그 요구사항에 맞춰 필요한 계약만 Public API로 연다. `ProductFilters`는 별개의 URL 필터 계약이므로 이번 분리에서 이 UI로 교체하지 않는다.
 
+### 최종 결정 — `ProductFilters`에는 select를 쓰지 않는다
+
+"이후 갱신" 절에서 "`TextOptionSelect`(또는 유사 변형)로 `ProductFilters`의 네이티브 select를 대체할 수 있다"고 재추가 근거를 세웠는데, 위 후속 분리에서 확인했듯 그 근거가 틀렸다. `TextOptionSelect`는 가격·재고·할인·배송을 아는 상품 옵션 UI라 카테고리·정렬처럼 `{id, label}`만 있으면 되는 필터에는 애초에 안 맞는 컴포넌트였다. `useControlledSelect` + `SelectToggleIcon`을 직접 조합해 새 컴포넌트를 만드는 방법은 남아 있지만, 그건 "기존 select를 재사용"이 아니라 "새 컴포넌트를 새로 만드는" 별개의 작업이다.
+
+그래서 이번 분리로 확정한다 — `ProductFilters`는 지금의 네이티브 `<select>`를 유지하고, `shared/ui/select`·`entities/product/ui/product-option-select` 어느 쪽도 이 화면에 연결하지 않는다. select 3종(`entities/product/ui/product-option-select`)은 Dialog와 마찬가지로 **소비처도 계획도 없는 상태**로 남는다. "재사용 범위를 판단할 근거가 없다"던 4번의 원래 삭제 근거가 다시 그대로 유효해진 셈이다. 이 코드를 다시 정리할 때는 select와 Dialog를 같은 기준(소비처 0, 재사용 근거 없음)으로 함께 판단한다.
+
 ## 5. `shared`에 무엇을 내릴 것인가
 
 ### 고민
