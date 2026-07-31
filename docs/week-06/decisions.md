@@ -129,6 +129,19 @@ Dialog는 사정이 다르다. 지금도 딱히 쓸 자리를 짚어두진 않�
 - `product-options.ts`의 `Product` 타입은 가져오지 않았다. `entities/product/model/product.ts`와 이름만 같은 별개 타입이라는 문제가 삭제 시점과 동일하게 남아 있어서, 실제로 쓰이던 `SizeSelectOption`·`TextSelectOption`·`ThumbnailSelectOption` 세 타입만 `shared/ui/select/select.model.ts`로 옮겼다.
 - `dialog/index.tsx`는 `Dialog.tsx`로 파일명만 바꿨다. 배럴 파일 금지 컨벤션이 삭제 이후 굳어져서, 로직은 그대로 두고 이름만 맞췄다.
 
+### 후속 분리 — controlled Select 기반과 상품 옵션 UI
+
+복원 뒤 다시 보니 `TextOptionSelect`·`SizeOptionSelect`·`ThumbnailOptionSelect`는 범용 Select가 아니었다. 옵션 타입과 JSX가 재고·가격·최대 할인·무료 배송·묶음 배지를 직접 알고 있어 `shared`의 도메인 비종속 기준을 어겼다. 특히 `TextOptionSelect`를 상품 목록의 카테고리·정렬 필터에 재사용하려면 필요하지 않은 가격·재고 필드를 억지로 채워야 하므로, 그 대체 근거도 성립하지 않았다.
+
+다음처럼 책임을 다시 나눴다.
+
+- `shared/ui/select/useControlledSelect.ts`: 외부가 소유한 `value`와 `onValueChange`, 옵션 식별자, 비활성 판정만 입력받는다. 내부에는 열림·하이라이트·키보드 탐색·바깥 클릭 상태만 둔다.
+- `shared/ui/select/SelectToggleIcon.tsx`: 상품 지식이 없는 공통 열림 상태 표현으로 남긴다.
+- `entities/product/model/product-option.ts`: 상품 옵션 타입과 품절 판정을 소유한다.
+- `entities/product/ui/product-option-select/*`: 가격·재고·할인·배송을 표현하는 세 상품 옵션 UI를 소유한다.
+
+상품 옵션 UI는 현재 소비처가 없으므로 `entities/product/index.ts`에서 공개하지 않는다. 실제 상품 상세나 옵션 선택 조합 위치가 생기면 그 요구사항에 맞춰 필요한 계약만 Public API로 연다. `ProductFilters`는 별개의 URL 필터 계약이므로 이번 분리에서 이 UI로 교체하지 않는다.
+
 ## 5. `shared`에 무엇을 내릴 것인가
 
 ### 고민
