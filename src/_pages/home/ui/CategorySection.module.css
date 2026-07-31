@@ -23,3 +23,22 @@
   outline: 3px solid #2557a7;
   outline-offset: 3px;
 }
+
+.skeletonPill {
+  display: block;
+  width: 72px;
+  height: 37px;
+  border-radius: 4px;
+  background: #ececec;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

@@ -16,3 +16,34 @@
     padding: 24px;
   }
 }
+
+.skeleton {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.skeletonDescription,
+.skeletonTitle {
+  display: block;
+  border-radius: 4px;
+  background: #d8d8d8;
+}
+
+.skeletonDescription {
+  width: 160px;
+  height: 16px;
+}
+
+.skeletonTitle {
+  width: 280px;
+  height: 28px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
