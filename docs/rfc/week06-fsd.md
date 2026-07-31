@@ -2,7 +2,7 @@
 
 - 작성일: 2026-07-28
 - 브랜치: `feat/week-06`
-- 상태: 구조 변경·자동 검증 완료 (1–8단계 · check · E2E 통과, 수동 M1–M9·layout shift 검증 대기)
+- 상태: 구조 변경·자동 검증 완료 (1–8단계 · check · E2E 통과, 수동 M1–M9·layout shift·예상 밖 렌더링 오류 재현까지 전부 완료)
 
 > 배치 결정과 자가 검증은 확정했다. **남은 이슈와 검증 상태는 아래 표만 단일 기준으로 관리한다.** 상세 실행 순서는 [rfc-review-checklist.md](../week-06/rfc-review-checklist.md)에서 확인한다.
 
@@ -12,17 +12,18 @@
 
 상태가 바뀌면 이 표와 관련 본문 결과만 갱신한다. 해결 과정에서 내린 구조적 판단은 [decisions.md](../week-06/decisions.md)에 남긴다.
 
-| ID  | 상태      | 항목                    | 결과·남은 작업                                        |
-| --- | --------- | ----------------------- | ----------------------------------------------------- |
-| R1  | 해결      | 홈 API 응답 타입 소유권 | `HomeApiResponse`를 mock API가 소유, 역방향 참조 제거 |
-| R2  | 해결      | 홈 오류 재시도          | query reset 후 route reset, Chromium·WebKit 복구 확인 |
-| R3  | 해결      | 상품 목록 오류 경계     | `ApiError`는 인라인, 계약 밖 예외는 경계로 전파       |
-| R4  | 해결      | Zustand 단위 테스트     | action·selector·persist Vitest 5/5                    |
-| V1  | 해결      | 최종 자동 검증          | `pnpm check` 통과, 예상 라우트 5개 확인               |
-| V2  | 해결      | 핵심 E2E                | Chromium·WebKit 36/36 통과                            |
-| V3  | 검증 대기 | 수동·예상 밖 오류 검증  | M1·M3–M9, layout shift, 예상 밖 렌더링 오류 재현 필요 |
+| ID  | 상태 | 항목                     | 결과·남은 작업                                                                   |
+| --- | ---- | ------------------------ | -------------------------------------------------------------------------------- |
+| R1  | 해결 | 홈 API 응답 타입 소유권  | `HomeApiResponse`를 mock API가 소유, 역방향 참조 제거                            |
+| R2  | 해결 | 홈 오류 재시도           | query reset 후 route reset, Chromium·WebKit 복구 확인                            |
+| R3  | 해결 | 상품 목록 오류 경계      | `ApiError`는 인라인, 계약 밖 예외는 경계로 전파                                  |
+| R4  | 해결 | Zustand 단위 테스트      | action·selector·persist Vitest 5/5                                               |
+| V1  | 해결 | 최종 자동 검증           | `pnpm check` 통과, 예상 라우트 5개 확인                                          |
+| V2  | 해결 | 핵심 E2E                 | Chromium·WebKit 36/36 통과                                                       |
+| V3  | 해결 | 수동 M1–M9·layout shift  | 2026-07-31 전부 통과                                                             |
+| V4  | 해결 | 예상 밖 렌더링 오류 재현 | 2026-07-31 `HomeContent`에 임시 throw 삽입해 재현·복구 확인, 임시 코드 제거 완료 |
 
-처리 현황: R1–R4와 V1·V2는 완료했다. 남은 항목은 V3 수동 M1–M9와 layout shift 확인이다.
+처리 현황: R1–R4와 V1–V4 전부 완료했다. 남은 미해결 항목 없음.
 
 ---
 
@@ -48,7 +49,7 @@
 
 최초 측정: 2026-07-28, `feat/week-06` (구조 변경 전)
 
-최근 재확인: 2026-07-31, 현재 작업 트리. `pnpm check`와 Chromium·WebKit E2E 36/36 통과. 수동 검증은 M2만 완료했다.
+최근 재확인: 2026-07-31, 현재 작업 트리. `pnpm check`와 Chromium·WebKit E2E 36/36 통과. 수동 검증 M1–M9와 layout shift 확인까지 전부 완료했다.
 
 | 명령               | 구조 변경 전 | 구조 변경 후  | 판정                                                            |
 | ------------------ | ------------ | ------------- | --------------------------------------------------------------- |
@@ -69,17 +70,17 @@ WebKit의 `debounce 대기 중 페이지를 떠나면…`은 격리 반복에서
 
 기대 동작과 관찰값(화면 문구·`총 N개`·URL 쿼리스트링·헤더 숫자)이 문자열까지 일치하면 체크한다. 어긋나면 체크하지 않고 실제 관찰값을 판정 열에 적는다.
 
-| #   | 시나리오                 | 조작                                                                   | 기대 동작                                                                | 구조 변경 전 | 구조 변경 후 | 판정                                    |
-| --- | ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | ------------ | --------------------------------------- |
-| M1  | 홈 로딩                  | Network Slow 3G + `/` 하드 리로드                                      | `홈을 불러오는 중…` 노출 후 본문 교체                                    | `[x]`        | `[ ]`        |                                         |
-| M2  | 홈 에러와 재시도 복구    | Route Handler를 임시 플래그로 강제 실패시킨 뒤 `다시 시도` 클릭        | `문제가 발생했어요` + `다시 시도` → 클릭 후 새 요청 발생, 정상 화면 복구 | `[x]`        | `[x]`        | Chromium·WebKit 통과(Chromium 3/3 반복) |
-| M3  | 홈 빈 상태               | 같은 자리에 `?scenario=empty` 임시 추가                                | 배너·카테고리 유지, 인기/신상품 섹션 미노출                              | `[x]`        | `[ ]`        |                                         |
-| M4  | 홈 정상                  | `/`                                                                    | 배너 `매일 새롭게 발견하는 취향`, 카테고리 5개, 인기·신상품 6개씩        | `[x]`        | `[ ]`        |                                         |
-| M5  | 목록 로딩·정상           | `/products` 첫 진입                                                    | 스켈레톤 → `총 30개`, `1 / 3`; 완료 전후 layout shift 없음               | `[x]`        | `[ ]`        |                                         |
-| M6  | 조건 전환 중 목록 유지   | 목록에서 카테고리 변경                                                 | 이전 목록 유지한 채 흐려짐(`aria-busy`) → 새 결과 교체                   | `[x]`        | `[ ]`        |                                         |
-| M7  | URL 공유                 | `/products?q=스탠리&category=home&sort=price-desc` 를 새 탭에 붙여넣기 | `총 4개` + 검색·카테고리·정렬 값 복원                                    | `[x]`        | `[ ]`        |                                         |
-| M8  | 페이지 이동 중 상태 유지 | 홈에서 찜·담기 → 목록 이동 → 홈 복귀                                   | 헤더 숫자 유지, 같은 상품 `aria-pressed=true`                            | `[x]`        | `[ ]`        |                                         |
-| M9  | 잘못된 페이지 보정       | `/products?page=0` 직접 진입                                           | 첫 페이지 데이터와 `1 / 3` 노출, 에러 UI 미노출                          | `[ ]`        | `[ ]`        | 기존 버그 수정 후 재검증                |
+| #   | 시나리오                 | 조작                                                                   | 기대 동작                                                                | 구조 변경 전 | 구조 변경 후 | 판정                                                                                                                |
+| --- | ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| M1  | 홈 로딩                  | Network Slow 3G + `/` 하드 리로드                                      | `홈을 불러오는 중…` 노출 후 본문 교체                                    | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M2  | 홈 에러와 재시도 복구    | Route Handler를 임시 플래그로 강제 실패시킨 뒤 `다시 시도` 클릭        | `문제가 발생했어요` + `다시 시도` → 클릭 후 새 요청 발생, 정상 화면 복구 | `[x]`        | `[x]`        | Chromium·WebKit 통과(Chromium 3/3 반복)                                                                             |
+| M3  | 홈 빈 상태               | 같은 자리에 `?scenario=empty` 임시 추가                                | 배너·카테고리 유지, 인기/신상품 섹션 미노출                              | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M4  | 홈 정상                  | `/`                                                                    | 배너 `매일 새롭게 발견하는 취향`, 카테고리 5개, 인기·신상품 6개씩        | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M5  | 목록 로딩·정상           | `/products` 첫 진입                                                    | 스켈레톤 → `총 30개`, `1 / 3`; 완료 전후 layout shift 없음               | `[x]`        | `[x]`        | 2026-07-31 통과, layout shift 없음 확인                                                                             |
+| M6  | 조건 전환 중 목록 유지   | 목록에서 카테고리 변경                                                 | 이전 목록 유지한 채 흐려짐(`aria-busy`) → 새 결과 교체                   | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M7  | URL 공유                 | `/products?q=스탠리&category=home&sort=price-desc` 를 새 탭에 붙여넣기 | `총 4개` + 검색·카테고리·정렬 값 복원                                    | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M8  | 페이지 이동 중 상태 유지 | 홈에서 찜·담기 → 목록 이동 → 홈 복귀                                   | 헤더 숫자 유지, 같은 상품 `aria-pressed=true`                            | `[x]`        | `[x]`        | 2026-07-31 통과                                                                                                     |
+| M9  | 잘못된 페이지 보정       | `/products?page=0` 직접 진입                                           | 첫 페이지 데이터와 `1 / 3` 노출, 에러 UI 미노출                          | `[ ]`        | `[x]`        | 2026-07-31 통과. URL은 `?page=0`으로 유지되며 미정정 — 별도 개선 과제, [decisions.md](../week-06/decisions.md) 12번 |
 
 > M2·M3은 홈 데이터가 서버에서 prefetch되어 브라우저 DevTools로 재현할 수 없다. `scenario`를 코드에 임시로 넣어 확인한 뒤 반드시 원복하고, 그 변경은 커밋하지 않는다.
 
@@ -107,7 +108,7 @@ WebKit의 `debounce 대기 중 페이지를 떠나면…`은 격리 반복에서
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | M2 상태(`?scenario=error`)에서 홈 에러 화면의 `다시 시도` 클릭 → 화면이 그대로 유지됨 | `reset()`이 react-query의 `errorResetBoundary`를 초기화하지 않아 `retryOnMount: false` → 재요청이 안 일어남        | `_app/ui/RootErrorFallback.tsx`                                                                        | 두 reset 연결 완료, Chromium·WebKit 런타임 재검증 통과 |
 | `/products?page=0`으로 직접 진입하면 상품 API가 400을 반환하고 목록 오류 UI가 노출됨  | 정수 parser가 `0`과 음수도 유효한 정수로 통과시켜 API의 `page >= 1` 검증까지 잘못된 값이 전달됨                    | `entities/product/api/query-schema.ts`, `e2e/week-05-state.spec.ts`                                    | 첫 페이지 보정 E2E 통과, 수동 M9 대기                  |
-| `/products` 최초 로딩 완료 시 필터와 카드 높이가 추가되면서 결과 영역이 아래로 이동함 | 로딩 중 필터를 렌더링하지 않았고 카드 skeleton도 실제 카드의 제목·가격·행위 영역 높이를 확보하지 않음              | `_pages/product-list/ui/ProductFiltersSkeleton.tsx`, `widgets/product-card/ui/ProductGridSkeleton.tsx` | 정적 검사 후 수동 layout shift 확인 필요               |
+| `/products` 최초 로딩 완료 시 필터와 카드 높이가 추가되면서 결과 영역이 아래로 이동함 | 로딩 중 필터를 렌더링하지 않았고 카드 skeleton도 실제 카드의 제목·가격·행위 영역 높이를 확보하지 않음              | `_pages/product-list/ui/ProductFiltersSkeleton.tsx`, `widgets/product-card/ui/ProductGridSkeleton.tsx` | 2026-07-31 수동 확인, layout shift 없음                |
 | 검색어 입력 중 URL 상태가 외부에서 바뀌면 effect가 input DOM 값을 직접 덮어쓸 수 있음 | uncontrolled input의 DOM 값과 URL 상태를 ref·effect로 수동 동기화해 사용자의 입력 초안과 외부 상태를 구분하지 않음 | `_pages/product-list/ui/ProductFilters.tsx`                                                            | controlled input 및 URL 동기화로 변경                  |
 
 홈 재시도는 App Router `reset()`만으로 TanStack Query의 오류 상태가 초기화되지 않는 문제였다. `useQueryErrorResetBoundary` reset을 먼저 호출하도록 수정했고 Chromium·WebKit에서 새 요청과 정상 복구를 확인했다. 상세 분석과 판단 과정은 [decisions.md](../week-06/decisions.md) 11번에 남겼다.
@@ -155,14 +156,14 @@ WebKit의 `debounce 대기 중 페이지를 떠나면…`은 격리 반복에서
 
 ### 이번 주에 하지 않을 것과 그 이유
 
-| 하지 않을 것                                             | 이유                                                                                                                                                                                                                                                                                                                                                    |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 기능 추가·UI 변경                                        | 이번 주는 리팩토링이다. 기능이 섞이면 "동작 보존"을 검증할 기준선이 무의미해진다.                                                                                                                                                                                                                                                                       |
-| 상품 목록의 서버 prefetch 적용                           | URL 조건마다 결과가 달라 이득을 따져야 하는 별개 주제다(5주차에도 보류).                                                                                                                                                                                                                                                                                |
-| ~~미사용 자산(`components/ui/select`·`dialog` 등) 삭제~~ | ~~삭제는 구조 이동과 다른 종류의 변경이다. 이번엔 **배치만** 정하고 삭제 여부는 근거와 함께 따로 남긴다.~~ → **2단계에서 삭제로 결정을 바꿨다.** 배치를 정하려면 재사용 범위를 봐야 하는데 소비처가 0이라 근거가 없었다. 이동과 성격이 다르다는 판단은 유지해서 별도 `chore` 커밋으로 분리했다. 판단 흐름은 [decisions.md](../week-06/decisions.md) 4번 |
-| Advanced B(변경 반경 실험)                               | 요구사항을 추가하면 동작 보존 중심의 마이그레이션 범위를 벗어난다. 의존성 하네스(A)만 ESLint로 적용한다.                                                                                                                                                                                                                                                |
-| E2E 플레이키 1건 수정                                    | 구조 변경과 무관한 타이밍 이슈다. 같은 커밋에 섞으면 회귀 판정이 흐려진다.                                                                                                                                                                                                                                                                              |
-| 캐시 정책(staleTime) 변경                                | 폴더 위치와 무관하다. 옮기기만 하고 값은 그대로 둔다.                                                                                                                                                                                                                                                                                                   |
+| 하지 않을 것                                             | 이유                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 기능 추가·UI 변경                                        | 이번 주는 리팩토링이다. 기능이 섞이면 "동작 보존"을 검증할 기준선이 무의미해진다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 상품 목록의 서버 prefetch 적용                           | URL 조건마다 결과가 달라 이득을 따져야 하는 별개 주제다(5주차에도 보류).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ~~미사용 자산(`components/ui/select`·`dialog` 등) 삭제~~ | ~~삭제는 구조 이동과 다른 종류의 변경이다. 이번엔 **배치만** 정하고 삭제 여부는 근거와 함께 따로 남긴다.~~ → **2단계에서 삭제로 결정을 바꿨다.** 배치를 정하려면 재사용 범위를 봐야 하는데 소비처가 0이라 근거가 없었다. 이동과 성격이 다르다는 판단은 유지해서 별도 `chore` 커밋으로 분리했다. → **2026-07-31 `shared/ui/select`·`shared/ui/Dialog`로 재추가했다.** select는 근거가 생겼다 — `_pages/product-list/ui/ProductFilters.tsx`의 카테고리·정렬 네이티브 `<select>`를 이 컴포넌트로 대체할 수 있다고 판단해, "재사용 범위를 판단할 근거가 없다"던 삭제 당시 전제가 깨졌다(아직 교체는 안 했다). Dialog는 이 판단이 없어 select와 같은 세트라 함께 되살렸을 뿐 여전히 소비처가 없다. 판단 흐름은 [decisions.md](../week-06/decisions.md) 4번 |
+| Advanced B(변경 반경 실험)                               | 요구사항을 추가하면 동작 보존 중심의 마이그레이션 범위를 벗어난다. 의존성 하네스(A)만 ESLint로 적용한다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| E2E 플레이키 1건 수정                                    | 구조 변경과 무관한 타이밍 이슈다. 같은 커밋에 섞으면 회귀 판정이 흐려진다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 캐시 정책(staleTime) 변경                                | 폴더 위치와 무관하다. 옮기기만 하고 값은 그대로 둔다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -232,7 +233,7 @@ src/
     ├── api/
     ├── lib/
     ├── styles/
-    └── ui/{PageContainer,Pagination}/
+    └── ui/{PageContainer,Pagination,select,Dialog}/   # 재추가, ProductFilters의 select 대체 후보(미적용), Dialog는 소비처 없음
 
 app/
 ├── (home)/{page,loading}.tsx
@@ -285,26 +286,26 @@ import { productListQueryParsers, useProductListQuery } from '@/entities/product
 
 최종 구조를 기준으로 이동·삭제 결과를 기록한다.
 
-| 현재 위치                                               | 목표 위치                                       | 레이어 / 슬라이스 / 세그먼트   | 이유                                |
-| ------------------------------------------------------- | ----------------------------------------------- | ------------------------------ | ----------------------------------- |
-| `app/{providers,globals,error,page.module}`             | `_app/{providers,styles,ui}`                    | `_app` / —                     | 전역 배선·fallback                  |
-| `app/(home)/**`의 화면 구현                             | `_pages/home/{api,ui}`                          | `_pages` / `home`              | 홈 화면 조립·조회 계약              |
-| `app/products/**`의 화면 구현                           | `_pages/product-list/{model,ui}`                | `_pages` / `product-list`      | 목록 화면·URL adapter               |
-| `app/hydration-demo/page.tsx`                           | 삭제                                            | —                              | 역할을 마친 실험 라우트             |
-| `service/queryClient.ts`, `utils/getApiBaseUrl.ts`      | `shared/api/*`                                  | `shared` / — / `api`           | 도메인 비종속 API 배선              |
-| `hooks/useDebouncedCallback.ts`, `utils/formatPrice.ts` | `shared/lib/*`                                  | `shared` / — / `lib`           | 범용 타이밍·표시 변환               |
-| `store/createCollectionStore.ts`                        | `shared/lib/create-collection-store.ts`         | `shared` / — / `lib`           | 두 entity가 공유하는 범용 팩토리    |
-| `pageContainer`, `pagination`                           | `shared/ui/{PageContainer,Pagination}`          | `shared` / — / `ui`            | 도메인 없는 공용 UI                 |
-| 미사용 select·dialog 관련 자산                          | 삭제                                            | —                              | 라우트에서 도달할 수 없는 닫힌 섬   |
-| `types/commerce.ts`의 상품·카테고리 타입                | `entities/product/model/*`                      | `entities` / `product` / model | 상품 도메인 계약                    |
-| `HomeResponse`                                          | `_pages/home/api/model.ts`                      | `_pages` / `home` / `api`      | 홈 화면 전용 조립 응답              |
-| 상품 목록 응답·쿼리 타입                                | `entities/product/api/model.ts`                 | `entities` / `product` / `api` | 상품 목록 엔드포인트 계약           |
-| mock API 타입                                           | `app/api/_types.ts`                             | 전환 범위 밖                   | mock 백엔드 내부 계약               |
-| `ProductCard`·`ProductGrid`·skeleton                    | `widgets/product-card/{model,ui}`               | `widgets` / `product-card`     | 두 상품 행위 feature를 조합         |
-| `ProductCardActions.tsx`                                | 삭제 후 `add-to-cart`, `add-to-wishlist`로 분리 | `features` / 각 행위 / `ui`    | 독립된 사용자 행위                  |
-| `cartStore.ts`, `wishlistStore.ts`                      | `entities/{cart,wishlist}/model`                | `entities` / 각 슬라이스       | 도메인 상태                         |
-| `components/ui/header/*`                                | `widgets/header/*`                              | `widgets` / `header`           | cart·wishlist를 조합하는 내비게이션 |
-| `categorySection`, `banner`                             | `_pages/home/ui`                                | `_pages` / `home` / `ui`       | 홈에서만 사용하는 UI                |
+| 현재 위치                                               | 목표 위치                                       | 레이어 / 슬라이스 / 세그먼트   | 이유                                                                                                                                                            |
+| ------------------------------------------------------- | ----------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/{providers,globals,error,page.module}`             | `_app/{providers,styles,ui}`                    | `_app` / —                     | 전역 배선·fallback                                                                                                                                              |
+| `app/(home)/**`의 화면 구현                             | `_pages/home/{api,ui}`                          | `_pages` / `home`              | 홈 화면 조립·조회 계약                                                                                                                                          |
+| `app/products/**`의 화면 구현                           | `_pages/product-list/{model,ui}`                | `_pages` / `product-list`      | 목록 화면·URL adapter                                                                                                                                           |
+| `app/hydration-demo/page.tsx`                           | 삭제                                            | —                              | 역할을 마친 실험 라우트                                                                                                                                         |
+| `service/queryClient.ts`, `utils/getApiBaseUrl.ts`      | `shared/api/*`                                  | `shared` / — / `api`           | 도메인 비종속 API 배선                                                                                                                                          |
+| `hooks/useDebouncedCallback.ts`, `utils/formatPrice.ts` | `shared/lib/*`                                  | `shared` / — / `lib`           | 범용 타이밍·표시 변환                                                                                                                                           |
+| `store/createCollectionStore.ts`                        | `shared/lib/create-collection-store.ts`         | `shared` / — / `lib`           | 두 entity가 공유하는 범용 팩토리                                                                                                                                |
+| `pageContainer`, `pagination`                           | `shared/ui/{PageContainer,Pagination}`          | `shared` / — / `ui`            | 도메인 없는 공용 UI                                                                                                                                             |
+| 미사용 select·dialog 관련 자산                          | `shared/ui/select`, `shared/ui/Dialog`          | `shared` / — / `ui`            | 2단계에서 삭제했다가 2026-07-31 재추가. select는 `ProductFilters`의 카테고리·정렬 select 대체 후보로 근거가 생겼고(아직 미적용), Dialog는 소비처 없이 함께 복원 |
+| `types/commerce.ts`의 상품·카테고리 타입                | `entities/product/model/*`                      | `entities` / `product` / model | 상품 도메인 계약                                                                                                                                                |
+| `HomeResponse`                                          | `_pages/home/api/model.ts`                      | `_pages` / `home` / `api`      | 홈 화면 전용 조립 응답                                                                                                                                          |
+| 상품 목록 응답·쿼리 타입                                | `entities/product/api/model.ts`                 | `entities` / `product` / `api` | 상품 목록 엔드포인트 계약                                                                                                                                       |
+| mock API 타입                                           | `app/api/_types.ts`                             | 전환 범위 밖                   | mock 백엔드 내부 계약                                                                                                                                           |
+| `ProductCard`·`ProductGrid`·skeleton                    | `widgets/product-card/{model,ui}`               | `widgets` / `product-card`     | 두 상품 행위 feature를 조합                                                                                                                                     |
+| `ProductCardActions.tsx`                                | 삭제 후 `add-to-cart`, `add-to-wishlist`로 분리 | `features` / 각 행위 / `ui`    | 독립된 사용자 행위                                                                                                                                              |
+| `cartStore.ts`, `wishlistStore.ts`                      | `entities/{cart,wishlist}/model`                | `entities` / 각 슬라이스       | 도메인 상태                                                                                                                                                     |
+| `components/ui/header/*`                                | `widgets/header/*`                              | `widgets` / `header`           | cart·wishlist를 조합하는 내비게이션                                                                                                                             |
+| `categorySection`, `banner`                             | `_pages/home/ui`                                | `_pages` / `home` / `ui`       | 홈에서만 사용하는 UI                                                                                                                                            |
 
 ### 애매한 파일 결정표 (5개 이상)
 
@@ -346,13 +347,13 @@ import { productListQueryParsers, useProductListQuery } from '@/entities/product
 
 Source of Truth와 소비처는 5주차 결정을 유지한다(폴더 이동으로 바뀌지 않는다). 소유 슬라이스만 이번에 정한다.
 
-| 상태                | Source of Truth     | 소유 슬라이스/레이어                                                                                    | 소비하는 곳        | 이동 후에도 중복 저장하지 않는 방법                                                                                                       |
-| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 홈 조회 결과        | 서버/TanStack Query | `_pages/home/api`                                                                                       | 홈                 | 응답을 store에 옮겨 담지 않는다. 서버 prefetch와 클라이언트가 **같은 `homeQueries.detail()`** 을 import해 캐시를 공유한다.                |
-| 상품 목록 조회 결과 | 서버/TanStack Query | `entities/product/api`                                                                                  | 상품 목록          | 위와 같다. 화면은 `productQueries`만 보고 fetch 구현은 슬라이스 안에 숨는다.                                                              |
-| 검색·정렬·페이지    | URL/nuqs            | parser는 `entities/product/api/query-schema`, 히스토리 동작은 `_pages/product-list/model/search-params` | 상품 목록          | 확정값은 URL에만 둔다. 검색 중 `draft`만 로컬 state로 관리하고, 뒤로·앞으로 가기로 URL이 바뀌면 controlled input을 동기화한다.            |
-| 장바구니·위시리스트 | Zustand             | `entities/cart/model`, `entities/wishlist/model`                                                        | 헤더, 상품 행위 UI | store hook은 Public API로 공개하되 소비처가 selector로 필요한 값·action만 구독한다. 개수는 `ids.length`로 파생하고 persist 키를 유지한다. |
-| Dialog 열림 여부    | 해당 없음           | 삭제                                                                                                    | —                  | 사용처 없는 Dialog를 삭제해 관리할 로컬 상태가 없다.                                                                                      |
+| 상태                | Source of Truth                             | 소유 슬라이스/레이어                                                                                    | 소비하는 곳        | 이동 후에도 중복 저장하지 않는 방법                                                                                                                                  |
+| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 홈 조회 결과        | 서버/TanStack Query                         | `_pages/home/api`                                                                                       | 홈                 | 응답을 store에 옮겨 담지 않는다. 서버 prefetch와 클라이언트가 **같은 `homeQueries.detail()`** 을 import해 캐시를 공유한다.                                           |
+| 상품 목록 조회 결과 | 서버/TanStack Query                         | `entities/product/api`                                                                                  | 상품 목록          | 위와 같다. 화면은 `productQueries`만 보고 fetch 구현은 슬라이스 안에 숨는다.                                                                                         |
+| 검색·정렬·페이지    | URL/nuqs                                    | parser는 `entities/product/api/query-schema`, 히스토리 동작은 `_pages/product-list/model/search-params` | 상품 목록          | 확정값은 URL에만 둔다. 검색 중 `draft`만 로컬 state로 관리하고, 뒤로·앞으로 가기로 URL이 바뀌면 controlled input을 동기화한다.                                       |
+| 장바구니·위시리스트 | Zustand                                     | `entities/cart/model`, `entities/wishlist/model`                                                        | 헤더, 상품 행위 UI | store hook은 Public API로 공개하되 소비처가 selector로 필요한 값·action만 구독한다. 개수는 `ids.length`로 파생하고 persist 키를 유지한다.                            |
+| Dialog 열림 여부    | 컴포넌트 로컬 상태(controlled/uncontrolled) | `shared/ui/Dialog`                                                                                      | —                  | 삭제했다가 2026-07-31 재추가. `open` prop 유무로 controlled·uncontrolled를 분기하는 구조는 원본 그대로이며, 소비처가 아직 없어 실제로 어느 쪽으로 쓰일지는 미정이다. |
 
 > 서버 응답을 Zustand에 복사하지 않는다. URL의 확정 검색값과 입력 중 draft는 수명이 다르므로 분리하되, 같은 확정값을 두 저장소에 중복 보관하지 않는다.
 
@@ -476,13 +477,13 @@ Error Boundary가 잡지 못하는 이유: React의 Error Boundary는 **렌더�
 
 ### 실패 재현 결과
 
-| 시나리오             | 재현 방법                                                                    | 관찰한 동작                                                         | 판정                                                              |
-| -------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 상품 목록 500과 복구 | Playwright에서 첫 요청은 500, `다시 시도` 후 정상 응답으로 가로채기          | 필터를 유지한 채 오류를 표시하고 같은 URL에서 새 요청으로 목록 복구 | Chromium·WebKit 통과                                              |
-| 홈 조회 실패         | Route Handler에 임시 플래그 조건을 넣어 강제 500, 플래그 제거 후 `다시 시도` | 루트 fallback 노출 → 재시도 시 새 `/api/home` 요청과 정상 화면 복구 | Chromium·WebKit 통과, Chromium 3/3 반복 확인. 임시 코드 제거 완료 |
-| 예상 밖 렌더링 오류  | 임시 `throw` 삽입 후 루트 `error.tsx` 확인                                   | 현재 구조 변경 후 직접 재현하지 않음                                | 검증 대기; 임시 코드 잔존 없음                                    |
+| 시나리오             | 재현 방법                                                                                          | 관찰한 동작                                                                                                                                                                             | 판정                                                                                                                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 상품 목록 500과 복구 | Playwright에서 첫 요청은 500, `다시 시도` 후 정상 응답으로 가로채기                                | 필터를 유지한 채 오류를 표시하고 같은 URL에서 새 요청으로 목록 복구                                                                                                                     | Chromium·WebKit 통과                                                                                                                                                                                |
+| 홈 조회 실패         | Route Handler에 임시 플래그 조건을 넣어 강제 500, 플래그 제거 후 `다시 시도`                       | 루트 fallback 노출 → 재시도 시 새 `/api/home` 요청과 정상 화면 복구                                                                                                                     | Chromium·WebKit 통과, Chromium 3/3 반복 확인. 임시 코드 제거 완료                                                                                                                                   |
+| 예상 밖 렌더링 오류  | `HomeContent`에 쿼리 파라미터(`?forceError=1`)로 토글되는 임시 throw 삽입 후 `/?forceError=1` 접근 | 루트 `error.tsx`(`RootErrorFallback`)가 `문제가 발생했어요` + `다시 시도`로 정상 포착. `다시 시도`는 같은 URL이라 동일하게 재현되고, 파라미터 없는 `/`로 이동하면 정상 홈 화면으로 복구 | Chromium(Playwright headless) 통과, 콘솔에 에러 스택 기록 확인. `오류 코드`(digest)는 dev 모드 특성상 미노출 — 프로덕션 빌드에서만 채번되는 값이라 판정에서 제외. 임시 코드 제거 완료(`git diff` 0) |
 
-> 예상 밖 렌더링 오류의 구조 변경 후 재현과 나머지 수동 시나리오는 V3에서 확인한다.
+> 나머지 수동 시나리오(M1–M9·layout shift)는 V3에서, 예상 밖 렌더링 오류 재현은 V4에서 2026-07-31 모두 확인했다. V3·V4 모두 해결로 닫혔다.
 
 ---
 
