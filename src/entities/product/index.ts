@@ -3,15 +3,11 @@
 export type { Category, CategoryId } from '@/entities/product/model/category'
 export type { Product, ProductSort } from '@/entities/product/model/product'
 
-// 목록 조회는 여러 화면이 같은 캐시를 공유해야 하므로 queryOptions를 공개한다.
-// fetch 구현(api.ts)과 요청 직렬화(query-schema.ts의 serializer)는 숨긴다.
-export { productQueries, productQueryKeys } from '@/entities/product/api/queries'
+// 목록 조회는 조회 훅과 응답 계약만 공개한다.
+// queryOptions·queryKey(queries.ts), fetch 구현(api.ts), 요청 직렬화(query-schema.ts의 serializer)는
+// 아직 슬라이스 외부 소비처가 없으므로 숨긴다.
 export { useProductListQuery } from '@/entities/product/api/service'
-export {
-  PRODUCT_PAGE_SIZE,
-  type GetProductListParams,
-  type GetProductListResponse,
-} from '@/entities/product/api/model'
+export { PRODUCT_PAGE_SIZE, type GetProductListResponse } from '@/entities/product/api/model'
 
 // 조회 파라미터 스키마. 화면은 이 parser 위에 자기 URL 동작(히스토리 등)만 얹는다.
 // 정렬 UI가 실제로 참조하는 허용값 목록만 외부 계약으로 공개한다.
