@@ -146,7 +146,13 @@ Dialog는 사정이 다르다. 지금도 딱히 쓸 자리를 짚어두진 않�
 
 "이후 갱신" 절에서 "`TextOptionSelect`(또는 유사 변형)로 `ProductFilters`의 네이티브 select를 대체할 수 있다"고 재추가 근거를 세웠는데, 위 후속 분리에서 확인했듯 그 근거가 틀렸다. `TextOptionSelect`는 가격·재고·할인·배송을 아는 상품 옵션 UI라 카테고리·정렬처럼 `{id, label}`만 있으면 되는 필터에는 애초에 안 맞는 컴포넌트였다. `useControlledSelect` + `SelectToggleIcon`을 직접 조합해 새 컴포넌트를 만드는 방법은 남아 있지만, 그건 "기존 select를 재사용"이 아니라 "새 컴포넌트를 새로 만드는" 별개의 작업이다.
 
-그래서 이번 분리로 확정한다 — `ProductFilters`는 지금의 네이티브 `<select>`를 유지하고, `shared/ui/select`·`entities/product/ui/product-option-select` 어느 쪽도 이 화면에 연결하지 않는다. select 3종(`entities/product/ui/product-option-select`)은 Dialog와 마찬가지로 **소비처도 계획도 없는 상태**로 남는다. "재사용 범위를 판단할 근거가 없다"던 4번의 원래 삭제 근거가 다시 그대로 유효해진 셈이다. 이 코드를 다시 정리할 때는 select와 Dialog를 같은 기준(소비처 0, 재사용 근거 없음)으로 함께 판단한다.
+그래서 `ProductFilters`는 지금의 네이티브 `<select>`를 유지하고, `shared/ui/select`·`entities/product/ui/product-option-select` 어느 쪽도 이 화면에 연결하지 않는다. select 3종과 Dialog 모두 **소비처도 계획도 없는 상태**라는 결론까지 도달했지만, 이 시점에는 원래 삭제 근거가 다시 유효해졌다는 기록만 남기고 코드는 정리하지 못했다.
+
+### 피드백 반영 — 최종 삭제 (2026-08-03)
+
+과제 피드백에서 self-review가 이미 삭제 대상으로 판정한 코드를 그대로 남긴 모순을 확인했다. 상품 옵션 select 3종과 옵션 모델, 이 UI만 사용하던 `useControlledSelect`·`SelectToggleIcon`, 소비처와 재사용 계획이 없는 Dialog를 다시 삭제했다.
+
+최종 기준은 처음과 같다. 배치를 정할 실제 소비처가 없고 구체적인 사용 계획도 없다면 지금 코드의 자리가 없는 것이다. 필요해질 가능성만으로 유지하지 않고, 실제 요구사항이 생길 때 git 이력에서 필요한 계약만 다시 검토한다.
 
 ## 5. `shared`에 무엇을 내릴 것인가
 
@@ -164,7 +170,7 @@ Dialog는 사정이 다르다. 지금도 딱히 쓸 자리를 짚어두진 않�
 
 `types/commerce.ts`는 반대로 `shared`에 두지 **않기로** 했다. 한 파일에 여러 도메인 타입이 모여 있는 게 RFC에서 꼽은 문제였는데, `shared/api`로 통째로 옮기면 창고가 이름만 바꿔 그대로 남는다. 도메인 타입은 `entities/product/model`로, 응답 봉투는 그 응답을 조회하는 쪽으로 나누기로 하고, 실제 분해는 entities를 만드는 3단계로 미뤘다.
 
-mock 전용 타입(`MockApiScenario`)은 `src/app/api` 안에 남긴다. Route Handler와 fixture만 소비하고, 프론트엔드 레이어의 자산이 아니라 mock 백엔드의 내부 계약이라고 봤다.
+mock 전용 타입(`MockApiScenario`)은 `app/api` 안에 남긴다. Route Handler와 fixture만 소비하고, 프론트엔드 레이어의 자산이 아니라 mock 백엔드의 내부 계약이라고 봤다.
 
 ### 옮기지 않고 남긴 것
 
@@ -182,7 +188,7 @@ mock 전용 타입(`MockApiScenario`)은 `src/app/api` 안에 남긴다. Route H
 
 `entities/product/ui`로 옮기고, 행위 버튼은 4단계에서 `features`로 분리한 뒤 카드가 `actions` 슬롯으로 받게 한다. 그러면 표시와 행위가 갈라지고 카드만 재사용할 수 있게 된다.
 
-3단계에서 실제로 그렇게 옮겼다.
+3단계 작업 트리에서는 실제로 그렇게 옮기는 시도를 했다. 당시 작업 스냅샷에는 `entities/product/ui/ProductCard.tsx`가 남아 있지만, 재사용 근거를 검토한 뒤 커밋 전에 철회했다. 실제 커밋 `30f0dc3`에서는 `ProductCard`가 `components`에서 `features/product-card`로 바로 이동했다.
 
 하지만 "카드만 재사용할 수 있게 된다"는 근거를 검증해 보니, **재사용할 자리가 없었다.**
 
@@ -487,13 +493,13 @@ RFC 156~165행(이번 주에 하지 않을 것)이 "기능 추가·UI 변경"을
 
 - 현재 `@x` 설정은 교차 참조가 전용 경로를 통하는 것까지 검사한다. `@x/<consumer>`의 파일명과 실제 소비 entity가 일치하는지까지 자동 검증할 필요가 생기면 커스텀 규칙이나 별도 아키텍처 검사 도구를 검토한다.
 - **전환 중에는 lint가 옛 폴더 의존을 잡지 못한다.** `boundaries/include`가 `src/{_app,_pages,widgets,features,entities,shared,app}/**/*`라, `src/components`·`src/service`·`src/store`는 element가 없어 "unknown"이 아니라 "ignored"로 처리된다. 1·2단계에서 `_pages → @/service` 같은 import가 실제로 통과하는 걸 확인했다. 전환이 끝나 옛 폴더가 사라지면 자연히 해소되지만, 그전까지 "lint 통과 = 잔여 참조 없음"으로 읽으면 안 된다. 각 단계에서 grep으로 따로 확인하고 있다.
-- 라우터를 루트 `app/`으로 옮기는 건 전환이 끝나 라우팅 껍질만 남았을 때 하기로 했다. 지금 옮기면 라우터 이동과 레이어 이동이 같은 diff에 섞여 회귀 판정이 흐려진다.
-- `boundaries/include`가 `src/**`만 보므로 루트 `app/`의 Route Handler는 의존성 검사 대상이 아니다. mock 백엔드가 `_pages/home` 내부 응답 타입을 참조하던 결합은 `HomeApiResponse`를 `app/api/_types.ts`로 분리해 제거했다. Product·Category처럼 fixture와 화면이 함께 쓰는 기본 도메인 계약만 `entities/product`에서 재사용한다. `eslint/fsd.config.mjs`에 남아 있는 `next-app`(`src/app`) element는 실제 검사 대상이 없어 별도 정리 대상이다.
+- Next.js 라우터는 전환 후 루트 `app/`에 있다. 피드백 반영 전 FSD 설정은 여전히 `src/app`을 가리켜 실제 라우트가 검사 범위 밖이었으나, `files`·`boundaries/include`·`next-app` pattern을 현재 트리에 맞게 수정했다.
+- `app/api`는 일반 라우트 조합과 별도 element로 분리했다. mock 백엔드는 같은 `app/api` 내부와 `entities`·`shared`만 참조할 수 있고, 과거에 수동으로 발견한 `app/api → _pages` 결합은 이제 `boundaries/dependencies`가 차단한다.
 - 9번에서 `entities/product`가 `nuqs/server`에 의존하게 됐다. `createSerializer`는 React 없이 도는 순수 직렬화라 지금은 문제가 없다고 봤지만, entity가 URL 라이브러리를 아는 게 맞는지는 계속 걸린다. 조회 파라미터를 나르는 다른 수단(직접 정의한 인코더 등)이 필요해지면 다시 본다.
 - 9번의 배치로 RFC 애매한 파일 결정표의 "상품 목록 queryOptions"와 "`searchParams.ts`" 두 행이 함께 정해졌다. 후자는 후보 A·B 중 하나가 아니라 **조회 계약은 `entities`, URL 동작은 화면**으로 쪼갠 결과라, 표에 그대로 옮기려면 선택지를 다시 써야 한다.
 
 ---
 
-_이 문서는 제가 이번 주 개발하며 내린 판단과 그 이유를 정리한 것입니다. 각 갈림길에서 후보를 정리하고 현재 코드의 import 관계를 대조해 제약(예: `_pages`가 `_app`을 참조할 수 없다는 점, `ProductCard`의 실제 소비처가 하나뿐이라는 점)을 확인한 것은 AI(Claude·Codex)가 했고, 어떤 방식을 택할지의 최종 결정과 문서 서술은 제가 했습니다. 6번은 `entities/product/ui` → `features/product-card` → `widgets/product-card`로 판단이 바뀐 과정을 지우지 않고 남겼습니다. 소비처 실측만으로는 feature의 행위 경계를 설명할 수 없다는 반론을 검토한 뒤, 찜·담기를 별도 feature로 분리하고 widget에서 조합하는 구조로 최종 결정했습니다._
+_이 문서는 제가 이번 주 개발하며 내린 판단과 그 이유를 정리한 것입니다. 각 갈림길에서 후보를 정리하고 현재 코드의 import 관계를 대조해 제약(예: `_pages`가 `_app`을 참조할 수 없다는 점, `ProductCard`의 실제 소비처가 하나뿐이라는 점)을 확인한 것은 AI(Claude·Codex)가 했고, 어떤 방식을 택할지의 최종 결정과 문서 서술은 제가 했습니다. 6번은 작업 트리에서 시도했다가 커밋 전에 철회한 `entities/product/ui`, 실제 커밋의 `features/product-card`, 최종 `widgets/product-card`로 판단이 바뀐 과정을 구분해 남겼습니다. 소비처 실측만으로는 feature의 행위 경계를 설명할 수 없다는 반론을 검토한 뒤, 찜·담기를 별도 feature로 분리하고 widget에서 조합하는 구조로 최종 결정했습니다._
 
 _9번도 `shared/api` → `entities/product/api`·`_pages/home/api`로 판단이 바뀐 과정을 남겼습니다. `shared`가 적절하지 않다는 반론(도메인 무지라는 기준, 소비처 실측, `shared → _pages` 순환)을 제기하고 이동 후 질의 문자열이 이전과 바이트 단위로 같은지 대조한 것은 AI(Claude)가 했고, 옮길지 이번 주에는 근거만 고쳐 둘지를 고르고 nuqs serializer를 유지해야 한다고 판단한 것은 제가 했습니다. 10번의 두 건도 AI가 검사 중 발견해 보고한 것입니다._

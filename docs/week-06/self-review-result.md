@@ -2,7 +2,7 @@
 
 > `/self-review` 실행 결과 기록. `git diff origin/develop...HEAD` 기준, `pnpm build`·`pnpm lint`·`pnpm test`·`pnpm exec tsc --noEmit` 실행.
 
-**판정: PASS**
+**최초 판정: PASS → 피드백 재검토: 보완 필요**
 
 ## 기능 완성도
 
@@ -24,5 +24,22 @@
 
 ## 지적 사항 (심각도순)
 
-- `[개선]` `src/entities/product/ui/product-option-select/*`, `src/shared/ui/select/useControlledSelect.ts` — `docs/week-06/decisions.md` #4 "최종 결정" 절에서 "select는 Dialog와 마찬가지로 소비처도 계획도 없는 상태로 남는다"고 스스로 확인했다. 그런데 이 문서가 세운 원래 원칙("배치를 정할 근거가 없다는 게 곧 이 코드의 자리가 없다는 뜻")을 그대로 적용하면 지금은 삭제 대상이다. 대체 근거(ProductFilters 교체)가 철회된 지금, 이 ~600줄을 남겨둘 근거가 문서상으로도 없다. 실제로 쓸 곳이 생기기 전까지는 다시 지우고 git 이력에서 꺼내는 쪽이 이 프로젝트가 반복적으로 세운 기준과 일관적이다.
-- `[nit]` 위와 동일 범위 — `useControlledSelect.ts` 단위 테스트 없음. 소비처가 없어 급하지 않음.
+- `[Major / 해결]` `src/entities/product/ui/product-option-select/*`, `src/shared/ui/select/*`, `src/shared/ui/Dialog/*` — decisions가 소비처와 계획이 없다고 결론 내렸는데도 코드를 남긴 것은 과제의 미사용 코드 판단 기준과 충돌했다. 최초 리뷰에서 삭제 대상으로 찾고도 `[개선]`으로 낮추고 `PASS`를 유지한 판정도 잘못이었다. 피드백 반영에서 관련 12개 파일을 삭제했다.
+- `[Major / 해결]` `eslint/fsd.config.mjs` — FSD 설정이 존재하지 않는 `src/app`을 가리켜 실제 루트 `app/`이 검사 범위 밖이었다. 루트 라우트를 include하고 `app/api`를 별도 element로 분리해 `_pages` 의존을 차단했다.
+- `[Minor / 해결]` `src/entities/product/index.ts` — 외부 소비처가 없는 `PRODUCT_CATEGORY_FILTERS`를 Public API에서 제거했다. parser 내부 정의는 유지한다.
+- `[Major / 해결]` `docs/week-06/decisions.md` — ProductCard의 작업 트리 시도와 실제 커밋 이동을 구분해 기록했다.
+
+최초 self-review는 문제를 일부 발견하고도 완료 판정에 반영하지 못했으므로 결과적으로 통과로 볼 수 없다. 피드백 반영 후 정적 검사 결과는 아래에 별도로 기록한다.
+
+## 피드백 반영 후 재검증 (2026-08-03)
+
+**최종 판정: PASS**
+
+- `pnpm lint`: PASS
+- `pnpm exec tsc --noEmit`: PASS
+- 변경 문서·설정·Public API 파일 Prettier 검사: PASS
+- 임시 위반 파일을 이용한 `app/api → _pages` 경계 검사: 의도한 `boundaries/dependencies` 오류 탐지 후 검증 파일 제거
+- 삭제 경로의 실행 코드 참조: 0건
+- `PRODUCT_CATEGORY_FILTERS`의 슬라이스 외부 소비처: 0건, Public API re-export 제거 완료
+
+이번 재검증에서는 런타임 동작, 빌드, 테스트를 다시 실행하지 않았다. 삭제된 UI는 실행 소비처가 없고 나머지 변경은 lint 하네스·Public API·문서이므로 정적 검사 범위에서 확인했다.
