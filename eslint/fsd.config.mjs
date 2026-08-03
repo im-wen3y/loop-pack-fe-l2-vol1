@@ -18,7 +18,9 @@ const elements = [
       ? { type: layer, pattern: `src/${layer}/*`, capture: ['slice'] }
       : { type: layer, pattern: `src/${layer}` },
   ),
-  { type: 'next-app', pattern: 'src/app' },
+  // 더 구체적인 app/api를 먼저 선언해 일반 라우트 조합과 Route Handler를 구분한다.
+  { type: 'next-api', pattern: 'app/api' },
+  { type: 'next-app', pattern: 'app' },
 ]
 
 const sameSliceOf = (layer) => ({
@@ -30,9 +32,16 @@ const sameSliceOf = (layer) => ({
 
 const policies = [
   {
+    from: { element: { type: 'next-api' } },
+    allow: {
+      // Route Handler와 mock fixture는 화면 조합 계층을 거치지 않는다.
+      to: ['next-api', 'entities', 'shared'].map((type) => ({ element: { type } })),
+    },
+  },
+  {
     from: { element: { type: 'next-app' } },
     allow: {
-      to: FSD_LAYERS.map((layer) => ({ element: { type: layer } })),
+      to: ['next-app', ...FSD_LAYERS].map((type) => ({ element: { type } })),
     },
   },
   ...FSD_LAYERS.map((layer) => ({
@@ -50,10 +59,10 @@ const policies = [
 ]
 
 const fsdConfig = {
-  files: ['src/**/*.{ts,tsx}'],
+  files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
   plugins: { boundaries },
   settings: {
-    'boundaries/include': ['src/{_app,_pages,widgets,features,entities,shared,app}/**/*'],
+    'boundaries/include': ['src/{_app,_pages,widgets,features,entities,shared}/**/*', 'app/**/*'],
     'boundaries/elements': elements,
     'import/resolver': {
       typescript: { alwaysTryTypes: true },
