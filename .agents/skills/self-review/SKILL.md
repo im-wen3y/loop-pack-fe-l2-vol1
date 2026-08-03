@@ -16,6 +16,13 @@ TRIGGER — 셀프 리뷰, self-review, PR 전 점검 요청 시 이 스킬을 �
 5. **Next 경계** — `'use client'`가 실제 필요(훅/이벤트 핸들러/브라우저 API)와 어긋나지 않는가(불필요한 선언 또는 누락), 데이터 조회 훅이 service 함수를 거치는가(Server Component 직접 fetch는 예외), mutation을 Server Actions 대신 불필요하게 클라이언트에서 처리하고 있지 않은가
 6. **문서-코드 동기화 & FSD 검증** — 해당 주차 RFC·결정 문서의 폴더 구조, 파일 위치, import 경로, 결정 사항이 실제 코드와 일치하는가? ([FSD 검증 규칙](../../../.claude/rules/fsd-verification.md) 참고)
 
+다음 항목은 정적 검사 통과만으로 확인할 수 없으므로 별도로 실측한다.
+
+- **미사용 코드** — 새로 만들거나 복원한 파일·심볼의 실행 코드 소비처를 검색한다. 소비처와 구체적인 계획이 모두 없으면 유지 근거가 아니라 삭제 대상으로 본다.
+- **Public API 최소성** — 슬라이스의 각 export마다 외부 소비처를 검색한다. 내부 구현에서만 사용하는 심볼은 Public API에서 제거한다.
+- **자동화 유효성** — lint 설정의 `files`·include·element pattern을 실제 폴더 트리와 대조한다. 검사 통과와 검사 대상 포함을 구분한다.
+- **역사적 사실** — 문서의 “실제로 이동했다”, “검증했다”, “커밋했다”는 서술을 관련 `git show`·`git blame`과 대조한다. 작업 트리 시도와 커밋된 변경을 구분한다.
+
 ## 실행 방법
 
 1. `git diff main...HEAD`로 전체 변경 사항 수집
@@ -28,6 +35,35 @@ TRIGGER — 셀프 리뷰, self-review, PR 전 점검 요청 시 이 스킬을 �
    - Next 경계 점검
    - 문서-코드 동기화 점검 (폴더 구조·경로·결정 사항)
 4. 각 단계의 결과를 종합하여 우선순위별 리포트 생성
+5. 해결되지 않은 Critical·Major가 있으면 전체 결과를 `PASS`로 판정하지 않는다. 과제의 명시적 평가 기준과 직접 충돌하는 미사용 코드도 Major로 분류한다.
+6. 아래의 결과 문서 저장 절차를 완료한 뒤에만 self-review가 완료됐다고 보고한다.
+
+## 결과 문서 저장 필수
+
+self-review의 PASS·FAIL 여부와 관계없이 해당 주차의 `docs/week-XX/self-review-result.md`를 생성하거나 최신 검토 결과로 갱신한다.
+
+### 주차 결정
+
+1. 현재 브랜치명의 `week-XX`를 우선 사용한다. 예: `feat/week-06` → `docs/week-06/self-review-result.md`
+2. 브랜치명에 주차가 없으면 현재 diff에서 변경된 `docs/week-XX/`가 하나인지 확인해 그 주차를 사용한다.
+3. 두 방법으로 하나의 주차를 확정할 수 없으면 임의 경로에 기록하지 말고 사용자에게 주차를 확인한다. 결과 문서를 저장하기 전에는 self-review를 완료로 보고하지 않는다.
+
+### 필수 기록 항목
+
+- 검증 시각
+- 현재 브랜치와 base 브랜치
+- base commit SHA와 HEAD commit SHA
+- `git status --short`
+- 검토 범위: `base...HEAD` 커밋 diff와 staged·unstaged·untracked 변경 포함 여부
+- 최종 판정: `PASS` 또는 `FAIL`
+- Critical·Major·Minor·Suggestions 발견 사항
+- 6단계 통과 요약표
+- 실행한 정적 검사와 결과, 실행하지 않은 검사와 이유
+- 남은 위험 또는 후속 조치
+
+기존 파일이 있으면 과거 결과를 현재 결과로 가장하지 않는다. 최신 실행의 검증 기준과 판정을 명확히 구분해 갱신한다. 해결되지 않은 Critical·Major가 있는 경우에도 문서를 작성하며 판정은 반드시 `FAIL`로 기록한다.
+
+결과 문서 생성·갱신은 self-review가 만드는 예상 산출물이므로, 이 파일 하나의 변경만으로 검토 대상 코드가 바뀐 것으로 보지 않는다. 문서 외의 HEAD·작업 트리 변경이 생기면 변경된 범위로 리뷰를 다시 실행한다.
 
 ## 출력 형식
 
@@ -61,3 +97,5 @@ TRIGGER — 셀프 리뷰, self-review, PR 전 점검 요청 시 이 스킬을 �
 | Next 경계 | ✅ / ❌ |
 | 문서-코드 동기화 | ✅ / ❌ |
 ```
+
+마지막 응답에는 최종 판정과 함께 생성하거나 갱신한 `docs/week-XX/self-review-result.md` 경로를 반드시 알린다.
