@@ -8,7 +8,7 @@ const SEARCH_DEBOUNCE_DELAY = 300
 
 // 상품 목록 필터(검색·카테고리·정렬)의 URL 상태 훅.
 // 모든 필터 변경은 여기서 page를 1로 되돌린다 → "필터 바꾸면 1페이지로" 규칙을 한 곳에서 보장한다.
-// productListParsers에 결합돼 있어 공용 훅(src/hooks)이 아니라 라우트 전용으로 둔다.
+// productListParsers에 결합돼 있어 shared/lib의 범용 훅이 아니라 이 페이지 슬라이스가 소유한다.
 export const useProductFilters = () => {
   const [{ q, category, sort }, setParams] = useQueryStates(productListParsers)
 
