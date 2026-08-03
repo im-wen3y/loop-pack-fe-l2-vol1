@@ -23,7 +23,7 @@
   backdrop-filter: blur(8px);
 }
 
-.copy h2 {
+.copy h1 {
   margin: 6px 0 10px;
   font-size: clamp(28px, 4vw, 52px);
   line-height: 1.08;
@@ -47,5 +47,45 @@
 
   .image {
     object-position: 56% center;
+  }
+}
+
+/* 스켈레톤은 .hero와 .copy를 그대로 재사용한다. 바깥 aspect-ratio가 같아
+   실제 Hero로 교체될 때 아래 콘텐츠가 밀리지 않는다. */
+.skeleton {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.skeletonEyebrow,
+.skeletonTitle,
+.skeletonDescription {
+  display: block;
+  border-radius: 4px;
+  background: #d8d8d8;
+}
+
+.skeletonEyebrow {
+  width: 96px;
+  height: 13px;
+}
+
+.skeletonTitle {
+  width: 100%;
+  height: clamp(28px, 4vw, 52px);
+  margin: 6px 0 10px;
+}
+
+.skeletonDescription {
+  width: 80%;
+  height: 16px;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

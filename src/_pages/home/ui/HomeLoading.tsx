@@ -1,7 +1,7 @@
 import { Header } from '@/widgets/header'
 import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import { ProductGridSkeleton } from '@/widgets/product-card'
-import { HeroBannerSkeleton } from '@/_pages/home/ui/HeroBannerSkeleton'
+import { HeroSectionSkeleton } from '@/_pages/home/ui/HeroSectionSkeleton'
 import { CategorySectionSkeleton } from '@/_pages/home/ui/CategorySectionSkeleton'
 import styles from './HomeLoading.module.css'
 import '@/shared/styles/layout.css'
@@ -14,7 +14,7 @@ export const HomeLoading = () => (
       홈을 불러오는 중…
     </p>
     <Header />
-    <HeroBannerSkeleton />
+    <HeroSectionSkeleton />
     <CategorySectionSkeleton />
     {['인기 상품', '신상품'].map((title) => (
       <section className="layout-section" key={title}>

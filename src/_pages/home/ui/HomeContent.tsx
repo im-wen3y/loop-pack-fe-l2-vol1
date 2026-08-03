@@ -1,7 +1,7 @@
 'use client'
 
 import { useSuspenseHomeQuery } from '@/_pages/home/api/service'
-import { HeroBanner } from '@/_pages/home/ui/HeroBanner'
+import { HeroSection } from '@/_pages/home/ui/HeroSection'
 import { CategorySection } from '@/_pages/home/ui/CategorySection'
 import { Header } from '@/widgets/header'
 import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
@@ -27,7 +27,7 @@ export const HomeContent = () => {
   return (
     <PageContainer>
       <Header />
-      <HeroBanner banner={banner} />
+      <HeroSection title={banner.title} description={banner.description} />
       <CategorySection categories={categories} />
       {productSections.map(({ title, products }) => (
         <section className="layout-section" key={title}>
