@@ -14,9 +14,5 @@ export {
 } from '@/entities/product/api/model'
 
 // 조회 파라미터 스키마. 화면은 이 parser 위에 자기 URL 동작(히스토리 등)만 얹는다.
-// 허용값 목록도 함께 공개해 화면의 선택 UI가 같은 정의를 참조하게 한다.
-export {
-  PRODUCT_CATEGORY_FILTERS,
-  PRODUCT_SORT_VALUES,
-  productListQueryParsers,
-} from '@/entities/product/api/query-schema'
+// 정렬 UI가 실제로 참조하는 허용값 목록만 외부 계약으로 공개한다.
+export { PRODUCT_SORT_VALUES, productListQueryParsers } from '@/entities/product/api/query-schema'
