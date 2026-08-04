@@ -18,8 +18,11 @@
 ### 아직 없는 것
 
 - ~~`HeroSection`이 홈에 연결되지 않음~~ → Step 1에서 완료
-- `generateMetadata`가 한 곳도 없음 — `app/layout.tsx`의 정적 `metadata`만 존재
-- `APP_ORIGIN` 없음 — 현재는 `src/shared/api/get-api-base-url.ts`의 `NEXT_PUBLIC_BASE_URL`
+- ~~서버 origin env에 `NEXT_PUBLIC_` 접두사가 붙어 클라이언트 번들로 새어 나감 — `src/shared/api/get-api-base-url.ts`~~ → Step 2에서 완료
+- `getProductList`가 상대경로 `/api/products`로 요청 — 서버에서 호출하면 실패한다 → Step 6에서 `getApiBaseUrl()` 적용
+- `generateMetadata`가 한 곳도 없음 — `app/layout.tsx`의 정적 `metadata`만 존재 → Step 6에서 `app/(home)/page.tsx`와 `app/products/page.tsx`에 추가
+- 루트 title template·공통 Open Graph 없음 — 페이지 `openGraph`가 shallow merge로 덮어쓸 대상 자체가 없다 → Step 6에서 `app/layout.tsx`에 정의
+- Hero 이미지 최적화 없음 — `<img>`로 7.5MB 원본을 그대로 요청 → Step 4에서 측정 근거 확보 후 개입
 
 ### 경로 매핑
 
@@ -44,13 +47,26 @@
 - 최적화(포맷 변환·리사이즈·`next/image`·priority)는 여기서 하지 않았다. Step 4에서 측정 근거를 확보한 뒤에 한다.
 - 남은 관찰거리: API의 `banner.image`(`/images/products/p6.jpg`)를 Hero가 더 이상 쓰지 않는다. Route Handler는 과제 지침대로 건드리지 않았다.
 
-### Step 2. `APP_ORIGIN` 도입 (코드)
+### Step 2. 서버 전용 origin env로 정리 (코드) — 완료
 
-측정 조건을 고정해야 하므로 Before 측정 **전에** 끝낸다.
+`src/shared/api/get-api-base-url.ts`의 서버 분기가 읽는 env를 `NEXT_PUBLIC_BASE_URL`에서 `APP_ORIGIN`으로 바꿨다.
 
-- `get-api-base-url.ts`의 `NEXT_PUBLIC_BASE_URL` 폴백을 `APP_ORIGIN` 기준으로 정리
-- build와 runtime에 같은 값을 넣는다
-- 3단계의 metadata query failure 재현(`APP_ORIGIN=http://127.0.0.1:9`)이 이 정리에 의존한다
+**변경 근거는 접두사 하나다.** Next는 `NEXT_PUBLIC_`으로 시작하는 env를 빌드 시점에 클라이언트 번들 안으로 문자열 치환한다. 그런데 이 함수의 클라이언트 분기는 빈 문자열을 반환하고 끝나므로 브라우저는 이 값을 한 번도 쓰지 않는다. 결과적으로 쓰지 않는 값이 번들에 실리고, 배포 환경에서는 서버 내부 origin이 브라우저에 노출된다. 접두사를 떼면 이 값은 서버 프로세스에서만 읽힌다.
+
+접두사를 떼는 이상 이름은 어차피 바뀌므로 과제 명세와 같은 `APP_ORIGIN`을 골랐다. **이름 자체는 기술적 필연이 아니다.** 3단계의 metadata query failure 재현은 env 이름과 무관하게 동작한다.
+
+`http://localhost:${PORT}` 폴백은 env 없이 도는 로컬 개발을 위해 남겼다.
+
+측정과 재현 시에는 build와 runtime에 같은 값을 넣는다. 빌드 때 미리 렌더된 결과와 요청마다 렌더되는 결과가 서로 다른 origin을 가리키면 차이의 원인을 설명할 수 없기 때문이다.
+
+```bash
+APP_ORIGIN=http://localhost:3000 pnpm build
+APP_ORIGIN=http://localhost:3000 pnpm start
+```
+
+이 정리가 Before 측정값을 바꾸지는 않는다. 폴백도 같은 `localhost:3000`을 가리키기 때문이다. Before 측정 전에 끝낸 이유는 **Step 6 커밋에 성능과 무관한 env 정리가 섞이지 않게 하려는 것**이다.
+
+**Step 6에서 걸릴 것** — `src/entities/product/api/api.ts`의 `getProductList`가 `getApiBaseUrl()` 없이 상대경로 `/api/products`로 요청한다. 지금은 클라이언트에서만 호출해 문제가 없지만, 상품 목록 `generateMetadata`가 같은 query factory를 쓰는 순간 서버에서 실패한다. Step 6에서 `getHome`과 같은 방식으로 맞춘다.
 
 ### Step 3. Before 측정 (측정 · 코드 변경 없음)
 
@@ -137,38 +153,69 @@ Step 3과 Step 7에서 같은 표를 채운다.
 
 ### 측정 조건
 
-| 항목               | 값  |
-| ------------------ | --- |
-| Before SHA         |     |
-| After SHA          |     |
-| URL / query string |     |
-| 행동               |     |
-| viewport           |     |
-| CPU throttling     |     |
-| Network throttling |     |
-| 브라우저 / 버전    |     |
-| Lighthouse 버전    |     |
-| cold load / warm   |     |
-| 브라우저 프로필    |     |
+| 항목               | Before                                    | After |
+| ------------------ | ----------------------------------------- | ----- |
+| SHA                | `3da2db4`                                 |       |
+| URL / query string | `http://localhost:3000`                   |       |
+| 행동               | 새 탭에서 홈 최초 진입                    |       |
+| 실행 방식          | `pnpm build` 후 `pnpm start`              |       |
+| 측정 도구          | Lighthouse 13.3.0 (DevTools 패널)         |       |
+| Mode / Device      | Navigation / Desktop                      |       |
+| throttlingMethod   | `simulate` (RTT 40ms, 10,240Kbps, CPU 1x) |       |
+| Network 패널       | **No throttling**                         |       |
+| screenEmulation    | `disabled: true` (실제 창 크기)           |       |
+| 캐시               | Clear storage + Disable cache             |       |
+| 브라우저 / 프로필  | Chrome 150, 시크릿 창                     |       |
+| cold load / warm   | cold load                                 |       |
+| 측정 일시          | 2026-08-04 21:42~21:44 KST                |       |
+
+Lighthouse의 `simulate`는 스로틀링 없이 수집한 뒤 위 모델로 환산한다. 따라서 **Network 패널 스로틀링은 반드시 꺼야 한다.** 켜두면 수집 단계에 실제 지연이 걸린 위에 시뮬레이션이 한 번 더 얹힌다(아래 폐기 기록 참고).
+
+측정은 `3da2db4` 커밋 직전의 작업 트리에서 수행했고, 그 트리의 코드는 `3da2db4`와 같다. 이후 문서 커밋은 빌드 산출물에 영향을 주지 않는다.
 
 ### Lighthouse 5회
 
-| 지표 | 1   | 2   | 3   | 4   | 5   | 중앙값 | 최솟값 | 최댓값 |
-| ---- | --- | --- | --- | --- | --- | ------ | ------ | ------ |
-| FCP  |     |     |     |     |     |        |        |        |
-| LCP  |     |     |     |     |     |        |        |        |
-| CLS  |     |     |     |     |     |        |        |        |
+Before cold load 5회다. 단위는 ms(CLS 제외).
+
+| 지표 | 1      | 2      | 3      | 4      | 5      | 중앙값 | 최솟값 | 최댓값 |
+| ---- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
+| FCP  | 252.0  | 250.7  | 250.8  | 247.9  | 249.6  | 250.7  | 247.9  | 252.0  |
+| LCP  | 8292.0 | 8270.7 | 8270.8 | 8367.9 | 8289.6 | 8289.6 | 8270.7 | 8367.9 |
+| CLS  | 0      | 0      | 0      | 0      | 0      | 0      | 0      | 0      |
+
+Performance score 75, Speed Index 약 440ms, TBT 0ms, 서버 응답 8~12ms.
+
+여기서 두 가지가 확정된다.
+
+- **셸은 hero에 막히지 않는다.** FCP 250.7ms, LCP 8,289.6ms로 격차 8초가 전부 hero 몫이다. "느린 데이터가 헤더·`h1`까지 막는다"는 가설은 이 페이지에서 반증됐다. Step 4의 렌더링 경계 조정은 근거가 없다.
+- **CLS가 0이다.** Step 1에서 `HeroSectionSkeleton`에 `aspect-ratio`를 맞춘 것이 동작한다. CLS 항목은 무개입 근거로 쓴다.
+
+#### 폐기한 1차 측정 (2026-08-04 21:26~21:31)
+
+Network 패널을 `Fast 4G`로 둔 채 Lighthouse를 돌려 이중 스로틀링이 걸렸다. FCP 577.4ms / LCP 9,297.4ms / CLS 0.0008, score 68이 나왔지만 **Before로 쓰지 않는다.**
+
+판별 근거는 5회 편차다. LCP 편차가 0.6ms(9,296.951~9,297.529)로 계산값에서만 나올 수 있는 값이었고, hero 이미지의 network 시간도 localhost에서 9,462ms로 물리적으로 불가능했다. 스로틀링을 끄자 같은 파일이 61ms로 떨어졌다.
 
 ### LCP 구간 분해
 
-| 구간             | Before | After | 비고 |
-| ---------------- | ------ | ----- | ---- |
-| 서버 응답 대기   |        |       |      |
-| 이미지 요청 시작 |        |       |      |
-| 이미지 전송      |        |       |      |
-| 페인트까지       |        |       |      |
-| Hero 전송 크기   |        |       |      |
-| LCP element      |        |       |      |
+| 구간             | Before                 | After | 비고                                    |
+| ---------------- | ---------------------- | ----- | --------------------------------------- |
+| 서버 응답 대기   | 8~12ms                 |       | Lighthouse `server-response-time`       |
+| 이미지 요청 시작 | 523ms                  |       | hero 요청 `networkRequestTime`          |
+| 이미지 전송      | 61ms                   |       | `networkEndTime` 584ms − 523ms          |
+| 페인트까지       | 미측정                 |       | Performance LCP breakdown에서 확인할 것 |
+| Hero 전송 크기   | 7,368.7KB (원본 7.5MB) |       | `hero-original.jpg` 3840×2160           |
+| LCP element      | Hero 이미지            |       | `HeroSection`의 `<img>`                 |
+
+**전송이 병목이 아니다.** 파일을 받는 데 61ms인데 LCP는 8,289.6ms다. 남는 8초의 정체를 Performance 패널의 LCP breakdown으로 확인한 뒤 개입 지점을 정한다. 후보는 이미지 디코딩·래스터화 비용과, Lantern이 10,240Kbps 모델로 환산하면서 부풀린 전송 시간이다.
+
+"7.5MB니까 파일을 줄이면 된다"는 아직 검증되지 않은 짐작이다. 파일 크기를 줄이면 디코딩 비용도 함께 줄지만, 8초를 무엇이 차지하는지 나누기 전에는 변경의 인과를 설명할 수 없다.
+
+#### 함께 관찰한 것 — 폰트 2MB
+
+`PretendardVariable.woff2`가 2,009.8KB로 전체 페이지 9,759KiB 중 두 번째로 크다. 스로틀링을 끈 뒤 전송 시간은 32ms라 LCP 병목이 아니므로 **이번 주 개입 대상이 아니다.**
+
+다만 `app/layout.tsx`의 "`next/font/local`이 서브셋을 자동 최적화해준다"는 주석은 사실과 다르다. 자동 서브셋은 `next/font/google`에만 적용되고 `next/font/local`은 준 파일을 그대로 쓴다. 2MB가 그 증거다. 주석 정정은 성능 변경과 분리해 별도로 처리한다.
 
 ### 목록 6상태 관찰
 
