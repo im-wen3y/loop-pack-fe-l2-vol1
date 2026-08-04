@@ -1,6 +1,6 @@
 # 7주차 체크리스트
 
-7주차 발제(성능 최적화: 사용자 경로별 병목 측정과 개선)의 체크리스트다. 진행 순서와 측정 기록 틀은 [plan.md](plan.md)에 있다.
+7주차 발제(성능 최적화: 사용자 경로별 병목 측정과 개선)의 체크리스트다. 진행 순서는 [plan.md](plan.md), 측정 기록은 [measurement.md](measurement.md)에 있다.
 
 ⚠️ 발제 슬라이드와 과제 명세(`docs/assignments/week-07.md`)가 어긋나는 항목은 **명세를 따른다.** 슬라이드는 정적 `metadata`면 충분하다고 하지만 명세 3단계는 `generateMetadata`와 Open Graph를 요구한다.
 
