@@ -12,7 +12,7 @@
 
 - slow scenario — `app/api/home/route.ts`, `app/api/products/route.ts` 둘 다 `?scenario=slow`(1.5초) 지원
 - 2단계 재료 상당수 — `placeholderData: keepPreviousData`, `ProductGridSkeleton`, 0건·에러·재시도 UI, nuqs 기반 URL 상태, 서버 응답을 Zustand에 복사하지 않음
-- `getServerQueryClient`가 `cache()`로 요청 단위 분리 — 3단계 요구사항과 이미 일치
+- `getServerQueryClient`가 `cache()`로 요청 단위 분리 — 요청 간에는 섞이지 않는다. 다만 **3단계 요구사항과 일치하는지는 아직 확정하지 않았다**(아래 참고)
 - Advanced A 측정 화면 — `app/performance-lab/inp/page.tsx`(24개 카드)
 
 ### 아직 없는 것
@@ -21,6 +21,23 @@
 - `generateMetadata`가 한 곳도 없음 — `app/layout.tsx`의 정적 `metadata`만 존재 → Step 6에서 `app/(home)/page.tsx`와 `app/products/page.tsx`에 추가
 - 루트 title template·공통 Open Graph 없음 — 페이지 `openGraph`가 shallow merge로 덮어쓸 대상 자체가 없다 → Step 6에서 `app/layout.tsx`에 정의
 - Hero 이미지 최적화 없음 — `<img>`로 7.5MB 원본을 그대로 요청 → Step 4에서 측정 근거 확보 후 개입
+
+### 아직 판단하지 않은 것 — `getServerQueryClient`의 `cache()`
+
+명세 141줄은 "서버에서는 `getQueryClient()`를 호출할 때마다 새 QueryClient를 만들어요. metadata와 본문이 QueryClient 캐시를 공유하게 만들려고 singleton이나 영속 캐시로 바꾸지 않아요"라고 적혀 있다.
+
+현재 구현(`src/shared/api/query-client.ts`)은 `cache(() => new QueryClient())`다. 요청 간에는 분리되지만 **같은 요청 안에서는 metadata와 본문이 같은 QueryClient를 공유한다.** 금지 대상인 singleton·영속 캐시는 아니지만 "호출할 때마다 새 인스턴스"도 아니다.
+
+두 해석이 갈린다.
+
+| 해석                                      | 근거                                                               | 결론           |
+| ----------------------------------------- | ------------------------------------------------------------------ | -------------- |
+| 금지 대상은 요청을 넘어 사는 캐시뿐이다   | 141줄 뒷문장이 `singleton이나 영속 캐시`를 명시한다                | 현재 구현 유지 |
+| 문자 그대로 호출마다 새 인스턴스여야 한다 | 체크리스트 262줄이 "호출마다 새 인스턴스가 만들어지고"로 못 박는다 | `cache()` 제거 |
+
+**Step 6에서 확정한다.** 이 판단은 개입 4와 얽혀 있다 — `HeroCopy`와 `HomeData`가 각각 조회해도 요청이 1회인 근거가 이 `cache()`이므로, 떼면 native fetch memoization만 남고 홈 요청 횟수를 서버 측 계수로 다시 세야 한다. Step 6이 어차피 서버 호출 계수를 요구하므로 그 측정에 함께 넣는다.
+
+관련 관찰은 [measurement.md의 "Suspense 경계가 둘인데 요청은 1회다"](measurement.md#suspense-경계가-둘인데-요청은-1회다)에 있다.
 
 ### 경로 매핑
 
@@ -69,19 +86,37 @@ APP_ORIGIN=http://localhost:3000 pnpm start
 
 여기까지 남기기 전에는 최적화 코드를 한 줄도 건드리지 않는다.
 
-### Step 4. 1단계 — Hero LCP
+### Step 4. 1단계 — Hero LCP — 완료
 
-LCP를 네 구간으로 쪼개 관찰한 뒤, 가장 긴 구간에만 개입한다.
+LCP를 네 구간(서버 응답 대기 / 이미지 요청 시작 대기 / 이미지 전송 / 화면에 그려질 때까지)으로 쪼개 관찰한 뒤 개입을 4건 시도했고, 그중 3건을 유지했다. 측정과 판정은 [measurement.md](measurement.md)의 "개입 1"~"개입 요약과 다음 병목"에 있다.
 
-1. 서버 응답 대기
-2. 이미지 요청 시작 대기
-3. 이미지 전송
-4. 화면에 그려질 때까지
+| 개입                         | 결과                               | 상태       |
+| ---------------------------- | ---------------------------------- | ---------- |
+| 1. 렌더링 경계 분리          | 초기 HTML 첫 flush에 `h1`·Header   | 유지       |
+| 2. Hero 이미지 축소          | Lighthouse LCP 8,289.6 → 2,370.2ms | 유지       |
+| 3. preload + `fetchpriority` | Lighthouse LCP +77.9ms 악화        | **되돌림** |
+| 4. Hero 이미지·카피 분리     | 실측 LCP 662.1 → 123.2ms           | 유지       |
 
-- 실제 표시 크기·viewport에 맞는 후보·포맷·압축률 선택
-- Hero의 시각적 크기·비율·피사체·문구 유지 (작게 보이게 하거나 품질을 낮춰 수치만 줄이면 안 됨)
-- 홈 데이터를 기다리는 동안 Header·`h1`·페이지 설명이 함께 막히지 않도록 렌더링 경계 조정
-- Hero fallback이 실제 Hero와 같은 공간을 차지하는지 Layout shifts track으로 확인
+요구사항별 확인은 이렇다.
+
+- 실제 표시 크기·포맷·압축률 — 컨테이너 1200px에 맞춘 `hero-1200.webp`(179KB) / `hero-2400.webp`, q92는 PSNR 47.61dB로 선택
+- 시각적 크기·비율·피사체·문구 유지 — CSS를 한 줄도 바꾸지 않았다(`width: 100%`, `aspect-ratio 16/9`, 모바일 `4/5`)
+- 렌더링 경계 — Header·`h1`·페이지 설명이 첫 flush에 나간다. `curl`로 초기 HTML에서 `h1` 1개(46,450 byte 중 1,863 byte 지점) 확인
+- **Hero fallback의 공간 — 확인했다.** 아래 참고
+
+#### fallback과 layout shift 확인 결과
+
+개입 4로 fallback의 범위가 바뀌었다. 원래는 Hero 전체(`HeroSectionSkeleton`)였는데, 지금은 이미지가 shell로 올라가고 **카피만** `HeroCopySkeleton`으로 기다린다.
+
+- `.copy`가 `.hero` 안에서 `position: absolute`이고 `.hero`는 `aspect-ratio`로 높이가 고정이라, 카피가 교체돼도 아래 콘텐츠가 밀릴 구조가 아니다
+- 트레이스에서 `LayoutShift` 이벤트 **0건**, Insights CLS **0** — Before / 개입 1 / 개입 4 모두 동일
+- Lighthouse 5회에서도 CLS가 전 구간 0
+- filmstrip 117.2ms(카피 스켈레톤)와 571.1ms(카피 채워짐) 두 프레임에서 사진과 카드의 위치·크기가 같다
+
+미확인으로 남은 것 두 가지는 Step 7에서 함께 본다.
+
+- 모바일 분기(`aspect-ratio 4/5`, `object-position 56%`)는 측정하지 않았다. 모든 녹화가 데스크톱 뷰포트다
+- Layout shifts track을 캡처한 스크린샷은 없다. 근거는 트레이스 JSON의 `LayoutShift` 이벤트 0건과 Insights CLS 0이다
 
 ### Step 5. 2단계 — 목록 6상태와 CLS
 
@@ -103,6 +138,7 @@ LCP를 네 구간으로 쪼개 관찰한 뒤, 가장 긴 구간에만 개입한�
 - title·description 규칙: 검색어 → title 우선, category·sort → description, 2페이지 이상 → title에 페이지 번호
 - 정상 empty는 0건을 설명하고 OG fallback image 유지 / query failure는 root 공통 metadata 상속
 - `robots: noindex` 넣지 않기
+- `getServerQueryClient`의 `cache()` 유지 여부 확정 (위 "아직 판단하지 않은 것" 참고)
 - 서버 호출 계수는 임시 서버 로그로 세고 **관찰 후 계측 제거**
 - 일반 UA vs `facebookexternalhit` 응답 시점 비교
 - 초기 HTML 확인 (View Source 또는 JS 비활성 요청)
@@ -114,6 +150,9 @@ Step 3과 **완전히 같은 조건**에서 재측정한다.
 - URL, 행동, viewport, throttling, 브라우저·Lighthouse 버전, cold/warm, 브라우저 프로필 동일
 - **After commit SHA 기록**
 - LCP element, Hero 전송 크기, 요청 시작 순서, 가장 길었던 구간의 변화 비교
+- **Step 4에서 미확인으로 남긴 두 가지**(위 "fallback과 layout shift 확인 결과" 참고)
+  - Layout shifts track 캡처 1장 — 지금 근거는 트레이스 JSON의 `LayoutShift` 0건과 Insights CLS 0뿐이다
+  - 모바일 뷰포트(`aspect-ratio 4/5`) 녹화 — Step 4까지의 녹화는 전부 데스크톱이다
 - 회귀 확인: 뒤로/앞으로 가기, 장바구니·위시리스트·Header 개수, 로딩·에러·빈 상태·재시도
 - FSD 의존 방향과 Public API 우회 여부 확인
 - 효과가 없거나 악화된 변경은 되돌리거나 유지 이유 기록
