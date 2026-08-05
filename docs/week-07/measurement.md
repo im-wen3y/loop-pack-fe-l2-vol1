@@ -252,6 +252,232 @@ curl -s http://localhost:3000 | grep -o '<h1[^>]*>[^<]*'
 
 `pnpm test`(8 파일 53개), `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`를 통과했다.
 
+### 부작용 — FCP가 101ms 늘었다
+
+Lighthouse 5회를 개입별로 따로 돌려 원인을 갈랐다. 개입 2(이미지)를 `git stash`로 잠시 되돌리고 개입 1만 적용된 `2b465a2` 상태에서 5회, 다시 개입 2를 얹고 5회 측정했다. 측정 조건은 Before와 같다.
+
+| 지표       | Before `3da2db4` | 개입 1 `2b465a2` | 개입 1+2      |
+| ---------- | ---------------- | ---------------- | ------------- |
+| FCP 중앙값 | 250.7ms          | **351.7ms**      | 352.8ms       |
+| LCP 중앙값 | 8,289.6ms        | 8,290.2ms        | **2,370.2ms** |
+| CLS        | 0                | 0                | 0             |
+| score      | 75               | 75               | 88            |
+
+개입 1은 FCP를 +101.0ms 올리고 LCP는 +0.6ms만 움직였다. 개입 2는 FCP를 +1.1ms 움직이고 LCP를 −5,920.0ms 내렸다. FCP 5회 범위가 2.1ms, LCP가 101.7ms이므로 각 개입이 정확히 한 지표씩만 바꾼 것으로 판정한다.
+
+**원인은 Header 조기 렌더가 유발한 route prefetch다.** 두 트레이스의 FCP 이전 요청을 비교하면 드러난다.
+
+|                            | Before               | 개입 1                          |
+| -------------------------- | -------------------- | ------------------------------- |
+| CSS 요청 시각              | 4개 모두 23.7~24.0ms | 3개는 25.3ms, **1개는 105.1ms** |
+| `/products?_rsc=` prefetch | 547.6ms (FCP 뒤)     | **94.1ms (FCP 앞)**             |
+| FCP                        | 101.9ms              | 118.7ms                         |
+
+늦게 온 `0zwxhsxlocupd.css`는 홈이 쓰지 않는 `ProductFilters` 스타일이다. 상품 목록 라우트의 CSS인데 priority가 `VeryHigh`라 홈의 첫 페인트를 막는다.
+
+사슬은 이렇다. 개입 1이 Header를 첫 flush로 올림 → Header가 일찍 하이드레이션됨 → `<Link href="/products">`의 prefetch가 94.1ms에 실행됨 → React 19가 그 라우트의 스타일시트를 head에 hoisting함 → 렌더 블로킹으로 FCP 지연. Before에서는 Header가 `HomeContent` 안에 있어 홈 데이터를 기다렸고, prefetch도 547.6ms에야 나가 FCP에 영향이 없었다.
+
+즉 **개입 1이 의도대로 동작한 결과로 생긴 부작용이다.** Header를 일찍 보여주려는 변경이, 일찍 보여준 Header 때문에 첫 페인트를 늦췄다.
+
+이 인과 사슬은 요청 시각 순서와 priority로 추론한 것이다. 직접 반증하려면 Header 링크에 `prefetch={false}`를 주고 같은 조건에서 재측정해 FCP가 250ms대로 회복되는지 보면 된다.
+
+**유지한다.** 근거는 셋이다.
+
+- 개입 1은 FCP 개선이 목적이 아니라 명세 1단계의 "Header·`h1`·페이지 설명이 함께 막히지 않도록"과 3단계의 초기 HTML 요구를 맞추려는 구조 변경이다. 그 목적은 달성했다.
+- 손실 +101ms는 같은 측정에서 얻은 LCP −5,920ms의 1.7%다.
+- prefetch 자체는 상품 목록 이동을 빠르게 하는 실제 이득이다. 홈 FCP 101ms를 위해 다른 페이지의 이동 속도를 파는 거래가 순이득인지 이 측정만으로는 판정할 수 없다.
+
+`prefetch={false}`로 되돌리는 선택지는 검토했으나 적용하지 않았다. 이득과 손실이 서로 다른 화면에 걸쳐 있어 같은 조건에서 비교할 기준을 세우지 못했다.
+
+## 개입 2 — 후보 1(Hero 이미지 축소)
+
+컨테이너 최대 폭이 1200px(`PageContainer`의 `min(100% - 32px, 1200px)`)인데 원본은 3840px였다. 표시 크기의 3.2배라 화면에 그릴 수 없는 픽셀을 받고 있었다. 표시 폭에 맞춘 후보를 미리 만들어 `srcset`으로 제공한다.
+
+`next/image`도 검토했으나 정적 파일 생성을 골랐다. 런타임 변환이 없어 첫 요청도 같은 조건이고, 측정이 재현된다. 명세 87줄이 `next/image` 사용 여부는 완료 기준이 아니라고 명시한다.
+
+### 압축률 선택
+
+`sips`로 리사이즈하고 `cwebp`로 변환했다. PSNR 기준 이미지는 원본을 같은 폭으로 줄인 것 — 브라우저가 원본에서 실제로 화면에 그렸을 픽셀이다.
+
+| 품질    | 크기(1200w)   | PSNR         | 원본 대비 |
+| ------- | ------------- | ------------ | --------- |
+| q75     | 76,750 B      | 40.01 dB     | 1.0%      |
+| q85     | 119,256 B     | 43.61 dB     | 1.6%      |
+| **q92** | **179,012 B** | **47.61 dB** | **2.4%**  |
+
+40dB가 통상 육안 구별 불가 경계라 q75도 기준을 넘지만 **q92를 골랐다.** 10,240Kbps 환산으로 q75가 61ms, q92가 143ms라 8,289.6ms 기준선에서 82ms 차이에 불과한 반면, "품질을 낮춰 수치만 줄였다"는 반론을 원천적으로 없앨 수 있다.
+
+크기가 준 주된 이유는 압축이 아니라 리사이즈다. 3840px를 1200px로 줄이면 픽셀 수가 1/10이 된다.
+
+| 파일                          | 크기        | PSNR     |
+| ----------------------------- | ----------- | -------- |
+| `hero-original.jpg` 3840×2160 | 7,545,239 B | —        |
+| `hero-1200.webp` 1200×675     | 179,012 B   | 47.61 dB |
+| `hero-2400.webp` 2400×1350    | 527,432 B   | 48.22 dB |
+
+CSS는 한 줄도 바꾸지 않았다. `.hero`의 `width: 100%`, `aspect-ratio: 16/9`, 모바일 `4/5`가 그대로다. 시각적 크기·비율·피사체·문구를 유지한다는 명세 요구를 충족한다.
+
+### 결과
+
+| 지표       | 개입 1    | 개입 1+2      |
+| ---------- | --------- | ------------- |
+| FCP 중앙값 | 351.7ms   | 352.8ms       |
+| LCP 중앙값 | 8,290.2ms | **2,370.2ms** |
+| CLS        | 0         | 0             |
+| score      | 75        | **88**        |
+
+**LCP −5,920.0ms(−71%).** 전송 환산분 약 5.76초가 빠질 것이라는 예측과 일치한다. 측정 흔들림(Before 101.7ms, After 81.9ms)의 60배가 넘는 변화다.
+
+![Lighthouse 리포트 — FCP 0.4s, LCP 2.4s, CLS 0, score 88](./assets/hero-webp-lighthouse.png)
+
+브라우저가 받은 후보는 `hero-1200.webp` 179,296 B였다(hostDPR 1). Before 7,368.7KB 대비 97.6% 감소다.
+
+## 개입 3 — 후보 2(preload + `fetchpriority`)는 되돌렸다
+
+`HomePage`에서 `ReactDOM.preload()`로 Hero 이미지 힌트를 prefetch await 앞에 내보냈다. `<img>`와 같은 후보 목록을 `imageSrcSet`·`imageSizes`로 넘겨 재사용을 보장했다. 측정 뒤 되돌렸으므로 커밋에는 남지 않는다.
+
+### 가설은 맞았다
+
+| 구간                     | 개입 1+2  | 후보 2 적용 |
+| ------------------------ | --------- | ----------- |
+| Time to first byte       | 19ms      | 15ms        |
+| **Resource load delay**  | **514ms** | **6ms**     |
+| Resource load duration   | 47ms      | 8ms         |
+| **Element render delay** | 83ms      | **557ms**   |
+| 실측 LCP                 | 662.1ms   | 586.2ms     |
+
+Hero 요청이 532.8ms → **21.6ms**로 앞당겨졌고 29.5ms에 전송을 마쳤다. `LCP request discovery`의 세 항목이 모두 통과로 바뀌었다. "preload를 넣어도 요청이 532.8ms 근처에서 시작하면 가설이 틀린 것"이라는 반증 조건은 반증되지 않았다.
+
+![Insights LCP breakdown — Resource load delay 6ms, Element render delay 557ms](./assets/preload-lcp-breakdown.png)
+![Insights LCP request discovery — 세 항목이 Passed insights로 이동](./assets/preload-lcp-request-discovery.png)
+![Performance 개요 — LCP 0.59s, CLS 0](./assets/preload-overview.png)
+
+### 그런데 LCP는 나빠졌다
+
+| 지표       | 개입 1+2  | 후보 2 적용   |
+| ---------- | --------- | ------------- |
+| FCP 중앙값 | 352.8ms   | 351.0ms       |
+| LCP 중앙값 | 2,370.2ms | **2,448.1ms** |
+| CLS        | 0         | 0             |
+| score      | 88        | 87            |
+
+Lighthouse LCP가 +77.9ms 늘었다. 두 측정의 범위가 겹치지 않는다(개입 1+2는 2,308.3~~2,390.2, 후보 2는 2,431.1~~2,448.9).
+
+원인은 대역폭 경쟁이다. preload가 Hero를 폰트와 같은 시점·우선순위로 끌어올렸다.
+
+```
+23.5ms   2,057,992 B   PretendardVariable.woff2   (High)
+23.9ms     179,296 B   hero-1200.webp             (High)
+```
+
+`simulate`의 10,240Kbps 모델에서 둘이 대역폭을 나눠 쓰므로 문서·CSS·JS 전달이 뒤로 밀린다. 반면 Hero를 일찍 받아도 이득이 없다. 실측에서 29.5ms에 전송을 마치고도 586.2ms까지 그리지 못했다 — `<img>` 태그가 Suspense 안에 있어 홈 데이터를 기다리는 HTML이 528.8ms에 도착해야 DOM에 생기기 때문이다.
+
+**즉 필요하지 않은 시점에 리소스를 먼저 받느라 정작 필요한 문서 전달이 늦어졌다.** localhost 실측에서는 대역폭이 사실상 무제한이라 이 손해가 드러나지 않았고 `simulate`에서만 보였다.
+
+### 판단
+
+되돌린다. 근거는 둘이다.
+
+- 의도한 구간(`Resource load delay` 514ms)은 정확히 제거했지만 그 구간이 실제 병목이 아니었다. 병목은 `Element render delay` 557ms이고 이는 HTML 도착을 기다리는 시간이다.
+- 같은 조건에서 Lighthouse LCP가 측정 흔들림을 넘어 악화됐다.
+
+**후보 2를 1순위로 고른 판단 자체가 틀렸다.** 실측 514ms가 전체의 78%라는 비중만 보고 순위를 정했는데, localhost는 전송이 거의 공짜라 대기 구간이 상대적으로 커 보였을 뿐이다. 비중은 측정 환경의 성질을 반영하므로 그것만으로 개입 순서를 정하면 안 된다.
+
+다음 개입에서 `<img>`가 첫 flush에 들어가면 브라우저가 스스로 일찍 발견하므로 preload는 중복 힌트가 된다. 다시 넣지 않는다.
+
+## 개입 4 — Hero의 이미지와 카피를 분리한다
+
+개입 3에서 드러난 `Element render delay` 557ms를 겨냥한다. 이 구간은 `<img>` 태그가 담긴 HTML이 도착하기를 기다리는 시간이다.
+
+Hero 안에서 데이터 소유권이 갈린다. `<img>`의 `src`는 정적 경로라 홈 응답과 무관하고, 카피(`banner.title`·`banner.description`)만 응답에 딸려 있다. 그래서 껍데기와 이미지를 shell로 올리고 카피만 스트리밍한다.
+
+```
+<section class="hero">          ← shell (첫 flush)
+  <img srcset=... />            ← shell (첫 flush)
+  <Suspense fallback={카피 스켈레톤}>
+    <HeroCopy />                ← 홈 데이터 대기
+  </Suspense>
+</section>
+```
+
+`.copy`는 `.hero` 안에서 `position: absolute`이고 `.hero`는 `aspect-ratio: 16/9`로 높이가 고정이다. 따라서 카피가 교체돼도 아래 콘텐츠가 밀리지 않는다.
+
+`HeroCopy`는 Server Component로 두어 `fetchQuery`로 직접 읽는다. 클라이언트 번들과 hydration이 필요 없다.
+
+### Suspense 경계가 둘인데 요청은 1회다
+
+`getServerQueryClient`가 React `cache()`로 감싸져 있어 같은 요청 안에서 같은 QueryClient를 돌려준다. `HeroCopy`와 `HomeData`가 각각 조회해도 두 번째는 채워진 query cache를 읽는다. 같은 render/request의 동일 native fetch도 memoization 대상이라 방어가 이중이다.
+
+명세 141줄은 서버에서 `getQueryClient()`를 호출할 때마다 새 QueryClient를 만들라고 요구한다. 현재 구현은 요청 단위로 공유하므로 3단계에서 이 지점을 다시 확인해야 한다. `cache()`를 떼면 QueryClient 공유가 사라지고 fetch memoization만 남는다.
+
+### 반증 기준과 결과
+
+측정 전에 정한 기준은 "실측 LCP가 250ms 이상이면 가설이 틀린 것"이었다. 예상 범위는 110~190ms였다(FCP 하한 106ms + `Element render delay` 상한 83ms).
+
+| 구간                     | 개입 3(preload) | **개입 4**  |
+| ------------------------ | --------------- | ----------- |
+| Time to first byte       | 15ms            | 18ms        |
+| Resource load delay      | 6ms             | 5ms         |
+| Resource load duration   | 8ms             | 9ms         |
+| **Element render delay** | **557ms**       | **92ms**    |
+| **실측 LCP**             | 586.2ms         | **123.2ms** |
+
+**반증되지 않았다.** 예상 범위 안에 들어왔다.
+
+![Insights LCP breakdown — Element render delay 92ms, LCP 123.1ms, Related node img.HeroSection](./assets/hero-split-lcp-breakdown.png)
+
+실측 LCP가 FCP와 같은 123.2ms다. 첫 페인트 순간에 Hero 이미지가 이미 최대 요소로 잡혔고 LCP element도 여전히 `img.HeroSection-module__lqBdna__image`다. 구조적으로 더 앞당길 여지가 없다.
+
+`LayoutShift` 이벤트 0건, CLS 0을 유지한다. 초기 HTML에서 `<img>`는 전체 47,732 byte 중 2,175 byte 지점에 있고 바로 뒤가 `<!--$?-->` Suspense 대기 마커다. `<h1>`은 1개다.
+
+### 사용자가 보는 화면
+
+![117.2ms — Hero 사진은 다 보이고 카피 카드만 스켈레톤](./assets/hero-split-filmstrip-117ms-copy-skeleton.png)
+![571.1ms — 같은 자리에 카피가 채워짐](./assets/hero-split-filmstrip-571ms-copy.png)
+
+117.2ms에 사진이 전부 보이고 그 위 카피 카드만 회색 막대다. 571.1ms에 같은 자리에 문구가 채워진다. 두 프레임에서 사진과 카드의 위치·크기가 동일하다.
+
+Before는 이 구간에 베이지 단색 박스를 보여줬다. **빈 박스를 0.5초 보는 것보다 사진을 먼저 보여주고 문구만 채우는 쪽이 낫다고 판단했다.** CLS 수치로는 두 경우가 모두 0이라 구분되지 않으므로 filmstrip을 근거로 남긴다.
+
+배너가 API에서 오는 슬라이드로 바뀌면 이미지 URL이 데이터가 되므로 이 분리는 성립하지 않는다. 그때는 `preconnect`가 대안이 된다.
+
+### Lighthouse는 거의 움직이지 않았다
+
+| 지표       | 개입 1+2  | 개입 4    |
+| ---------- | --------- | --------- |
+| FCP 중앙값 | 352.8ms   | 352.2ms   |
+| LCP 중앙값 | 2,370.2ms | 2,307.6ms |
+| CLS        | 0         | 0         |
+| score      | 88        | 88        |
+
+−62.6ms지만 범위가 겹친다(2,308.3~~2,390.2 vs 2,288.0~~2,310.1). **개선이라고 주장하지 않는다.**
+
+실측은 −463ms인데 `simulate`는 −62.6ms다. 두 측정이 서로 다른 병목을 보고 있기 때문이다. 실측의 병목은 렌더 대기였고 개입 4가 그것을 제거했다. `simulate`의 병목은 전송량이고 그것은 개입 2가 이미 처리했다.
+
+## 개입 요약과 다음 병목
+
+| 개입                     | 실측 LCP    | Lighthouse LCP | 상태                       |
+| ------------------------ | ----------- | -------------- | -------------------------- |
+| Before `3da2db4`         | 662.1ms     | 8,289.6ms      | —                          |
+| 1. 렌더링 경계 분리      | 638.9ms     | 8,290.2ms      | 유지(FCP −101ms 손실 기록) |
+| 2. Hero 이미지 축소      | —           | **2,370.2ms**  | 유지                       |
+| 3. preload               | 586.2ms     | 2,448.1ms      | **되돌림**                 |
+| 4. Hero 이미지·카피 분리 | **123.2ms** | 2,307.6ms      | 유지                       |
+
+**다음 병목은 폰트다.** 개입 4 시점의 전송 구성은 이렇다.
+
+| 자산                         | 크기            | 비중      |
+| ---------------------------- | --------------- | --------- |
+| `PretendardVariable.woff2`   | **2,057,992 B** | **78.4%** |
+| `hero-1200.webp`             | 179,296 B       | 6.8%      |
+| `/_next/image` 상품 카드 9장 | 139,416 B       | 5.3%      |
+| 나머지                       | 248,924 B       | 9.5%      |
+| **총계**                     | **2,625,628 B** |           |
+
+Before에서는 Hero 7.4MB에 가려 보이지 않던 항목이다. `simulate`의 10,240Kbps 모델에서 폰트 2MB는 약 1.6초에 해당하고, 남은 LCP 2,307.6ms의 상당 부분이 여기 있을 가능성이 크다.
+
+**이번 주에는 개입하지 않는다.** 명세 1단계는 Hero 이미지의 LCP 병목을 다루고 폰트는 범위에 없다. 관찰 사실만 남기고, 손대려면 subset 범위·`font-display`·variable font의 weight 축 범위를 함께 봐야 한다는 것을 다음 작업의 시작점으로 기록한다.
+
 ## 상품 목록 — Before 측정 조건
 
 홈과 달리 Lighthouse 5회가 아니라 **Performance 녹화**가 증거다. 명세 0단계는 `/api/products?scenario=slow`에서 (a) 데이터 없는 최초 진입과 (b) 기존 목록이 있는 갱신을 각각 녹화하라고 요구한다.
@@ -503,4 +729,10 @@ Network 패널(All 필터가 아니라 Fetch/XHR)에서 5건 전부 **Status 200
 
 이 문서는 [plan.md](plan.md)에서 분리했다. 측정과 스크린샷 캡처는 작성자가 직접 수행했고, `before-home-record.json` 트레이스에서 filmstrip 프레임·paint 마커·Network 요청을 추출해 표로 정리하고 스크린샷의 값을 표에 옮긴 것은 Claude(AI)다. 빈 표는 틀만 만들어 두었고 작성자가 채운다.
 
-"개입 1 — 후보 3(렌더링 경계 분리) 중간 검증" 절은 다음과 같이 나뉜다. 렌더링 경계 분리 코드 변경, `after-h1-home-record.json` 트레이스 추출, `curl`로 받은 초기 HTML의 `h1`·`<header>` 개수와 byte 위치 확인, 그 결과를 표와 판정 문단으로 정리한 것은 Claude(AI)다. Performance 재측정과 filmstrip 캡처는 작성자가 직접 수행했다. 초기 HTML에 `h1`이 두 벌 실린 결함도 Claude(AI)가 발견해 보고했고, `loading.tsx` 삭제 여부는 작성자가 판단했다.
+"개입 1"부터 "개입 요약과 다음 병목"까지의 절은 다음과 같이 나뉜다.
+
+Lighthouse 5회와 Performance 녹화, filmstrip·Insights 캡처는 작성자가 직접 수행했다. 코드 변경(렌더링 경계 분리, 이미지 후보 생성, preload 적용과 되돌림, Hero 이미지·카피 분리), 트레이스·Lighthouse JSON에서 수치를 추출해 표로 정리한 것, `curl`로 받은 초기 HTML 확인, 인과 사슬과 판정 문단 작성은 Claude(AI)다.
+
+판단이 갈린 지점은 작성자가 정했다. 초기 HTML에 `h1`이 두 벌 실린 결함은 Claude(AI)가 발견해 보고했고 `loading.tsx` 삭제는 작성자가 결정했다. 이미지 후보를 `next/image` 대신 정적 파일로 만드는 선택, Hero를 이미지와 카피로 쪼개도 사용자 경험이 나빠지지 않는다는 판단(높이가 고정이라 화면이 밀리지 않는다는 근거), 폰트를 이번 주 범위에서 제외하는 결정도 작성자가 내렸다.
+
+개입 순서를 잘못 정한 판단(후보 2를 1순위로 추천)은 Claude(AI)의 오류이고, 측정으로 반증된 뒤 되돌렸다.
