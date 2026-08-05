@@ -3,9 +3,8 @@
 import { useSuspenseHomeQuery } from '@/_pages/home/api/service'
 import { HeroSection } from '@/_pages/home/ui/HeroSection'
 import { CategorySection } from '@/_pages/home/ui/CategorySection'
-import { Header } from '@/widgets/header'
-import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import { ProductGrid } from '@/widgets/product-card'
+import '@/shared/styles/layout.css'
 
 // useQuery 대신 useSuspenseQuery를 쓴 이유:
 // - useQuery는 data가 로딩·에러 중 undefined라 본문마다 `!data` 가드가 필요했다.
@@ -25,8 +24,7 @@ export const HomeContent = () => {
   ].filter(({ products }) => products.length > 0)
 
   return (
-    <PageContainer>
-      <Header />
+    <>
       <HeroSection title={banner.title} description={banner.description} />
       <CategorySection categories={categories} />
       {productSections.map(({ title, products }) => (
@@ -35,6 +33,6 @@ export const HomeContent = () => {
           <ProductGrid products={products} titleLevel={3} />
         </section>
       ))}
-    </PageContainer>
+    </>
   )
 }

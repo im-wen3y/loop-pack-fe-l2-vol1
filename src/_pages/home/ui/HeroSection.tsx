@@ -18,8 +18,9 @@ export const HeroSection = ({ title, description }: HeroSectionProps) => {
       />
       <div className={styles.copy}>
         <p className={styles.eyebrow}>이번 주의 발견</p>
-        {/* starter는 h2였지만 홈의 유일한 h1이 HeroBanner에 있었다. 문서 제목 구조를 유지하려고 h1으로 둔다. */}
-        <h1 id="hero-title">{title}</h1>
+        {/* 홈의 h1은 홈 데이터를 기다리지 않는 HomePage가 소유한다.
+            banner.title은 응답에 딸린 섹션 제목이므로 h2로 둔다. */}
+        <h2 id="hero-title">{title}</h2>
         <p>{description}</p>
       </div>
     </section>

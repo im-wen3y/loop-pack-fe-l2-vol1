@@ -1,19 +1,15 @@
-import { Header } from '@/widgets/header'
-import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import { ProductGridSkeleton } from '@/widgets/product-card'
 import { HeroSectionSkeleton } from '@/_pages/home/ui/HeroSectionSkeleton'
 import { CategorySectionSkeleton } from '@/_pages/home/ui/CategorySectionSkeleton'
-import styles from './HomeLoading.module.css'
 import '@/shared/styles/layout.css'
 
-// useSuspenseHomeQuery가 홈 데이터를 기다리는 동안 App Router가 자동으로 보여주는 스켈레톤이다.
 // HomeContent와 같은 배치(배너 → 카테고리 → 인기/신상품 6개씩)로 높이를 맞춰 layout shift를 막는다.
-export const HomeLoading = () => (
-  <PageContainer>
-    <p role="status" className={styles.visuallyHidden}>
+// Header와 h1은 HomePage가 Suspense 바깥에서 소유하므로 여기 넣지 않는다.
+export const HomeContentSkeleton = () => (
+  <>
+    <p role="status" className="visually-hidden">
       홈을 불러오는 중…
     </p>
-    <Header />
     <HeroSectionSkeleton />
     <CategorySectionSkeleton />
     {['인기 상품', '신상품'].map((title) => (
@@ -22,5 +18,5 @@ export const HomeLoading = () => (
         <ProductGridSkeleton count={6} />
       </section>
     ))}
-  </PageContainer>
+  </>
 )
