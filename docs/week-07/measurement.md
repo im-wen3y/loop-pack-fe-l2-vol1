@@ -57,38 +57,46 @@ Network 패널을 `Fast 4G`로 둔 채 Lighthouse를 돌려 이중 스로틀링�
 
 ## LCP 구간 분해
 
-Chrome DevTools Performance 패널의 Insights → `LCP breakdown`에서 읽은 값이다. **Lighthouse와 달리 스로틀링 없는 실측이므로 5회 표와 같은 숫자가 아니다.** 측정 조건은 CPU·Network 모두 `No throttling`, Disable cache, 시크릿 창, `Record and reload` 1회다.
+Chrome DevTools Performance 패널의 Insights → `LCP breakdown`에서 읽은 값이다. **Lighthouse와 달리 스로틀링 없는 실측이므로 5회 표와 같은 숫자가 아니다.** 측정 조건은 CPU·Network 모두 `No throttling`, Disable cache, 시크릿 창, `Record and reload` 1회이고, 2026-08-05 13:25 KST에 녹화했다. 코드는 `3da2db4`와 동일하다(`git diff 3da2db4 HEAD -- . ':!docs'`가 비어 있다).
+
+아래 표, filmstrip, waterfall은 **모두 같은 녹화 하나**(`results/before-home-record.json`)에서 뽑았다.
 
 | 구간                   | Before                 | After | 비중 | 비고                                                  |
 | ---------------------- | ---------------------- | ----- | ---- | ----------------------------------------------------- |
-| Time to first byte     | 15ms                   |       | 2%   | head와 `loading.tsx` fallback이 먼저 flush            |
-| Resource load delay    | **510ms**              |       | 77%  | document가 532ms에 끝나야 `<img>`가 도착              |
-| Resource load duration | 42ms                   |       | 6%   | 7.4MB를 localhost에서 받는 시간                       |
-| Element render delay   | 91ms                   |       | 14%  | 디코딩·래스터화                                       |
-| **실측 LCP**           | **658.7ms**            |       |      | Performance 패널 LCP 마커                             |
+| Time to first byte     | 19ms                   |       | 3%   | head와 `loading.tsx` fallback이 먼저 flush            |
+| Resource load delay    | **514ms**              |       | 78%  | document가 533.6ms에 끝나야 `<img>`가 도착            |
+| Resource load duration | 47ms                   |       | 7%   | 7.4MB를 localhost에서 받는 시간                       |
+| Element render delay   | 83ms                   |       | 13%  | 디코딩·래스터화                                       |
+| **실측 LCP**           | **662.1ms**            |       |      | Performance 패널 LCP 마커                             |
 | Hero 전송 크기         | 7,368.7KB (원본 7.5MB) |       |      | `hero-original.jpg` 3840×2160                         |
 | LCP element            | Hero 이미지            |       |      | `img.HeroSection-module__lqBdna__image`, Type `image` |
 
-Lighthouse 5회의 LCP 중앙값은 8,289.6ms인데 실측은 658.7ms다. 12배 차이의 원인은 Lighthouse의 `simulate`가 7,545,525 bytes를 10,240Kbps 모델로 환산하기 때문이다(≈5.76초). **localhost에서는 대역폭 병목이 아예 보이지 않는다.**
+![Insights LCP breakdown - TTFB 19ms / Resource load delay 514ms / Resource load duration 47ms / Element render delay 83ms](./assets/lcp-breakdown.png)
+
+![LCP 마커 Summary - Type image, Size 468882, Timestamp 662.1ms, Related node img.HeroSection-module__lqBdna__image](./assets/lcp-element.png)
+
+Lighthouse 5회의 LCP 중앙값은 8,289.6ms인데 실측은 662.1ms다. 12배 차이의 원인은 Lighthouse의 `simulate`가 7,545,525 bytes를 10,240Kbps 모델로 환산하기 때문이다(≈5.76초). **localhost에서는 대역폭 병목이 아예 보이지 않는다.**
 
 ### Performance filmstrip 표시 순서
 
-같은 녹화(`before-home-record.json`)의 Screenshot 40프레임과 paint 마커를 `navigationStart` 기준으로 정렬한 값이다.
+같은 녹화(`before-home-record.json`)의 Screenshot 43프레임과 paint 마커를 `navigationStart` 기준으로 정렬한 값이다.
 
-| 시각      | 화면에 새로 나타난 것                                                                               | 대응 마커                                                    |
-| --------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| 110~123ms | Header(로고·상품·위시리스트 0·장바구니 0), `h2` "카테고리"·"인기 상품", Hero·카테고리·카드 스켈레톤 | FCP 125.1ms, LCP candidate 1 = `H2`                          |
-| 123~523ms | **변화 없음.** 33프레임이 같은 스켈레톤이다                                                         | 홈 데이터 대기 구간                                          |
-| 547ms     | Hero 이미지 상단 일부, `h1` "매일 새롭게 발견하는 취향", 페이지 설명, 카테고리 칩 실제 텍스트       | DOMContentLoaded 526.8ms, LCP candidate 2 = `H1#hero-title`  |
-| 563ms     | 인기 상품 카드 이미지                                                                               | firstImagePaint 565.3ms, LCP candidate 3 = `img.ProductCard` |
-| 637ms     | Hero 이미지 전체                                                                                    | LCP 658.7ms, candidate 4 = `img.HeroSection`                 |
+| 시각         | 화면에 새로 나타난 것                                                                               | 대응 마커                                                    |
+| ------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 85.5ms       | Header(로고·상품·위시리스트 0·장바구니 0), `h2` "카테고리"·"인기 상품", Hero·카테고리·카드 스켈레톤 | FCP 101.9ms, LCP candidate 1 = `H2`(size 2581)               |
+| 85.5~552.8ms | **화면 변화 없음.** 34프레임이 같은 스켈레톤이다                                                    | 홈 데이터 대기 구간                                          |
+| 566.0ms      | Hero 이미지 상단 일부, `h1` "매일 새롭게 발견하는 취향", 페이지 설명, 카테고리 칩 실제 텍스트       | DOMContentLoaded 534.1ms, LCP candidate 2 = `H1#hero-title`  |
+| 593.3ms      | 인기 상품 카드 이미지                                                                               | firstImagePaint 582.1ms, LCP candidate 3 = `img.ProductCard` |
+| 643.7ms      | Hero 이미지 전체                                                                                    | LCP 662.1ms, candidate 4 = `img.HeroSection`                 |
 
-![110ms — Header와 h2만 있고 h1·설명은 스켈레톤](./assets/filmstrip-110ms-skeleton.jpg)
-![547ms — h1과 페이지 설명이 처음 등장](./assets/filmstrip-547ms-hero-h1.jpg)
-![563ms — 인기 상품 카드 이미지](./assets/filmstrip-563ms-cards.jpg)
-![637ms — Hero 이미지 전체](./assets/filmstrip-637ms-hero-full.jpg)
+프레임 이미지의 md5는 매 장 다르지만(스켈레톤 shimmer 애니메이션과 JPEG 인코딩 차이), 85.5ms와 552.8ms 프레임을 직접 열어 비교하면 화면 내용은 같다. "변화 없음"은 해시가 아니라 육안 대조로 판정했다.
 
-**Lighthouse 5회에서 내린 결론을 여기서 한 칸 좁힌다.** Header는 110ms에 나오지만 `h1`과 페이지 설명은 547ms까지 없다. 초기 HTML의 최대 텍스트가 `h2`("인기 상품", `frame_y=743`)라는 것이 그 증거다. `h1`이 `HeroSection` 안에 있어서 홈 데이터를 함께 기다린다.
+![86ms — Header와 h2만 있고 h1·설명은 스켈레톤](./assets/filmstrip-86ms-skeleton.jpg)
+![566ms — h1과 페이지 설명이 처음 등장](./assets/filmstrip-566ms-hero-h1.jpg)
+![593ms — 인기 상품 카드 이미지](./assets/filmstrip-593ms-cards.jpg)
+![644ms — Hero 이미지 전체](./assets/filmstrip-644ms-hero-full.jpg)
+
+**Lighthouse 5회에서 내린 결론을 여기서 한 칸 좁힌다.** Header는 85.5ms에 나오지만 `h1`과 페이지 설명은 566.0ms까지 없다. 초기 HTML의 최대 텍스트가 `h2`("인기 상품", LCP candidate 1)라는 것이 그 증거다. `h1`이 `HeroSection` 안에 있어서 홈 데이터를 함께 기다린다.
 
 명세 1단계는 "Header, 하나의 `h1`, 페이지 설명까지 함께 막히지 않도록" 요구한다. **Header는 통과하지만 `h1`과 설명은 통과하지 못한다.** Step 4의 렌더링 경계 조정은 근거가 없는 것이 아니라, Header가 아니라 `h1`·설명을 대상으로 해야 한다.
 
@@ -100,23 +108,26 @@ Lighthouse 5회의 LCP 중앙값은 8,289.6ms인데 실측은 658.7ms다. 12배 
 
 | 시작    | 종료    | 크기          | 리소스                                   |
 | ------- | ------- | ------------- | ---------------------------------------- |
-| 18.7ms  | 526.2ms | 10.2KB        | document `/`                             |
-| 19.5ms  | 95.8ms  | **2,009.8KB** | `PretendardVariable.woff2`               |
-| 31.6ms  | 62.8ms  | 178.9KB       | CSS·JS 청크 15개(병렬)                   |
-| 525.4ms | 568.6ms | **7,368.7KB** | `/images/week-07/hero-original.jpg`      |
-| 537.6ms | 557.5ms | 135.9KB       | `/_next/image` 상품 카드 9장(w=640&q=75) |
-| 547.6ms | 574.8ms | 7.3KB         | `/products?...&_rsc=` prefetch 11건      |
-| 569.9ms | 573.0ms | 25.6KB        | `favicon.ico`                            |
+| 21.9ms  | 533.6ms | 10.2KB        | document `/`                             |
+| 22.3ms  | 74.9ms  | **2,009.8KB** | `PretendardVariable.woff2`               |
+| 23.7ms  | 60.1ms  | 178.8KB       | CSS·JS 청크 14개(병렬)                   |
+| 532.8ms | 580.4ms | **7,368.7KB** | `/images/week-07/hero-original.jpg`      |
+| 544.4ms | 560.2ms | 136.0KB       | `/_next/image` 상품 카드 9장(w=640&q=75) |
+| 551.2ms | 577.4ms | 8.7KB         | `/products?...&_rsc=` prefetch 11건      |
+| 576.6ms | 581.1ms | 19.9KB        | JS 청크 2개(추가 로드)                   |
+| 582.1ms | 584.4ms | 25.6KB        | `favicon.ico`                            |
+
+총 40개 요청, 전송 합계 9,757.6KB다.
 
 여기서 세 가지가 확인된다.
 
-- **`/api/home` 요청이 waterfall에 없다.** 홈 데이터는 서버에서 RSC로 조회하므로 브라우저 요청으로 나타나지 않는다. slow API 500ms는 document `/`의 18.7~526.2ms 안에 들어 있다. 3단계의 "Browser Network만 보고 Route Handler 호출 횟수를 판정하지 않는다"가 이 상황을 말한다.
-- **Hero 요청은 document가 끝나기 직전인 525.4ms에 시작한다.** 스트리밍된 HTML을 preload scanner가 읽은 시점이고, 그 앞 500ms 동안 네트워크는 폰트·청크를 다 받고 놀고 있었다.
-- **상품 카드 이미지는 `/_next/image`로 최적화되는데 Hero만 원본 `<img>`다.** 카드 9장 합계가 135.9KB인데 Hero 한 장이 7,368.7KB다. 같은 페이지 안에서 처리 방식이 갈린다.
+- **`/api/home` 요청이 waterfall에 없다.** 홈 데이터는 서버에서 RSC로 조회하므로 브라우저 요청으로 나타나지 않는다. slow API 500ms는 document `/`의 21.9~533.6ms 안에 들어 있다. 3단계의 "Browser Network만 보고 Route Handler 호출 횟수를 판정하지 않는다"가 이 상황을 말한다.
+- **Hero 요청은 document가 끝나기 직전인 532.8ms에 시작한다.** 스트리밍된 HTML을 preload scanner가 읽은 시점이고, 그 앞 500ms 동안 네트워크는 폰트·청크를 다 받고 놀고 있었다.
+- **상품 카드 이미지는 `/_next/image`로 최적화되는데 Hero만 원본 `<img>`다.** 카드 9장 합계가 136.0KB(webp)인데 Hero 한 장이 7,368.7KB(jpeg)다. 같은 페이지 안에서 처리 방식이 갈린다.
 
-### 실측이 가리키는 병목 — 요청 시작이 510ms 늦다
+### 실측이 가리키는 병목 — 요청 시작이 514ms 늦다
 
-DevTools 설명대로 LCP 시간은 대기가 아니라 리소스 로딩에 쓰여야 하는데, 지금은 받는 데 42ms, 기다리는 데 510ms로 정반대다.
+DevTools 설명대로 LCP 시간은 대기가 아니라 리소스 로딩에 쓰여야 하는데, 지금은 받는 데 47ms, 기다리는 데 514ms로 정반대다.
 
 원인은 `HomePage`가 `await queryClient.prefetchQuery(homeQueries.detail())`로 홈 API 500ms를 기다린 뒤에야 `HeroSection`이 들어간 HTML을 내보내는 구조다.
 
@@ -128,15 +139,11 @@ DevTools 설명대로 LCP 시간은 대기가 아니라 리소스 로딩에 쓰�
 | Request is discoverable in initial document                         | ✅   |
 | LCP resources should not use `loading=lazy`                         | ✅   |
 
-`<img>`는 초기 HTML에 있으므로 발견 자체는 문제가 없다. **그 HTML이 늦게 도착하는 것이 문제다.**
+`<img>`는 초기 HTML에 있으므로 발견 자체는 문제가 없다. **그 HTML이 늦게 도착하는 것이 문제다.** 같은 패널이 `LCP image loaded 514 ms after earliest start point.`라고 표시하는데, 이 514ms가 위 breakdown의 `Resource load delay`와 같은 값이다.
 
-아직 저장하지 않은 증거 스크린샷이 세 장 있다. Performance 패널에서 다시 캡처해 아래 경로로 넣고 이 문단 아래에 참조를 건다.
+![Insights LCP request discovery - fetchpriority 미적용 1건, 나머지 2건 통과, /hero-original.jpg 7.5MB](./assets/lcp-request-discovery.png)
 
-| 파일                                 | 내용                                                               |
-| ------------------------------------ | ------------------------------------------------------------------ |
-| `./assets/lcp-element.png`           | LCP 마커 Summary — Type `image`, Timestamp 658.7ms, Related node   |
-| `./assets/lcp-breakdown.png`         | Insights `LCP breakdown` — 4구간 값                                |
-| `./assets/lcp-request-discovery.png` | Insights `LCP request discovery` — 판정 3개와 `fetchpriority` 지적 |
+같은 녹화의 Insights에 `Legacy JavaScript`(Est savings 13.8kB), `Render-blocking requests`, `Network dependency tree`도 함께 잡혔다. JS 청크 합계가 178.8KB로 Hero 7.4MB에 비해 두 자릿수 작으므로 이번 병목과 무관하다고 보고 다루지 않는다. 판단이 틀렸다면 Hero를 줄인 뒤에도 LCP가 안 내려가는 것으로 드러날 것이다.
 
 ### CLS
 
@@ -397,7 +404,7 @@ Network 패널(All 필터가 아니라 Fetch/XHR)에서 5건 전부 **Status 200
 
 | 관찰한 사실                                                                         | 원인 가설                                                                                        | 반증 방법                                                                             | 먼저 시도할 가장 작은 변경                                                          |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 홈 Hero LCP 658.7ms의 77%가 Resource load delay                                     | [Step 4 개입 후보](#step-4-개입-후보) 참고(후보 1~3)                                             | 각 후보 문단의 반증 방법 참고                                                         | 후보 2(preload+fetchpriority)부터, 근거는 해당 문단                                 |
+| 홈 Hero LCP 662.1ms의 78%가 Resource load delay                                     | [Step 4 개입 후보](#step-4-개입-후보) 참고(후보 1~3)                                             | 각 후보 문단의 반증 방법 참고                                                         | 후보 2(preload+fetchpriority)부터, 근거는 해당 문단                                 |
 | 카테고리 갱신·레이스 응답 완료 직후 `ProductCard`가 142px→453px로 점프하며 CLS 0.37 | 갱신 시작 시점에 그리드가 카드 개수·높이가 다른 중간 상태를 거쳤다가 실제 카드 높이로 재배치된다 | 갱신 중 DOM을 스냅샷해 중간 상태의 카드 높이를 직접 확인                              | 갱신 중에도 이전 목록을 DOM에서 안 지우고 `opacity`만 바꾸도록 렌더 경로 통일       |
 | 갱신 실패 시 기존 목록 12개가 전부 사라지고 최초 실패와 같은 화면으로 대체됨        | 쿼리 실패 시 컴포넌트가 `data`를 유지하지 않고 에러 전용 분기로 완전히 스위칭한다                | 실패 시 `isError`와 `data` 유무를 함께 확인해 이전 `data`가 실제로 비는지 로그로 검증 | 에러 시에도 `placeholderData`/이전 `data`를 유지하고 에러는 목록 위에 배너로만 표시 |
 | 갱신 실패 화면에서 카테고리 `select`가 "전체"로 보이는데 URL은 `category=goods`     | select 값이 URL이 아니라 쿼리 결과(또는 실패로 리셋된 로컬 상태)에서 파생된다                    | select의 `value` prop이 실제로 어디서 오는지 소스에서 확인                            | select value를 URL 상태(`useQueryStates`)에서만 파생하도록 단일화                   |
