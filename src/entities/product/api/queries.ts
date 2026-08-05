@@ -14,7 +14,9 @@ export const productQueries = {
   list: (params: GetProductListParams) =>
     queryOptions({
       queryKey: productQueryKeys.list(params),
-      queryFn: () => getProductList(params),
+      // React Query가 넘기는 signal을 요청에 연결한다. 조건을 빠르게 연달아 바꾸면
+      // 더 이상 필요 없어진 이전 요청이 실제로 취소되어 응답을 기다리지 않는다.
+      queryFn: ({ signal }) => getProductList(params, signal),
       // 페이지·검색 조건이 바뀌며 재조회되므로 이전 목록을 유지해 깜빡임을 막는다.
       placeholderData: keepPreviousData,
       // 같은 검색·필터 결과를 재사용해 요청을 줄인다. 재고·할인가격처럼

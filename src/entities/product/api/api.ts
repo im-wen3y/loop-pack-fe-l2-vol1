@@ -4,13 +4,20 @@ import { ApiError } from '@/shared/api/api-error'
 
 export const getProductList = async (
   params: GetProductListParams,
+  signal?: AbortSignal,
 ): Promise<GetProductListResponse> => {
   const query = serializeProductListQuery({ ...params, pageSize: PRODUCT_PAGE_SIZE })
   let response: Response
 
   try {
-    response = await fetch(`/api/products${query}`)
+    response = await fetch(`/api/products${query}`, { signal })
   } catch (cause) {
+    // 취소는 실패가 아니다. ApiError로 감싸면 버려질 이전 요청이 화면에 오류로 보인다.
+    // 원본 AbortError를 그대로 올려 호출자(React Query)가 취소로 인식하게 둔다.
+    if (signal?.aborted) {
+      throw cause
+    }
+
     throw new ApiError('상품 목록 요청 중 네트워크 오류가 발생했습니다.', {
       kind: 'network',
       cause,
