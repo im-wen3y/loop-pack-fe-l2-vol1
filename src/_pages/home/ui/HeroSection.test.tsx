@@ -2,33 +2,42 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 describe('HeroSection', () => {
-  it('renders the existing banner contract as a stable hero', async () => {
+  // 이미지가 홈 데이터를 기다리지 않아야 첫 flush에 들어간다.
+  // props로 데이터를 받으면 다시 대기 안으로 끌려가므로 children만 받는 계약을 고정한다.
+  it('renders the image shell without waiting for home data', async () => {
     const { HeroSection } = await import('./HeroSection')
 
     const markup = renderToStaticMarkup(
-      <HeroSection
-        title="매일 새롭게 발견하는 취향"
-        description="지금 가장 사랑받는 상품을 만나보세요."
-      />,
+      <HeroSection>
+        <div>카피 자리</div>
+      </HeroSection>,
     )
 
-    expect(markup).toContain('매일 새롭게 발견하는 취향')
-    expect(markup).toContain('지금 가장 사랑받는 상품을 만나보세요.')
-    expect(markup).toContain('src="/images/week-07/hero-original.jpg"')
-    expect(markup).toContain('width="3840"')
-    expect(markup).toContain('height="2160"')
+    expect(markup).toContain('src="/images/week-07/hero-1200.webp"')
+    expect(markup).toContain('width="2400"')
+    expect(markup).toContain('height="1350"')
+    expect(markup).toContain('카피 자리')
   })
 
-  // 홈의 h1은 홈 데이터를 기다리지 않는 HomePage가 소유한다.
-  // Hero가 다시 h1을 들고 오면 홈에 h1이 둘이 되므로 h2로 고정한다.
-  it('renders the banner title as h2 so the shell keeps the only h1', async () => {
+  // 컨테이너 최대 폭이 1200px이라 3840px 원본은 표시 크기의 3배가 넘는다.
+  // 표시 폭에 맞춘 후보만 내려보내는지 고정한다.
+  it('offers width-matched candidates instead of the original', async () => {
     const { HeroSection } = await import('./HeroSection')
 
-    const markup = renderToStaticMarkup(
-      <HeroSection title="매일 새롭게 발견하는 취향" description="설명" />,
-    )
+    const markup = renderToStaticMarkup(<HeroSection>{null}</HeroSection>)
 
-    expect(markup).toContain('<h2 id="hero-title">매일 새롭게 발견하는 취향</h2>')
+    expect(markup).toContain('/images/week-07/hero-1200.webp 1200w')
+    expect(markup).toContain('/images/week-07/hero-2400.webp 2400w')
+    expect(markup).not.toContain('hero-original.jpg')
+  })
+
+  // 홈의 h1은 HomePage가 소유한다. 카피 fallback이 h1을 들고 오면 홈에 h1이 둘이 된다.
+  it('keeps the copy fallback free of a second h1', async () => {
+    const { HeroCopySkeleton } = await import('./HeroCopySkeleton')
+
+    const markup = renderToStaticMarkup(<HeroCopySkeleton />)
+
     expect(markup).not.toContain('<h1')
+    expect(markup).toContain('aria-hidden="true"')
   })
 })
