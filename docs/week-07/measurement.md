@@ -161,16 +161,96 @@ Layout Shifts 트랙에 항목이 없고 Insights의 CLS도 `0`이다. `HeroSect
 
 **후보 2. `app/layout.tsx` head에 preload + `fetchpriority="high"`**
 
-- 근거: 실측 510ms delay가 전체의 77%다. `HeroSection`의 `src`는 `/images/week-07/hero-original.jpg`로 하드코딩된 정적 URL이라 API 응답과 무관하고, TTFB 15ms에 head가 이미 flush되므로 힌트를 API 대기 전에 내보낼 수 있다.
-- 반증: preload를 넣어도 이미지 요청이 여전히 532ms에 시작하면 가설이 틀린 것이다.
+- 근거: 실측 514ms delay가 전체의 78%다. `HeroSection`의 `src`는 `/images/week-07/hero-original.jpg`로 하드코딩된 정적 URL이라 API 응답과 무관하고, TTFB 19ms에 head가 이미 flush되므로 힌트를 API 대기 전에 내보낼 수 있다.
+- 반증: preload를 넣어도 이미지 요청이 여전히 532.8ms 근처에서 시작하면 가설이 틀린 것이다.
 - 발제가 경고한 반례(데이터가 와야 URL을 아는 경우)에는 해당하지 않는다.
 
 **후보 3. `h1`·페이지 설명을 홈 데이터 밖으로 빼기**
 
-- 근거: filmstrip에서 `h1`과 설명이 547ms까지 없다. LCP 숫자가 아니라 명세 1단계·3단계 요구사항에 걸린다.
+- 근거: filmstrip에서 `h1`과 설명이 566.0ms까지 없다. LCP 숫자가 아니라 명세 1단계·3단계 요구사항에 걸린다.
 - 반증: 경계를 바꿨는데도 초기 HTML(View Source)에 `h1`이 없으면 가설이 틀린 것이다.
 
 한 번에 하나만 바꾸고 각각 같은 조건에서 재측정한다.
+
+## 개입 1 — 후보 3(렌더링 경계 분리) 중간 검증
+
+4단계 After가 아니라 개입 하나가 의도대로 동작했는지 확인한 중간 측정이다. After 표는 이미지·preload까지 끝낸 뒤 Lighthouse 5회로 따로 채운다.
+
+### 무엇을 바꿨나
+
+`HomePage`가 `async` 함수라 `return` 전체가 `prefetchQuery` await 뒤로 밀려 Header와 `h1`까지 홈 데이터를 기다렸다. 기다리는 부분만 `HomeData`로 내려 `Suspense` 안에 두고, `PageContainer`·`Header`·`h1`은 첫 flush로 내보내도록 바꿨다.
+
+- 홈의 `h1`은 시각 숨김 텍스트로 `HomePage`가 소유한다. `HeroSection`의 `banner.title`은 응답에 딸린 섹션 제목이므로 `h2`로 내렸다.
+- 라우트 레벨 `app/(home)/loading.tsx`는 삭제했다. `HomePage` 내부 `Suspense`와 중복이라 초기 HTML에 `Header`·`h1`이 두 벌 실렸다(아래 참고).
+- 스켈레톤은 `HomeContentSkeleton`으로 분리해 `Suspense` fallback이 사용한다.
+
+측정 조건은 홈 Before의 LCP 구간 분해와 같다. CPU·Network 모두 `No throttling`, Disable cache, 시크릿 창, `Record and reload` 1회다. 트레이스는 `results/after-h1-home-record.json`이다.
+
+### 중간에 발견한 결함 — 초기 HTML에 `h1`이 2개
+
+`loading.tsx`를 남겨둔 1차 시도에서는 라우트 fallback과 `HomePage` shell이 각각 `Header`+`h1`을 그려 document에 두 벌이 실렸다. 하이드레이션 후 DOM에는 하나만 남지만, JavaScript를 끈 요청과 crawler가 보는 초기 HTML에는 `h1`이 둘이다. 명세의 "하나의 명확한 `h1`"과 "JavaScript를 끈 요청으로 초기 HTML 확인"에 걸린다.
+
+`loading.tsx`를 지워 해결했다. document 전송 크기도 함께 줄었다.
+
+| 상태                    | document 전송 | 초기 HTML `h1`    | 초기 HTML `<header>` |
+| ----------------------- | ------------- | ----------------- | -------------------- |
+| Before                  | 10.2KB        | 1개(566.0ms 렌더) | 1개                  |
+| 1차(`loading.tsx` 유지) | 11.4KB        | **2개**           | **2개**              |
+| 2차(`loading.tsx` 삭제) | 9.3KB         | 1개               | 1개                  |
+
+### 초기 HTML 확인
+
+production build를 `APP_ORIGIN=http://localhost:3000`으로 실행하고 `curl`로 document를 받아 확인했다.
+
+```bash
+curl -s http://localhost:3000 | grep -o '<h1[^>]*>[^<]*'
+# <h1 class="visually-hidden">취향을 발견하는 라이프스타일 스토어
+```
+
+- `h1` 1개, `<header>` 1개
+- `h1` 위치는 전체 46,450 byte 중 **1,863 byte 지점**이다. 첫 flush에 들어간다.
+- `h1` 바로 뒤가 `<!--$?--><template id="B:0">`다. Suspense 대기 마커이므로 shell이 홈 데이터를 기다리지 않고 나갔다는 뜻이다.
+
+### 측정값 비교
+
+| 항목                 | Before(홈)    | 개입 1 후  |
+| -------------------- | ------------- | ---------- |
+| FCP                  | 101.9ms       | 118.7ms    |
+| 실측 LCP             | 662.1ms       | 638.9ms    |
+| CLS                  | 0             | 0          |
+| `LayoutShift` 이벤트 | 0건           | 0건        |
+| document 전송        | 10.2KB        | 9.3KB      |
+| hero 요청 시작       | 532.8ms       | 534.2ms    |
+| hero 전송 크기       | 7,368.7KB     | 7,368.7KB  |
+| 초기 HTML의 `h1`     | 없음(566.0ms) | 1,863 byte |
+
+**FCP와 LCP 차이는 개선으로 읽지 않는다.** 같은 조건 실측이 662.1(Before) / 617.9(1차) / 638.9ms(2차)로 44ms 폭인데, Before Lighthouse 5회 범위도 97ms였다. 이 개입은 이미지 요청 시점을 바꾸지 않으므로 LCP가 그대로인 것이 예상된 결과다.
+
+### LCP 후보 변화
+
+| 순서 | Before                    | 개입 1 후                 |
+| ---- | ------------------------- | ------------------------- |
+| 1    | `H2` 101.9ms              | `H2` 118.7ms              |
+| 2    | `H1#hero-title` 566.0ms   | `H2#hero-title` 585.6ms   |
+| 3    | `img.ProductCard` 593.3ms | —                         |
+| 4    | `img.HeroSection` 662.1ms | `img.HeroSection` 638.9ms |
+
+`h1`이 후보에서 사라진 것은 의도한 결과다. 시각 숨김이라 크기가 1px이라 LCP 후보가 될 수 없다.
+
+### filmstrip
+
+![114.23ms 프레임 — Header, Hero 스켈레톤, 카테고리·인기 상품 h2가 모두 렌더된 상태](./assets/after-h1-filmstrip-114ms-header.png)
+![635ms 프레임 — Hero 이미지 전체와 카테고리 칩·상품 카드 이미지](./assets/after-h1-filmstrip-635ms-hero.png)
+
+114.23ms 프레임에 Header(`Commerce`, `상품`, `위시리스트 0`, `장바구니 0`)가 이미 있다. 두 프레임에서 Header·`카테고리`·`인기 상품`의 세로 위치가 같아 스켈레톤과 실제 콘텐츠가 같은 공간을 차지한다. `LayoutShift` 이벤트 0건과 일치한다.
+
+`h1`은 시각 숨김이라 filmstrip에 나타나지 않는다. 그 확인은 위 초기 HTML 검사가 대신한다.
+
+### 판정
+
+후보 3의 반증 조건은 "경계를 바꿨는데도 초기 HTML에 `h1`이 없으면 가설이 틀린 것"이었다. **반증되지 않았다.** `h1`은 초기 HTML 첫 flush에 있고, CLS 0과 기존 filmstrip 순서는 유지된다. LCP는 변하지 않았고 이는 이 개입의 대상이 아니다.
+
+`pnpm test`(8 파일 53개), `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`를 통과했다.
 
 ## 상품 목록 — Before 측정 조건
 
@@ -421,4 +501,6 @@ Network 패널(All 필터가 아니라 Fetch/XHR)에서 5건 전부 **Status 200
 
 ---
 
-이 문서는 [plan.md](plan.md)에서 분리했다. 측정값은 작성자가 직접 수집했고, `before-home-record.json` 트레이스에서 filmstrip 표시 순서와 paint 마커를 추출해 표로 정리한 것은 Claude(AI)다. 빈 표는 틀만 만들어 두었고 작성자가 채운다.
+이 문서는 [plan.md](plan.md)에서 분리했다. 측정과 스크린샷 캡처는 작성자가 직접 수행했고, `before-home-record.json` 트레이스에서 filmstrip 프레임·paint 마커·Network 요청을 추출해 표로 정리하고 스크린샷의 값을 표에 옮긴 것은 Claude(AI)다. 빈 표는 틀만 만들어 두었고 작성자가 채운다.
+
+"개입 1 — 후보 3(렌더링 경계 분리) 중간 검증" 절은 다음과 같이 나뉜다. 렌더링 경계 분리 코드 변경, `after-h1-home-record.json` 트레이스 추출, `curl`로 받은 초기 HTML의 `h1`·`<header>` 개수와 byte 위치 확인, 그 결과를 표와 판정 문단으로 정리한 것은 Claude(AI)다. Performance 재측정과 filmstrip 캡처는 작성자가 직접 수행했다. 초기 HTML에 `h1`이 두 벌 실린 결함도 Claude(AI)가 발견해 보고했고, `loading.tsx` 삭제 여부는 작성자가 판단했다.
