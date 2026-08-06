@@ -1392,13 +1392,14 @@ Step 6에서 슬라이스 3개(`_pages/home`, `_pages/product-list`, `entities/p
 | 항목              | 결과                                                            |
 | ----------------- | --------------------------------------------------------------- |
 | Before SHA        | `8aa15c5`                                                       |
+| After SHA         | `f50b925`                                                       |
 | 조건              | production build, CPU 4x, Network No throttling, 같은 카드 클릭 |
 | 반복              | Before 3회 / After 3회                                          |
 | 렌더 범위         | 24장 → 누른 카드 1장                                            |
 | INP 중앙값        | 107.2ms → 35.6ms (`−67%`)                                       |
 | processing 중앙값 | 79.26ms → 8.59ms (`−89%`)                                       |
 | 개입              | `wishlistIds` 배열 구독 → 카드별 `selected` boolean 구독        |
-| 상태              | 측정 완료, 최종 회귀·정적 검사·After SHA 기록 남음              |
+| 상태              | 측정·정적 검사 완료, 회귀 확인과 Profiler `Why` 캡처 남음       |
 
 Before Profiler에서 `SyncExternalStore` 변경으로 관계없는 카드 23장까지 렌더되는 것을 확인한 뒤 selector를 변경했다. After에서는 누른 카드 1장만 렌더됐고, 감소한 총 71.6ms 중 70.7ms가 processing에서 나왔다. 상세 계산식, raw 결과, Profiler 대체 경로와 남은 증빙은 별도 문서를 기준으로 한다.
 

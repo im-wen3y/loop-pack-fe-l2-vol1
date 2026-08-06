@@ -4,7 +4,7 @@
 
 전달할 때는 단계별로 끊어서 줘도 된다.
 
-> **현재 상태 (2026-08-07)** — 1·2절의 Before 측정으로 병목을 확인한 뒤 3절의 selector 변경을 적용했고, 4·5절의 After 측정까지 끝냈다. 남은 것은 4절의 `Why did this render?` 캡처, 6절 회귀·정적 검사, After SHA 기록이다.
+> **현재 상태 (2026-08-07)** — 1·2절의 Before 측정으로 병목을 확인한 뒤 3절의 selector 변경을 적용했고, 4·5절의 After 측정까지 끝냈다. **Before SHA `8aa15c5`, After SHA `f50b925`**이고 6절 정적 검사도 통과했다. 남은 것은 4절의 `Why did this render?` 캡처, 0-6의 뷰포트 값, 6절 회귀 4항목 확인이다.
 
 ---
 
@@ -148,14 +148,10 @@
 
 29. After SHA를 기록한다
     ```bash
-
+    git rev-parse --short HEAD
     ```
 
-git rev-parse --short HEAD
-
-````
-
-### 측정 결과 — 3회 완료, After SHA 미기록
+### 측정 결과 — 3회 완료
 
 After 트레이스 3건과 Interaction 캡처 3장을 남겼다. 중앙값은 총 35.6ms, input delay 0.88ms, processing 8.59ms, presentation 25.54ms다. Before와 비교하면 총 INP는 107.2ms에서 35.6ms로 67%, processing은 79.26ms에서 8.59ms로 89% 줄었다.
 
@@ -163,39 +159,40 @@ After 트레이스 3건과 Interaction 캡처 3장을 남겼다. 중앙값은 �
 ![After Interaction 2회차 — 32ms](assets/adv-a-after-interaction-2.png)
 ![After Interaction 3회차 — 36ms](assets/adv-a-after-interaction-3.png)
 
-After SHA는 코드와 문서 변경을 커밋한 뒤 기록해야 하므로 아직 비워둔다.
+**After SHA는 `f50b925`**(`refactor: 찜 상태를 카드별 boolean으로 구독해 리렌더 축소`)다. Before SHA `8aa15c5`의 바로 다음 커밋이고, 3절의 selector 한 줄 변경만 담고 있다. 이어지는 문서 커밋에는 코드 변경이 없다.
 
 ---
 
 ## 6. 회귀 확인
 
-> **미완료** — 아래 4가지 동작 확인과 정적 검사를 마치기 전에는 Advanced A 전체 완료로 표시하지 않는다.
+> **정적 검사만 완료** — 아래 30–33번 동작 확인을 마치기 전에는 Advanced A 전체 완료로 표시하지 않는다.
 
 30. `/performance-lab/inp?pageSize=24`에서 카드가 **24장 그대로**인지
 31. `화면 계산 {숫자}` 가 카드마다 여전히 표시되는지 (필수 계산을 지우지 않았다는 증거)
 32. 찜 버튼이 **누르는 즉시** `찜하기` ↔ `찜 해제`로 바뀌는지
 33. 여러 카드를 연달아 눌러도 각자의 상태가 독립적으로 유지되는지
-34. 정적 검사
- ```bash
- pnpm lint && pnpm exec tsc --noEmit
- ```
+34. 정적 검사 — **통과**. `pnpm lint` 경고 0건, `pnpm exec tsc --noEmit` 오류 0건
+
+    ```bash
+    pnpm lint && pnpm exec tsc --noEmit
+    ```
 
 ---
 
 ## 7. 전달 목록
 
-| 순번    | 파일                                                                      | 상태                                      |
-| ------- | ------------------------------------------------------------------------- | ----------------------------------------- |
-| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`                          |
-| 0-6     | 뷰포트 값                                                                 | 확인 필요                                 |
-| 8       | `adv-a-performance-settings.png`                                          | 완료                                      |
-| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 완료                                      |
-| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                                      |
-| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                                      |
-| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | Ranked 완료, Why 캡처 필요                |
-| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 완료                                      |
-| 29      | After SHA                                                                 | 커밋 후 기록                              |
-| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 확인 필요                                 |
+| 순번    | 파일                                                                      | 상태                       |
+| ------- | ------------------------------------------------------------------------- | -------------------------- |
+| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`           |
+| 0-6     | 뷰포트 값                                                                 | 확인 필요                  |
+| 8       | `adv-a-performance-settings.png`                                          | 완료                       |
+| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 완료                       |
+| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                       |
+| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                       |
+| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | Ranked 완료, Why 캡처 필요 |
+| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 완료                       |
+| 29      | After SHA                                                                 | 완료 — `f50b925`           |
+| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 확인 필요                  |
 
 ---
 
@@ -244,7 +241,7 @@ Profiler를 포기하고 production 트레이스의 JS 샘플로 렌더 횟수�
 ```js
 // next/dist/build/define-env.js:143
 'process.env.__NEXT_STRICT_MODE_APP': // When next.config.js does not have reactStrictMode it's enabled by default.
-````
+```
 
 렌더가 두 번 호출되므로 Profiler 개수가 실제의 2배로 보일 수 있다. Before/After를 같은 조건에서 재니 비교는 성립하지만, **숫자를 적을 때 "StrictMode 이중 렌더 포함"을 함께 적는다.**
 
@@ -305,5 +302,7 @@ Before 절에 "presentation delay 26ms는 24장을 다시 그리는 비용으로
 - processing 8.59ms는 누른 카드 1장의 렌더 + `calculateCardPresentation`이 남은 값이다. 필수 계산을 지우지 않았으므로 0이 되지는 않는다.
 
 ---
+
+After SHA `f50b925`는 Claude(AI)가 커밋 로그에서 확인해 채웠고, 34번 정적 검사도 AI가 `pnpm lint`와 `pnpm exec tsc --noEmit`을 실제로 실행해 통과를 확인한 것이다. 30–33번 회귀 확인과 4절 `Why` 캡처, 0-6 뷰포트 값은 아직 남아 있고 작성자가 직접 수행한다.
 
 이 문서는 Claude(AI)가 `docs/assignments/week-07.md` Advanced A와 [checklist.md](checklist.md)를 대조해 작성했다. Before·After 수치는 AI가 작성자가 직접 측정한 트레이스 6건을 파싱해 계산하고 해석한 것이다. 3절의 개입 후보는 처음에는 코드를 읽고 세운 가설이었고, 작성자가 2절 Profiler에서 관계없는 카드 23장의 렌더와 `SyncExternalStore` 변경 원인을 확인한 뒤 적용했다.

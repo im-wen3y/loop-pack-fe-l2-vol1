@@ -262,8 +262,8 @@ Before Profiler에서 `SyncExternalStore` 변경으로 24장이 모두 렌더되
 - [ ] After Profiler의 `Why did this render?` 캡처
 - [ ] 뷰포트 값 기록
 - [ ] 카드 24장·필수 계산·즉시 피드백·복수 카드 상태 회귀 확인
-- [ ] `pnpm lint && pnpm exec tsc --noEmit`
-- [ ] 변경 커밋 후 Advanced A After SHA 기록
+- [x] `pnpm lint && pnpm exec tsc --noEmit` — 통과
+- [x] Advanced A After SHA 기록 — **`f50b925`** (Before `8aa15c5`)
 
 ## 측정 기록
 

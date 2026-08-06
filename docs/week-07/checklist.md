@@ -110,8 +110,8 @@ Elements 패널은 JavaScript 실행 뒤의 DOM이다. 서버가 만든 HTML은 
 - [ ] After Profiler의 `Why did this render?` 캡처
 - [ ] 측정 뷰포트 값 기록
 - [ ] 카드 24장·필수 계산·즉시 피드백·복수 카드 상태 회귀 확인
-- [ ] `pnpm lint && pnpm exec tsc --noEmit`
-- [ ] 변경 커밋 후 Advanced A After SHA 기록
+- [x] `pnpm lint && pnpm exec tsc --noEmit` — 통과
+- [x] Advanced A After SHA 기록 — **`f50b925`** (Before `8aa15c5`)
 
 Advanced B(Next Cache)는 하지 않는다. 과제 명세의 선택 원칙대로 하나를 끝까지 하는 편이 낫고, `cacheComponents: true` starter를 따로 검증해야 해서 비용이 훨씬 크다.
 
