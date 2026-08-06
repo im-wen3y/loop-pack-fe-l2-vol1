@@ -25,9 +25,11 @@ const usePerformanceWishlist = create<WishlistState>((set) => ({
 }))
 
 function PerformanceProductCard({ product }: { product: PerformanceLabProduct }) {
-  const wishlistIds = usePerformanceWishlist((state) => state.wishlistIds)
+  // 배열을 그대로 구독하면 toggle 한 번에 참조가 바뀌어 구독한 24장 전부가 리렌더된다.
+  // Profiler에서 커밋 1건에 p1~p24가 모두 들어오고 이유가 SyncExternalStore 변경으로 찍혔다.
+  // 이 카드에 필요한 값은 boolean 하나이므로 selector에서 좁혀 다른 카드의 값이 안 바뀌게 한다.
+  const selected = usePerformanceWishlist((state) => state.wishlistIds.includes(product.id))
   const toggleWishlist = usePerformanceWishlist((state) => state.toggleWishlist)
-  const selected = wishlistIds.includes(product.id)
   const presentation = calculateCardPresentation(product.id, selected)
 
   return (
