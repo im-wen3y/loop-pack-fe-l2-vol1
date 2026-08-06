@@ -36,6 +36,10 @@ const HomeData = async () => {
 // 두 경계가 각각 홈 데이터를 조회하지만 getServerQueryClient가 요청 단위로 같은 QueryClient를
 // 돌려주므로 /api/home 요청은 1회다.
 //
+// h1과 페이지 설명은 홈 응답이 아니라 이 페이지가 소유한다. banner.title·description은
+// 배너 카피라 데이터를 기다리는 게 맞고, 그것만 있으면 페이지 제목·설명이 함께 대기에 갇힌다.
+// 화면의 설명 역할은 Hero 카피가 그대로 하므로 시각 숨김으로 두어 렌더 결과를 바꾸지 않는다.
+//
 // 라우트 레벨 loading.tsx는 두지 않는다. 이 Suspense와 중복이라 초기 HTML에
 // Header·h1이 두 벌 실려 명세가 요구하는 "하나의 h1"이 깨졌다.
 // (라우트 세그먼트 설정 dynamic = 'force-dynamic'은 라우팅 파일 app/(home)/page.tsx가 소유한다.)
@@ -43,6 +47,9 @@ export const HomePage = () => (
   <PageContainer>
     <Header />
     <h1 className="visually-hidden">취향을 발견하는 라이프스타일 스토어</h1>
+    <p className="visually-hidden">
+      카테고리별 추천과 인기 상품, 신상품을 한곳에서 살펴볼 수 있는 커머스 홈입니다.
+    </p>
     <HeroSection>
       <Suspense fallback={<HeroCopySkeleton />}>
         <HeroCopy />
