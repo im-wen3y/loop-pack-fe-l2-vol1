@@ -149,10 +149,10 @@ LCP를 네 구간(서버 응답 대기 / 이미지 요청 시작 대기 / 이미
 - Lighthouse 5회에서도 CLS가 전 구간 0
 - filmstrip 117.2ms(카피 스켈레톤)와 571.1ms(카피 채워짐) 두 프레임에서 사진과 카드의 위치·크기가 같다
 
-미확인으로 남은 것 두 가지는 Step 7에서 함께 본다.
+미확인으로 남은 것 두 가지는 Step 7에서 함께 봤고 **둘 다 해소했다**([결과](measurement.md#step-7--홈-after-추가-관찰)).
 
-- 모바일 분기(`aspect-ratio 4/5`, `object-position 56%`)는 측정하지 않았다. 모든 녹화가 데스크톱 뷰포트다
-- Layout shifts track을 캡처한 스크린샷은 없다. 근거는 트레이스 JSON의 `LayoutShift` 이벤트 0건과 Insights CLS 0이다
+- 모바일 분기(`aspect-ratio 4/5`, `object-position 56%`)는 측정하지 않았다. 모든 녹화가 데스크톱 뷰포트다 → 390 × 844에서 재측정. 비율은 의도대로 적용됐고, 대신 **표시 폭보다 과대한 이미지가 나가는 문제를 새로 발견**했다
+- Layout shifts track을 캡처한 스크린샷은 없다. 근거는 트레이스 JSON의 `LayoutShift` 이벤트 0건과 Insights CLS 0이다 → 캡처로 대체 확인
 
 ### Step 5. 2단계 — 목록 6상태와 CLS — 완료
 
@@ -184,7 +184,7 @@ Before 6건과 After 6건을 같은 절차로 녹화해 대조했다. 근거는 
 #### Step 7로 넘기는 것
 
 - **After 뷰포트가 945×963으로 Before(945×929)와 34px 다르다.** 폭이 같아 시나리오 2의 CLS가 소수점 16자리까지 일치했지만, Step 7의 "완전히 같은 조건" 요구를 생각하면 홈 재측정 때는 창 크기를 먼저 맞춰야 한다.
-- 취소 시나리오의 전환 간격이 Before(968~~1,443ms)와 After(1,986~~3,307ms)에서 달랐다. 재현하려면 전환 간격을 응답 시간(1.5초)보다 짧게 유지해야 한다.
+- 취소 시나리오의 전환 간격이 Before(968–1,443ms)와 After(1,986–3,307ms)에서 달랐다. 재현하려면 전환 간격을 응답 시간(1.5초)보다 짧게 유지해야 한다.
 
 ### Step 6. 3단계 — metadata와 Open Graph (완료)
 
@@ -210,20 +210,27 @@ Before 6건과 After 6건을 같은 절차로 녹화해 대조했다. 근거는 
 - **상품 목록 초기 HTML에 상품 링크가 0개다.** 목록 조회가 클라이언트 전용이라 문서에 데이터가 실리지 않는다(홈은 서버 prefetch가 있어 실린다). 명세의 "초기 응답에 주요 링크와 구조"를 충족하지 못하지만, 서버 prefetch를 넣으면 2단계에서 설계한 6상태를 다시 짜야 해서 이번 범위를 넘는다. 발견 사실로 남겼다.
 - `description`에 사용자가 지정하지 않은 정렬(`sort` 기본값 `latest`)까지 설명하던 것을 원본 `searchParams`에 키가 있을 때만 붙이도록 고쳤다.
 
-### Step 7. 4단계 — After와 회귀
+### Step 7. 4단계 — After와 회귀 — 완료
 
-Step 3과 **완전히 같은 조건**에서 재측정한다.
+Step 3과 같은 조건에서 재측정했다. **After SHA는 `a081464`**(코드는 직전 `29c7900`과 동일한 docs 전용 커밋)이고, 측정 결과는 [measurement.md](measurement.md)에 있다.
 
-- URL, 행동, viewport, throttling, 브라우저·Lighthouse 버전, cold/warm, 브라우저 프로필 동일
-- **After commit SHA 기록**
-- LCP element, Hero 전송 크기, 요청 시작 순서, 가장 길었던 구간의 변화 비교
-- **Step 4에서 미확인으로 남긴 두 가지**(위 "fallback과 layout shift 확인 결과" 참고)
-  - Layout shifts track 캡처 1장 — 지금 근거는 트레이스 JSON의 `LayoutShift` 0건과 Insights CLS 0뿐이다
-  - 모바일 뷰포트(`aspect-ratio 4/5`) 녹화 — Step 4까지의 녹화는 전부 데스크톱이다
-- 회귀 확인: 뒤로/앞으로 가기, 장바구니·위시리스트·Header 개수, 로딩·에러·빈 상태·재시도
-- FSD 의존 방향과 Public API 우회 여부 확인
-- 효과가 없거나 악화된 변경은 되돌리거나 유지 이유 기록
-- `pnpm test`, `pnpm check` 통과 확인
+- [x] URL, 행동, viewport, throttling, 브라우저·Lighthouse 버전, cold/warm, 브라우저 프로필 동일 — `configSettings`를 리포트 JSON에서 직접 대조. **뷰포트만 Before가 미기록**이라 같다고 적을 수 없어 그대로 남겼다
+- [x] **After commit SHA 기록**
+- [x] LCP element, Hero 전송 크기, 요청 시작 순서, 가장 길었던 구간의 변화 비교
+- [x] Step 4에서 미확인으로 남긴 두 가지 → 위 "fallback과 layout shift 확인 결과" 참고
+- [x] 회귀 확인 → [Step 7 — 회귀 확인](measurement.md#step-7--회귀-확인). URL 복원 4종·뒤로/앞으로, Header 개수, 로딩·에러·빈 상태·재시도, 이미지 품질 전부 통과
+- [x] FSD 의존 방향과 Public API 우회 여부 확인 — lint 통과, `eslint-disable` 0건, 우회 import 0건
+- [x] 효과가 없거나 악화된 변경은 되돌리거나 유지 이유 기록 — 개입 3(preload)은 되돌렸고, 갱신 중 CLS 0.37은 유지 근거를 남겼다
+- [x] `pnpm test`, `pnpm check` 통과 확인 — `pnpm check` 통과, E2E 35/36(WebKit 1건은 6주차부터 기록된 플래키)
+
+#### Step 7에서 새로 나온 것
+
+측정을 끝내는 단계인데 개선 후보가 두 개 나왔다. **둘 다 고치지 않았다** — 코드를 바꾸면 After SHA가 무효가 되기 때문이다.
+
+- **모바일에 과대한 이미지가 나간다.** Step 4에서 데스크톱 표시 폭(1200px)만 기준으로 후보를 만들었다. 600w 후보를 하나 추가하면 풀린다
+- **다음 병목은 폰트다.** Hero를 줄이자 전송량의 79%가 폰트가 됐다. 이번 주 범위 밖이다
+
+`generateMetadata`가 prefetch 시작을 94.1ms → 109ms로 밀었다는 관찰도 남겼다. FCP는 오히려 좋아졌고 원인은 확정하지 못했다.
 
 ### Step 8. Advanced A (선택)
 
