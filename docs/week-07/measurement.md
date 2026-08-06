@@ -1385,6 +1385,23 @@ Step 6에서 슬라이스 3개(`_pages/home`, `_pages/product-list`, `entities/p
 
 `entities/cart/index.ts`와 `entities/wishlist/index.ts`가 자기 `model/`을 재export하는 것은 Public API를 정의하는 정상 형태다.
 
+## Advanced A — INP
+
+선택 과제의 상세 측정 절차와 결과는 [Advanced A — INP 측정 및 개선](advanced-a-inp.md)에 분리해 기록한다. Basic의 홈·상품 목록 로드 성능과는 다른 화면·지표·SHA를 사용하므로 같은 표에 놓지 않는다.
+
+| 항목              | 결과                                                            |
+| ----------------- | --------------------------------------------------------------- |
+| Before SHA        | `8aa15c5`                                                       |
+| 조건              | production build, CPU 4x, Network No throttling, 같은 카드 클릭 |
+| 반복              | Before 3회 / After 3회                                          |
+| 렌더 범위         | 24장 → 누른 카드 1장                                            |
+| INP 중앙값        | 107.2ms → 35.6ms (`−67%`)                                       |
+| processing 중앙값 | 79.26ms → 8.59ms (`−89%`)                                       |
+| 개입              | `wishlistIds` 배열 구독 → 카드별 `selected` boolean 구독        |
+| 상태              | 측정 완료, 최종 회귀·정적 검사·After SHA 기록 남음              |
+
+Before Profiler에서 `SyncExternalStore` 변경으로 관계없는 카드 23장까지 렌더되는 것을 확인한 뒤 selector를 변경했다. After에서는 누른 카드 1장만 렌더됐고, 감소한 총 71.6ms 중 70.7ms가 processing에서 나왔다. 상세 계산식, raw 결과, Profiler 대체 경로와 남은 증빙은 별도 문서를 기준으로 한다.
+
 ## metadata 증거
 
 > **요약** — 홈과 상품 목록에 `generateMetadata`를 붙이고 normal·정상 empty·query failure 세 상황의 document를 남겼다. 정상 empty는 0건을 설명하는 페이지 metadata에 OG fallback image를, query failure는 루트 metadata 상속을 보여 fallback이 갈린다.

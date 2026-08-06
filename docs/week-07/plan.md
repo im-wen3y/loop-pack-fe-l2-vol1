@@ -1,6 +1,6 @@
 # 7주차 진행 순서
 
-7주차는 코드 개선 과제가 아니라 측정 과제다. 합격선(점수·향상률)이 없고, 완료조건이 전부 "Before/After SHA, 5회 raw 값·중앙값·범위, 어떤 구간이 길었고 왜 그 변경을 골랐는지"를 제출물에서 확인할 수 있느냐다.
+7주차는 코드 개선 과제가 아니라 측정 과제다. 합격선(점수·향상률)이 없고, 완료조건은 "Before/After SHA, 정해진 반복 횟수의 raw 값·중앙값·범위, 어떤 구간이 길었고 왜 그 변경을 골랐는지"를 제출물에서 확인할 수 있느냐다. Basic의 Lighthouse는 5회, Advanced A의 상호작용은 Before/After 각 3회다.
 
 따라서 **최적화 코드를 먼저 건드리면 안 된다.** Before를 남길 수 없게 된다.
 
@@ -232,15 +232,38 @@ Step 3과 같은 조건에서 재측정했다. **After SHA는 `a081464`**(코드
 
 `generateMetadata`가 prefetch 시작을 94.1ms → 109ms로 밀었다는 관찰도 남겼다. FCP는 오히려 좋아졌고 원인은 확정하지 못했다.
 
-### Step 8. Advanced A (선택)
+### Step 8. Advanced A (선택) — 측정 완료, 최종 검증 남음
 
 Basic 완료 후, 실제 클릭에서 관계없는 카드 렌더 병목이 확인될 때만 진행한다.
+
+상세 절차, 트레이스 수치, Profiler 근거와 캡처는 [Advanced A — INP 측정 및 개선](advanced-a-inp.md)에 분리해 기록한다.
 
 - `/performance-lab/inp?pageSize=24`, 이미지 로드 완료 후 같은 상품 찜 버튼 1회 클릭
 - production build + CPU 4x slowdown, Before/After 각 3회
 - Interactions track: input delay / processing duration / presentation delay
-- profiling build에서 React Profiler로 렌더 범위와 변경 원인 확인
+- React Profiler로 렌더 범위와 변경 원인 확인. profiling build는 Next 16에서 Profiler가 열리지 않아 `pnpm exec next dev --webpack`으로 대체했고, 시간은 production build에서만 비교
 - 금지: `pageSize` 축소, 필수 계산 제거, `setTimeout`으로 갱신 지연
+
+실제 측정에서 관계없는 카드 렌더 병목이 확인됐다.
+
+| 항목                | Before                       | After                          |
+| ------------------- | ---------------------------- | ------------------------------ |
+| 렌더된 카드         | 24장 (`p1`~`p24`)            | 누른 카드 1장 (`p1`)           |
+| INP 중앙값          | 107.2ms                      | 35.6ms (`−67%`)                |
+| processing 중앙값   | 79.26ms                      | 8.59ms (`−89%`)                |
+| input delay 중앙값  | 1.04ms                       | 0.88ms                         |
+| presentation 중앙값 | 25.89ms                      | 25.54ms                        |
+| selector            | `wishlistIds` 배열 전체 구독 | 카드별 `selected` boolean 구독 |
+
+Before Profiler에서 `SyncExternalStore` 변경으로 24장이 모두 렌더되는 것을 확인한 뒤에만 selector를 변경했다. After에서는 누른 카드 1장만 렌더됐고, 감소한 총 71.6ms 중 70.7ms가 processing에서 나왔다. input delay와 presentation delay는 거의 그대로라 변경 효과가 렌더 처리 구간에 집중됐다는 해석과 맞는다.
+
+측정과 개입은 끝났다. 아래 항목을 마쳐야 Step 8 전체 완료다.
+
+- [ ] After Profiler의 `Why did this render?` 캡처
+- [ ] 뷰포트 값 기록
+- [ ] 카드 24장·필수 계산·즉시 피드백·복수 카드 상태 회귀 확인
+- [ ] `pnpm lint && pnpm exec tsc --noEmit`
+- [ ] 변경 커밋 후 Advanced A After SHA 기록
 
 ## 측정 기록
 
