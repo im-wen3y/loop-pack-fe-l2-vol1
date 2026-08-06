@@ -33,8 +33,9 @@ const HomeData = async () => {
 // HeroSection 껍데기와 이미지를 첫 flush로 내보내고 카피만 스트리밍하면
 // 이미지가 홈 API를 기다리지 않는다. .copy는 .hero 안에서 absolute라 교체해도 아래가 밀리지 않는다.
 //
-// 두 경계가 각각 홈 데이터를 조회하지만 getServerQueryClient가 요청 단위로 같은 QueryClient를
-// 돌려주므로 /api/home 요청은 1회다.
+// 두 경계가 각각 홈 데이터를 조회하지만 /api/home 요청은 1회다. 합쳐주는 것은 QueryClient 공유가
+// 아니라 Next의 request memoization이다(같은 render에서 URL·options가 같은 native fetch는 한 번만
+// 나간다). Step 6 서버 호출 계수에서 getServerQueryClient의 cache() 유무와 무관하게 1회임을 확인했다.
 //
 // h1과 페이지 설명은 홈 응답이 아니라 이 페이지가 소유한다. banner.title·description은
 // 배너 카피라 데이터를 기다리는 게 맞고, 그것만 있으면 페이지 제목·설명이 함께 대기에 갇힌다.
