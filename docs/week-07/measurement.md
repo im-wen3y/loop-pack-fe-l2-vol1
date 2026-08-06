@@ -6,27 +6,44 @@ Step 3(Before)과 Step 7(After)에서 같은 표를 채운다.
 
 ## 홈 — 측정 조건
 
-| 항목               | Before                                    | After |
-| ------------------ | ----------------------------------------- | ----- |
-| SHA                | `3da2db4`                                 |       |
-| URL / query string | `http://localhost:3000`                   |       |
-| 행동               | 새 탭에서 홈 최초 진입                    |       |
-| 실행 방식          | `pnpm build` 후 `pnpm start`              |       |
-| 측정 도구          | Lighthouse 13.3.0 (DevTools 패널)         |       |
-| Mode / Device      | Navigation / Desktop                      |       |
-| throttlingMethod   | `simulate` (RTT 40ms, 10,240Kbps, CPU 1x) |       |
-| Network 패널       | **No throttling**                         |       |
-| screenEmulation    | `disabled: true` (실제 창 크기)           |       |
-| 캐시               | Clear storage + Disable cache             |       |
-| 브라우저 / 프로필  | Chrome 150, 시크릿 창                     |       |
-| cold load / warm   | cold load                                 |       |
-| 측정 일시          | 2026-08-04 21:42~21:44 KST                |       |
+| 항목               | Before                                    | After                                     |
+| ------------------ | ----------------------------------------- | ----------------------------------------- |
+| SHA                | `3da2db4`                                 | `a081464` (코드는 `29c7900`과 동일)       |
+| URL / query string | `http://localhost:3000`                   | 동일                                      |
+| 행동               | 새 탭에서 홈 최초 진입                    | 동일                                      |
+| 실행 방식          | `pnpm build` 후 `pnpm start`              | 동일                                      |
+| 측정 도구          | Lighthouse 13.3.0 (DevTools 패널)         | Lighthouse 13.3.0 (DevTools 패널)         |
+| Mode / Device      | Navigation / Desktop                      | Navigation / Desktop                      |
+| throttlingMethod   | `simulate` (RTT 40ms, 10,240Kbps, CPU 1x) | `simulate` (RTT 40ms, 10,240Kbps, CPU 1x) |
+| Network 패널       | **No throttling**                         | **No throttling**                         |
+| screenEmulation    | `disabled: true` (실제 창 크기)           | `disabled: true` (실제 창 크기)           |
+| 캐시               | Clear storage + Disable cache             | 동일                                      |
+| 브라우저 / 프로필  | Chrome 150, 시크릿 창                     | 동일                                      |
+| cold load / warm   | cold load                                 | cold load                                 |
+| 뷰포트             | **미기록**                                | **945 × 929**                             |
+| 측정 일시          | 2026-08-04 21:42~21:44 KST                | 2026-08-06 18:41~18:46 KST                |
+
+After의 `throttlingMethod`·`throttling`·`screenEmulation`은 리포트 JSON의 `configSettings`에서 직접 대조했다(`results/after-final-lh-1.json`). 값이 Before와 문자열까지 같다.
+
+**뷰포트는 Before가 미기록이다.** `screenEmulation: disabled: true`라 실제 창 크기로 재는데, Before 홈 측정 당시 창 크기를 남기지 않았다. 945 × 929는 상품 목록 녹화에서 확인된 값이라 After를 거기에 맞췄지만, **홈 Before가 같은 크기였다는 보장은 없다.** 조건을 맞췄다고 적을 수 없는 항목이므로 그대로 남긴다.
+
+![After 뷰포트 945 × 929](./assets/after-final-viewport.png)
 
 Lighthouse의 `simulate`는 스로틀링 없이 수집한 뒤 위 모델로 환산한다. 따라서 **Network 패널 스로틀링은 반드시 꺼야 한다.** 켜두면 수집 단계에 실제 지연이 걸린 위에 시뮬레이션이 한 번 더 얹힌다(아래 폐기 기록 참고).
 
 ![Lighthouse 패널 설정 - Navigation / Desktop / Performance, Clear storage 켬, Simulated throttling](./assets/lighthouse-settings.png)
 
 ![Network 패널 설정 - Disable cache 켬, No throttling](./assets/network-no-throttling.png)
+
+After 측정에서도 같은 조건을 화면으로 남겼다. JSON의 `configSettings`는 Lighthouse가 스스로 기록한 값이라 **Network 패널이 실제로 꺼져 있었는지는 증명하지 못한다.** 이중 스로틀링으로 Before 1차를 폐기했던 항목이라 패널 상태를 따로 찍었다.
+
+![After Lighthouse 패널 설정](./assets/after-final-lighthouse-settings.png)
+
+![After Network 패널 - No throttling](./assets/after-final-network-no-throttling.png)
+
+![After Performance 패널 설정 - CPU·Network 모두 No throttling](./assets/after-performance-settings.png)
+
+세 번째는 Lighthouse가 아니라 Performance 패널 설정이다. LCP 구간 분해와 6상태 녹화가 이 조건에서 나왔다.
 
 측정은 `3da2db4` 커밋 직전의 작업 트리에서 수행했고, 그 트리의 코드는 `3da2db4`와 같다. 이후 문서 커밋은 빌드 산출물에 영향을 주지 않는다.
 
@@ -55,21 +72,80 @@ Network 패널을 `Fast 4G`로 둔 채 Lighthouse를 돌려 이중 스로틀링�
 
 이 측정의 리포트 HTML과 `Fast 4G` 설정 스크린샷은 재측정 때 덮어써서 남아 있지 않다. 위 수치는 폐기 전에 리포트에서 추출한 값이다.
 
+### After — Lighthouse 5회 (Step 7)
+
+`a081464` cold load 5회다. 원본은 `results/after-final-lh-1.json` ~ `-5.json`이다.
+
+| 지표  | 1      | 2      | 3      | 4      | 5      | 중앙값 | 최솟값 | 최댓값 |
+| ----- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
+| FCP   | 248.8  | 248.6  | 250.2  | 251.8  | 249.1  | 249.1  | 248.6  | 251.8  |
+| LCP   | 2248.8 | 2248.6 | 2250.2 | 2251.8 | 2249.1 | 2249.1 | 2248.6 | 2251.8 |
+| CLS   | 0      | 0      | 0      | 0      | 0      | 0      | 0      | 0      |
+| SI    | 250.5  | 251.0  | 250.2  | 257.7  | 249.1  | 250.5  | 249.1  | 257.7  |
+| Score | 89     | 89     | 89     | 89     | 89     | 89     | 89     | 89     |
+
+TBT는 5회 모두 0ms다.
+
+![After Lighthouse 요약 — Performance 89](./assets/after-final-lighthouse-overview.png)
+
+#### Before 대비
+
+| 지표       | Before        | After        | 변화                                      |
+| ---------- | ------------- | ------------ | ----------------------------------------- |
+| FCP 중앙값 | 250.7ms       | **249.1ms**  | −1.6ms (사실상 동일)                      |
+| LCP 중앙값 | 8289.6        | **2249.1**   | **−6,040.5ms (−72.9%)**                   |
+| CLS        | 0             | 0            | 유지                                      |
+| Score      | 75            | **89**       | +14                                       |
+| 5회 범위   | LCP 97.2ms 폭 | LCP 3.2ms 폭 | 좁아짐 (전송량이 줄어 환산 편차도 줄었다) |
+
+#### 예상 2건 중 1건이 반증됐다
+
+측정 전에 적어둔 예상은 두 가지였다.
+
+| 예상                                                         | 결과                              |
+| ------------------------------------------------------------ | --------------------------------- |
+| LCP는 2,300ms 근처로 줄 것이다                               | **적중** (2,249.1ms)              |
+| FCP는 Before(250.7ms)보다 나빠질 것이다 — Step 4에서 351.7ms | **반증** (249.1ms, Before와 동일) |
+
+FCP 예상의 근거는 Step 4의 인과 사슬이었다. `Header 조기 하이드레이션 → /products prefetch 94.1ms → React 19가 그 라우트 스타일시트를 head에 hoisting → 첫 페인트 차단`.
+
+After의 네트워크 기록에서 이 사슬이 끊긴 지점을 찾았다.
+
+|                           | Step 4                      | After                     |
+| ------------------------- | --------------------------- | ------------------------- |
+| `/products` prefetch 시작 | 94.1ms                      | **109ms**                 |
+| FCP(실측)                 | —                           | 96.6ms                    |
+| 관계                      | prefetch가 FCP보다 **앞섬** | prefetch가 FCP보다 **뒤** |
+
+FCP 이전에 완료되는 CSS는 홈 자신의 3건(41→49ms, 각 966·1,905·997 B, 모두 `VeryHigh`)뿐이다. prefetch가 109ms로 밀리면서 라우트 스타일시트가 첫 페인트를 막지 못한다.
+
+**왜 밀렸는지는 확정하지 못했다.** Step 5·6에서 클라이언트 번들과 컴포넌트 트리가 바뀌었으므로 그중 하나일 텐데, Step 4 트레이스와 직접 대조하지 않았다. 확정된 것은 "지금은 prefetch가 FCP를 막지 않는다"까지다.
+
 ## LCP 구간 분해
 
 Chrome DevTools Performance 패널의 Insights → `LCP breakdown`에서 읽은 값이다. **Lighthouse와 달리 스로틀링 없는 실측이므로 5회 표와 같은 숫자가 아니다.** 측정 조건은 CPU·Network 모두 `No throttling`, Disable cache, 시크릿 창, `Record and reload` 1회이고, 2026-08-05 13:25 KST에 녹화했다. 코드는 `3da2db4`와 동일하다(`git diff 3da2db4 HEAD -- . ':!docs'`가 비어 있다).
 
 아래 표, filmstrip, waterfall은 **모두 같은 녹화 하나**(`results/before-home-record.json`)에서 뽑았다.
 
-| 구간                   | Before                 | After | 비중 | 비고                                                  |
-| ---------------------- | ---------------------- | ----- | ---- | ----------------------------------------------------- |
-| Time to first byte     | 19ms                   |       | 3%   | head와 `loading.tsx` fallback이 먼저 flush            |
-| Resource load delay    | **514ms**              |       | 78%  | document가 533.6ms에 끝나야 `<img>`가 도착            |
-| Resource load duration | 47ms                   |       | 7%   | 7.4MB를 localhost에서 받는 시간                       |
-| Element render delay   | 83ms                   |       | 13%  | 디코딩·래스터화                                       |
-| **실측 LCP**           | **662.1ms**            |       |      | Performance 패널 LCP 마커                             |
-| Hero 전송 크기         | 7,368.7KB (원본 7.5MB) |       |      | `hero-original.jpg` 3840×2160                         |
-| LCP element            | Hero 이미지            |       |      | `img.HeroSection-module__lqBdna__image`, Type `image` |
+| 구간                   | Before                 | After               | Before 비중 | 비고                                                  |
+| ---------------------- | ---------------------- | ------------------- | ----------- | ----------------------------------------------------- |
+| Time to first byte     | 19ms                   | **11ms**            | 3%          | head와 `loading.tsx` fallback이 먼저 flush            |
+| Resource load delay    | **514ms**              | **5ms**             | 78%         | document가 533.6ms에 끝나야 `<img>`가 도착            |
+| Resource load duration | 47ms                   | **5ms**             | 7%          | 7.4MB를 localhost에서 받는 시간                       |
+| Element render delay   | 83ms                   | **76ms**            | 13%         | 디코딩·래스터화                                       |
+| **실측 LCP**           | **662.1ms**            | **96.6ms** (−85.4%) |             | Performance 패널 LCP 마커                             |
+| Hero 전송 크기         | 7,368.7KB (원본 7.5MB) | **175.1KB**         |             | `hero-1200.webp` 1200×675                             |
+| LCP element            | Hero 이미지            | Hero 이미지 (동일)  |             | `img.HeroSection-module__lqBdna__image`, Type `image` |
+
+After 녹화는 `results/after-final-home-record.json`이다. 조건은 Before와 같다(CPU·Network `No throttling`, Disable cache, 시크릿 창, `Record and reload` 1회, 2026-08-06 18:50~18:55 KST).
+
+![After LCP breakdown — TTFB 11ms / Resource load delay 5ms / Resource load duration 5ms / Element render delay 76ms](./assets/after-final-lcp-breakdown.png)
+
+![After LCP 마커 Summary — Type image, Size 468882, Timestamp 96.6ms](./assets/after-final-lcp-element.png)
+
+**Before에서 78%를 차지하던 `Resource load delay`가 514ms → 5ms로 사라졌다.** 개입 4(`<img>`를 Suspense 밖 첫 flush로 올림)의 효과이고, `Resource load duration` 47ms → 5ms는 파일 크기(7.5MB → 179KB)의 효과다. 두 개입이 서로 다른 구간에 걸렸다는 것이 여기서 분리되어 보인다.
+
+`Element render delay`만 83ms → 76ms로 거의 그대로다. 디코딩·래스터화는 이번 개입 대상이 아니었고, 이제 실측 LCP 96.6ms의 **79%**가 이 구간이다. 다음에 줄일 것이 있다면 여기다.
 
 ![Insights LCP breakdown - TTFB 19ms / Resource load delay 514ms / Resource load duration 47ms / Element render delay 83ms](./assets/lcp-breakdown.png)
 
@@ -910,14 +986,70 @@ if (signal?.aborted) {
 
 각 트레이스의 `LayoutShift` 이벤트를 직접 집계한 값이다.
 
-| #   | 시나리오  | Before                 | After                  | 판정                   |
-| --- | --------- | ---------------------- | ---------------------- | ---------------------- |
-| 1   | 최초 진입 | 0 (shift 0건)          | 0 (shift 0건)          | 동일                   |
-| 2   | 갱신      | **0.3671410915759678** | **0.3671410915759678** | 비트 단위로 동일       |
-| 3   | 0건       | 7.256766908862576e-05  | 7.256766908862576e-05  | 동일                   |
-| 4-a | 최초 실패 | 0 (shift 0건)          | 0 (shift 0건)          | 동일                   |
-| 4-b | 갱신 실패 | 0.0003991502119214209  | **0 (shift 0건)**      | **개선**               |
-| 5   | 취소      | 0.3671410915759678     | 0.4334352806           | 조작 순서가 다름(아래) |
+| #   | 시나리오  | Before                 | After (Step 5)         | **After (Step 7)**        | 판정                        |
+| --- | --------- | ---------------------- | ---------------------- | ------------------------- | --------------------------- |
+| 1   | 최초 진입 | 0 (shift 0건)          | 0 (shift 0건)          | **0 (shift 0건)**         | 동일                        |
+| 2   | 갱신      | **0.3671410915759678** | **0.3671410915759678** | **0.3671410915759678**    | 비트 단위로 동일            |
+| 3   | 0건       | 7.256766908862576e-05  | 7.256766908862576e-05  | **7.256766908862576e-05** | 비트 단위로 동일            |
+| 4-a | 최초 실패 | 0 (shift 0건)          | 0 (shift 0건)          | **0 (shift 0건)**         | 동일                        |
+| 4-b | 갱신 실패 | 0.0003991502119214209  | **0 (shift 0건)**      | **0 (shift 0건)**         | **개선 유지**               |
+| 5   | 취소      | 0.3671410915759678     | 0.4334352806           | **0.3671410915759678**    | **Before와 비트 단위 동일** |
+
+Step 7 값은 `results/after-final-products-*.json` 6건에서 `LayoutShift` 이벤트를 직접 집계한 것이다. 측정 조건은 `a081464` + `scenario=slow` 임시 패치, 뷰포트 945 × 929, production build, No throttling, Disable cache, 시크릿 창이다.
+
+#### 취소 시나리오 — Step 5의 판정이 재현으로 확인됐다
+
+Step 5에서 취소 CLS가 0.4334로 튀었을 때 "개입 때문이 아니라 조작 순서가 달라서"라고 판정했다([근거](#취소-cls-0433은-개입-때문이-아니다)). 근거는 shift 발생 시각과 응답 완료 시각의 대조였고, 추론이었다.
+
+Step 7에서 전환 간격을 응답 시간(1.5초)보다 짧게 유지하자 **Before와 소수점 16자리까지 같은 `0.3671410915759678`이 나왔다.** 같은 조작에서 같은 값이 재현되므로 그때 판정이 맞았다는 것이 실측으로 뒷받침된다.
+
+취소 자체도 유지된다. `didFail` 3건이 전부 `/api/products`이고, Network 패널에도 `(canceled)` 3건이 찍혔다(Before 0건).
+
+```
+/api/products?q=&category=casual&…&scenario=slow
+/api/products?q=&category=fashion&…&scenario=slow
+/api/products?q=&category=home&…&scenario=slow
+```
+
+![After 취소 Network — casual·fashion·home이 (canceled), digital만 200](./assets/after-final-products-race-network.png)
+
+#### 차단된 요청은 트레이스에 남지 않는다
+
+실패 두 시나리오는 Network 패널의 `Block request URL`(`*/api/products*`)로 재현했다. 이 앱은 `scenario`를 화면에서 API로 보내지 않으므로 URL 조작으로는 실패를 만들 수 없다.
+
+**차단된 요청은 트레이스에 `ResourceSendRequest`도 `ResourceFinish`도 남기지 않는다.** 그래서 4-a·4-b 트레이스의 `/api/products` 요청 건수는 0이다. 요청이 없었던 것이 아니라 네트워크 스택에 닿기 전에 막힌 것이다.
+
+4-a의 `didFail` 4건은 차단과 무관하다. requestId를 URL에 매칭하면 `/`, `/products`, `/?_rsc=…`, `/products?_rsc=…`로, **정상 최초 진입 트레이스에도 똑같이 4건이 있다.** 라우터가 내비게이션 중 취소하는 prefetch라 시나리오 판정에 쓰지 않는다.
+
+증거는 화면 캡처와 `LayoutShift` 집계로 남긴다.
+
+![Step 7 갱신 실패 — 상단 알림, 유지된 목록, 카테고리 "캐주얼"](./assets/after-final-products-refetch-error.png)
+
+![Step 7 최초 실패 — 목록 자리에 에러, 필터는 남아 있다](./assets/after-final-products-init-error.png)
+
+![요청 차단 설정 — `*http://localhost:3000/api/products*`](./assets/after-final-products-blocking.png)
+
+Step 5에서 확인한 갱신 실패의 세 조건(목록 유지 / 상단 고정 알림 / `select`가 URL과 일치)이 Step 7에서도 그대로다. 캡처의 카테고리는 "캐주얼"이고 목록은 이전 조건의 30개가 유지된다.
+
+#### slow 조건과 6상태 화면
+
+요청 URL에 `scenario=slow`가 실렸다는 증거와 각 상태 화면이다.
+
+![요청 URL에 scenario=slow](./assets/after-final-products-network-slow.png)
+
+![최초 로딩 — 스켈레톤 12개](./assets/after-final-products-init.png)
+
+![갱신 — 기존 목록이 남은 채 흐려짐](./assets/after-final-products-refetch.png)
+
+![0건 — "검색 결과가 없습니다."](./assets/after-final-products-empty.png)
+
+![취소 — 마지막 조건의 목록](./assets/after-final-products-race.png)
+
+0건 시나리오의 트레이스에는 debounce 중간 요청까지 3건이 잡혔고(`q=zzz` → `q=zzzz` → `q=zzzzqqq`), 앞 2건이 `didFail`로 취소됐다. 카테고리 전환뿐 아니라 **검색 입력 경로에서도 취소가 걸린다**는 것이 여기서 확인된다.
+
+![Step 7 갱신 Layout shifts — CLS 0.37, 마커 1건](./assets/after-final-products-layout-shifts.png)
+
+갱신 CLS 0.37은 의도적으로 남긴 값이다. Insights가 `Could not detect any layout shift culprits`를 표시하는 것까지 Before와 같아서, 원인 판정은 여전히 트레이스 JSON의 `impacted_nodes`로만 가능하다.
 
 ### 갱신 실패 — 세 조건이 모두 바뀌었다
 
@@ -1037,6 +1169,222 @@ CLS만 미충족으로 남는다. [6번 반증 실험](#6-cls-037의-원인--반
 | 갱신 실패 화면에서 카테고리 `select`가 "전체"로 보이는데 URL은 `category=goods`     | ~~select 값이 URL이 아니라 쿼리 결과에서 파생된다~~ → **반증됨.** `value`는 URL에서 온다. 그 값을 가진 `option`이 사라져 브라우저가 첫 항목을 표시한 것이다                         | `ProductFilters.tsx`의 `value` prop 출처를 소스에서 확인 → `useProductFilters`(URL)였다                                                                             | 위와 같은 변경으로 `categories`가 유지되면 함께 풀린다 → `e836a06`                                                       |
 | 조건을 빠르게 연속으로 바꿔도 요청 5건이 전부 완료되고 `(canceled)`가 없다          | `queryFn`이 `AbortSignal`을 받지 않아 취소 신호가 `fetch`까지 닿지 않는다                                                                                                           | `signal`을 연결한 뒤 같은 조작에서 트레이스의 `didFail`이 true로 바뀌는지 확인 → **2건 확인**                                                                       | `queryFn: ({ signal }) => getProductList(params, signal)` → `c29ccaa`, [After](#취소--트레이스의-didfail이-증거다)       |
 
+## Step 7 — 홈 After 추가 관찰
+
+Step 4에서 미확인으로 남긴 두 항목을 여기서 채우고, After 측정에서 새로 나온 것을 기록한다.
+
+### CLS 0의 시각 증거 (Step 4 미확인 해소)
+
+Step 4까지 홈 CLS 0의 근거는 트레이스 JSON의 `LayoutShift` 0건과 Insights의 CLS 수치뿐이었다. Performance 패널 캡처가 없어 미확인으로 남겼던 항목이다.
+
+`results/after-final-home-record.json`에서 `LayoutShift` 이벤트는 **0건**, score 합 **0**이다. Insights의 `Layout shift culprits` 카드가 **`No layout shifts`**를 명시한다.
+
+![After Insights — Layout shift culprits "No layout shifts", CLS 0, LCP 0.10s](./assets/after-final-layout-shifts.png)
+
+**`Layout shifts` 트랙 자체는 화면에 없다.** shift가 0건이면 DevTools가 트랙을 렌더하지 않는다. "트랙을 못 찾아서 안 찍었다"와 구분하기 위해 Insights 카드를 증거로 남긴다. 이쪽이 "0건"을 명시적으로 말해주므로 빈 트랙 캡처보다 낫다.
+
+### 모바일 뷰포트 (Step 4 미확인 해소)
+
+Step 4까지의 녹화는 전부 데스크톱이라 `@media (max-width: 640px)`의 `aspect-ratio: 4 / 5` 분기가 한 번도 검증되지 않았다. 녹화는 `results/after-final-home-mobile.json`이다.
+
+`aspect-ratio`를 트레이스 값으로 역산해 확인했다.
+
+|                     | 데스크톱         | 모바일                    |
+| ------------------- | ---------------- | ------------------------- |
+| LCP element size    | 468,882px²       | 160,205px²                |
+| 역산한 hero 박스    | 913 × 513.6      | **358 × 447.5**           |
+| `PaintImage` height | —                | **447.5** (역산값과 일치) |
+| 폭 ÷ 높이           | 1.777 = **16/9** | 0.800 = **4/5**           |
+| 실측 LCP            | 96.6ms           | 95.1ms                    |
+| `LayoutShift`       | 0건              | **0건**                   |
+
+데스크톱 역산값 913 × 513.6은 Lighthouse가 기록한 `boundingRect`(913 × 514)와 일치하고, 뷰포트 945에서 `PageContainer`의 좌우 여백 32px을 뺀 값과도 맞는다. 모바일은 390px 뷰포트에서 같은 계산이 성립한다.
+
+![모바일 hero — @media (max-width: 640px) 적용 상태](./assets/after-final-mobile-hero.png)
+
+![모바일 LCP breakdown — TTFB 10ms / delay 4ms / duration 7ms / render delay 74ms](./assets/after-final-mobile-lcp-breakdown.png)
+
+**모바일에서도 `LayoutShift`가 0건이다.** `HeroSection.module.css`의 주석("스켈레톤은 `.hero`와 `.copy`를 그대로 재사용한다. 바깥 aspect-ratio가 같아 실제 Hero로 교체될 때 아래 콘텐츠가 밀리지 않는다")이 브레이크포인트 양쪽에서 성립한다는 것이 확인됐다.
+
+### 새로 발견한 것 1 — metadata가 prefetch 비용을 올렸다
+
+홈 문서 요청 하나에 딸려 나가는 `/products` RSC prefetch가 응답마다 약 500ms를 쓴다.
+
+| 요청                                | 시작 → 종료     | 소요  |
+| ----------------------------------- | --------------- | ----- |
+| `/products?_rsc=…`                  | 117 → 629ms     | 512ms |
+| `/products?category=digital&_rsc=…` | 575 → 1,092ms   | 517ms |
+| `/products?category=home&_rsc=…`    | 582 → 1,095ms   | 513ms |
+| `/products?category=goods&_rsc=…`   | 629 → 1,145ms   | 516ms |
+| `/products?category=fashion&_rsc=…` | 630 → 1,148ms   | 518ms |
+| `/products?category=casual&_rsc=…`  | 1,096 → 1,613ms | 517ms |
+
+원인은 Step 6에서 붙인 `generateMetadata`다. 상품 목록 metadata가 mock API(기본 지연 500ms)를 기다리므로 **prefetch 응답도 그만큼 늦어진다.** Step 6 이전에는 없던 비용이다.
+
+우선순위가 전부 `Low`이고 FCP(96.6ms)·LCP(96.6ms) 이후라 **사용자 체감 지표에는 잡히지 않았다.** Lighthouse 5회에서 FCP·LCP·CLS·TBT 어디에도 영향이 없다.
+
+다만 홈 진입 한 번에 서버가 6회 × 약 500ms를 더 일한다. 명세 3단계가 요구한 동적 metadata의 대가이고, 이번 범위에서 되돌릴 항목은 아니라고 판단해 기록만 남긴다. 되돌리려면 `generateMetadata`에서 조회를 빼야 하는데 그건 3단계 요구사항을 깬다.
+
+### 새로 발견한 것 2 — 모바일에 과대한 이미지가 나간다
+
+Insights `Improve image delivery`의 절감 추정치가 데스크톱 57.8KB, **모바일 149KB**다.
+
+`srcset` 후보가 `hero-1200.webp 1200w`와 `hero-2400.webp 2400w` 둘뿐이라, 358px 박스에도 1200w(179KB)를 받는다. 더 작은 후보가 없어서 브라우저가 고를 수 없다.
+
+Step 4에서 후보를 만들 때 데스크톱 표시 폭 상한(1200px)만 기준으로 삼았고 모바일 분기를 계산에 넣지 않았다. 600w 후보를 하나 추가하면 풀리는 문제이지만, **Step 7은 같은 조건에서 재측정하는 단계라 여기서 코드를 고치면 After SHA가 무효가 된다.** 다음 주 항목으로 남긴다.
+
+### 다음 병목은 폰트다
+
+After의 총 전송량은 2,603,503 B이고 그중 폰트가 **2,057,992 B(79.0%)**다. 이미지 13.3%, JS 6.8%, 텍스트 0.9%다.
+
+Lighthouse 시뮬레이션 LCP가 5회 모두 `FCP + 정확히 2,000ms`인 것도 여기서 설명된다. 총 전송량 ÷ 10,240Kbps = 2,034ms로, **`simulate`가 보는 LCP는 이제 hero가 아니라 폰트 다운로드다.** 실측 96.6ms와 시뮬레이션 2,249.1ms의 23배 차이가 이 계산에서 나온다.
+
+Step 4에서 hero를 7.5MB → 179KB로 줄이면서 전송량 1위가 폰트로 바뀌었고(78.4%), After에서도 그대로다(79.0%). `next/font/local`은 `next/font/google`과 달리 자동 서브셋을 하지 않는다. 이번 주 범위 밖이지만 다음 병목은 확정됐다.
+
+## Step 7 — 전체 검증
+
+`a081464`에서 `scenario=slow` 임시 패치를 되돌린 뒤 실행했다.
+
+| 검증                     | 결과                                                      |
+| ------------------------ | --------------------------------------------------------- |
+| `pnpm check` — test      | 8 파일 / **59 통과** (286ms)                              |
+| `pnpm check` — lint      | 통과                                                      |
+| `pnpm check` — typecheck | 통과                                                      |
+| `pnpm check` — build     | 통과. `/`·`/products` 모두 `ƒ (Dynamic)`                  |
+| `pnpm test:e2e`          | **35 / 36 통과.** WebKit 1건은 기존에 기록된 플래키(아래) |
+
+### E2E 1차 실행은 무효다 — 측정용 서버가 재사용됐다
+
+첫 실행에서 32건이 실패했는데 코드 회귀가 아니었다. [playwright.config.ts](../../playwright.config.ts)가 이렇게 되어 있다.
+
+```ts
+webServer: {
+  command: 'pnpm dev',
+  url: 'http://localhost:3000',
+  reuseExistingServer: !process.env.CI,
+}
+```
+
+Step 7 녹화용으로 띄워둔 **`scenario=slow` 패치가 박힌 production 서버**가 3000번을 점유하고 있었고, Playwright가 `pnpm dev`를 새로 띄우지 않고 그 서버를 그대로 썼다. 모든 응답이 1.5초로 늘어나 debounce·연속 조작 타이밍을 전제한 테스트가 무너졌다.
+
+판별 근거는 문서 응답 시간이었다.
+
+```
+curl -w 'total=%{time_total}' http://localhost:3000/products
+→ total=1.535917
+```
+
+서버를 내리고 다시 돌리자 35/36이 됐다. **측정과 E2E를 같은 날 수행하면 다시 밟기 쉬운 함정이라 기록해 둔다.** E2E는 production 빌드가 아니라 dev 서버를 쓰므로, `pnpm check`의 빌드 결과와도 무관하다.
+
+### WebKit debounce 이탈 — 회귀가 아니다
+
+남은 1건은 `debounce 대기 중 페이지를 떠나면 검색어 변경을 취소한다`(WebKit 전용)다. Chromium은 통과한다.
+
+```
+Expected: "http://localhost:3000/"
+Received: "http://localhost:3000/products?q=%EC%8A%A4%ED%83%A0%EB%A6%AC"
+```
+
+검색어 입력(debounce 300ms) 중 Commerce 링크로 `/`에 나가는 흐름인데, `/`로 가는 내비게이션이 끝나기 전에 debounce가 발화해 `?q=…`를 도로 쓴다.
+
+**6주차에 이미 관찰하고 판정한 항목이다**(`docs/week-06/decisions.md` 12절 앞). 당시 격리 재현 실패율이 `--repeat-each=5`에서 2/5였고, 원인은 "홈의 서버 prefetch 지연(약 500ms)이 검색 debounce(300ms)보다 길어 두 내비게이션이 경합한다"는 가설까지만 세워두고 미뤘다.
+
+Step 7에서 같은 방법으로 다시 쟀다.
+
+| 시점   | 격리 실패율 (`--repeat-each=5`) |
+| ------ | ------------------------------- |
+| 6주차  | 2 / 5                           |
+| Step 7 | **2 / 5**                       |
+
+**비율이 그대로다.** Step 6의 `generateMetadata` 추가가 홈 내비게이션을 더 느리게 만들었다면 실패율이 올랐어야 하는데 변화가 없다. 회귀로 판정하지 않는다.
+
+가설을 뒷받침하는 관찰이 하나 더 나왔다. **실패한 회차만 느리다.**
+
+```
+1회 ✘ 6.9s     2회 ✓ 2.3s     3회 ✓ 2.3s     4회 ✓ 2.3s     5회 ✘ 6.8s
+```
+
+통과는 2.3초로 일정하고 실패는 6.8~6.9초다. 홈 내비게이션이 느려질 때만 debounce와 경합해 진다는 6주차 가설과 방향이 맞는다. 원인 확정은 이번에도 하지 않았다.
+
+## Step 7 — 회귀 확인
+
+`scenario=slow` 패치를 제거한 production 서버에서 확인했다.
+
+### URL 상태 복원 — 검색·카테고리·정렬·페이지
+
+픽스처가 30건이고 `PRODUCT_PAGE_SIZE = 12`라 **카테고리를 걸면 6건이 되어 2페이지가 존재하지 않는다.** 그래서 페이지를 먼저 만들고 필터를 나중에 거는 순서로 밟았다. 이 순서면 필터가 `page`를 리셋하는 것도 같은 흐름에서 확인된다.
+
+```
+/products → ?page=2 → ?sort=price-asc → &category=fashion → &q=가디건
+```
+
+뒤로/앞으로를 왕복하며 **주소창 값과 화면 컨트롤 값이 어긋나는 지점이 있는지**를 봤다.
+
+| 되돌아간 URL                                | 검색   | 카테고리 | 정렬        | 총 건수 | 판정 |
+| ------------------------------------------- | ------ | -------- | ----------- | ------- | ---- |
+| `?sort=price-asc&category=fashion&q=가디건` | 가디건 | 패션     | 낮은 가격순 | 1개     | 일치 |
+| `?sort=price-asc&category=fashion`          | 빈칸   | 패션     | 낮은 가격순 | 6개     | 일치 |
+| `?sort=price-asc`                           | 빈칸   | 전체     | 낮은 가격순 | 30개    | 일치 |
+| `?page=2`                                   | 빈칸   | 전체     | 최신순      | 30개    | 일치 |
+| `/products`                                 | 빈칸   | 전체     | 최신순      | 30개    | 일치 |
+
+앞으로 가기로 정순 복귀했을 때도 다섯 상태 모두 같았다.
+
+**Step 5에서 관찰한 결함(`category=goods`인데 select는 "전체")이 재현되지 않았다.** 정렬을 걸었을 때 `page`가 URL에서 사라지는 것도 확인했다(4행 → 3행).
+
+![URL 복원](assets/after-final-regression-url-restore.png)
+
+카테고리가 `fashion`(6건)일 때 페이지네이션이 `1 / 1`로 줄고, 필터 없을 때는 `1 / 3`으로 돌아온다. 총 건수 표시와 페이지 수가 함께 움직인다.
+
+### 장바구니·위시리스트와 Header 개수
+
+| 조작                 | Header                      | 확인                                     |
+| -------------------- | --------------------------- | ---------------------------------------- |
+| 홈에서 찜 2 · 담기 3 | 위시리스트 2 장바구니 3     | 개수가 조작대로 오른다                   |
+| `/products`로 이동   | 유지                        | **같은 상품의 찜 버튼이 눌린 상태 유지** |
+| 목록에서 1개 더 담기 | 장바구니 4                  | 페이지를 넘어가도 같은 store다           |
+| 새로고침             | 위시리스트 2 장바구니 4     | persist 통과                             |
+| 찜 1개 해제          | **위시리스트 1 장바구니 4** | 두 store가 독립적이다                    |
+
+![Header 개수](assets/after-final-regression-header-count.png)
+
+마지막 행의 상태다. 찜을 해제했는데 장바구니 4는 그대로다.
+
+### 로딩·에러·빈 상태·재시도
+
+`scenario=slow` 없이 정상 응답(0.5초)으로 다시 확인했다. 화면 캡처는 [목록 6상태 관찰](#목록-6상태-관찰)에 이미 남아 있어 여기서는 통과 여부만 기록한다.
+
+| 상태   | 재현                         | 결과                                        |
+| ------ | ---------------------------- | ------------------------------------------- |
+| 로딩   | `/products` 새로고침         | 스켈레톤 → 목록 교체                        |
+| 빈     | `?q=zzzzqqq`                 | "검색 결과가 없습니다." + 페이지네이션 없음 |
+| 에러   | `*/api/products*` 요청 차단  | 목록 자리에 에러 + `다시 시도`              |
+| 재시도 | **차단 해제 후 `다시 시도`** | **목록이 정상 복구됨**                      |
+
+재시도는 Step 7에서 처음 밟은 항목이다. 에러 상태에서 버튼을 눌러 원래 목록으로 돌아오는 것까지 확인했다. 6상태를 한 컴포넌트에서 분기하는 구조라 에러 → 성공 전이가 별도 경로를 타지 않는다.
+
+### 이미지 품질 회귀
+
+Hero를 7,545,239 B JPG(3840×2160) → 179,296 B webp(1200×675)로 바꿨으므로 **화질을 깎아 수치를 만든 것은 아닌지**를 확인해야 한다.
+
+![Hero 화질](assets/after-final-regression-hero-quality.png)
+
+Before([`assets/filmstrip-644ms-hero-full.jpg`](assets/filmstrip-644ms-hero-full.jpg))와 비교했을 때 피사체 위치·잘림 범위·색감이 같고, 오버레이 카피(`매일 새롭게 발견하는 취향`)의 가독성도 유지된다. CSS(`width: 100%`, `aspect-ratio: 16/9`)를 건드리지 않았으므로 표시 크기와 비율도 그대로다.
+
+**42배 줄인 것은 화질이 아니라 표시하지도 않던 해상도였다.** 1200px 폭에 3840px 원본을 내려받고 있었다.
+
+### FSD 의존 방향과 Public API
+
+Step 6에서 슬라이스 3개(`_pages/home`, `_pages/product-list`, `entities/product`)의 Public API를 건드렸으므로 확인 대상이다. 브라우저가 아니라 정적 검사다.
+
+| 검사                                                  | 결과                                                      |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `pnpm lint` (`boundaries/dependencies`)               | 통과                                                      |
+| `rg "eslint-disable.*boundaries" src app`             | 0건                                                       |
+| 슬라이스 내부 경로(`ui/`·`model/`·`api/`) 우회 import | 0건 — 검출된 2건은 각 슬라이스 자기 `index.ts`의 재export |
+
+`entities/cart/index.ts`와 `entities/wishlist/index.ts`가 자기 `model/`을 재export하는 것은 Public API를 정의하는 정상 형태다.
+
 ## metadata 증거
 
 > **요약** — 홈과 상품 목록에 `generateMetadata`를 붙이고 normal·정상 empty·query failure 세 상황의 document를 남겼다. 정상 empty는 0건을 설명하는 페이지 metadata에 OG fallback image를, query failure는 루트 metadata 상속을 보여 fallback이 갈린다.
@@ -1099,6 +1447,10 @@ CLS만 미충족으로 남는다. [6번 반증 실험](#6-cls-037의-원인--반
 이 문서는 [plan.md](plan.md)에서 분리했다. 측정과 스크린샷 캡처는 작성자가 직접 수행했고, `before-home-record.json` 트레이스에서 filmstrip 프레임·paint 마커·Network 요청을 추출해 표로 정리하고 스크린샷의 값을 표에 옮긴 것은 Claude(AI)다.
 
 `## metadata 증거` 절은 다음과 같이 나뉜다. production build 실행, 서버 기동, `APP_ORIGIN`을 바꾼 재빌드, 서버 터미널의 호출 계수 확인, JS 비활성 캡처 2장은 작성자가 직접 수행했다. `curl`로 document를 받아 `<head>`를 뽑고 UA별 응답 시점을 3회씩 잰 것, 문서에 실린 내용을 세어 홈과 상품 목록을 대조한 것, 표를 채운 것은 Claude(AI)다. `cache()` 제거 결정은 작성자가 실측을 보고 내렸다.
+
+`## Step 7 — 홈 After 추가 관찰` 절과 홈 측정 조건·Lighthouse 5회·LCP 구간 분해의 `After` 열도 같은 방식으로 나뉜다. production build, Lighthouse 5회, Performance 녹화 2건(데스크톱·모바일), 캡처 12장은 작성자가 직접 수행했다. 리포트 JSON에서 지표를 추출해 중앙값·범위를 계산한 것, 트레이스에서 `LayoutShift`·LCP candidate·`PaintImage`를 뽑아 `aspect-ratio`를 역산한 것, prefetch 응답 시간과 전송량 구성을 세어 표로 정리한 것은 Claude(AI)다. 측정 전 예상 두 건도 Claude(AI)가 적었고 그중 FCP 예상은 반증됐다.
+
+`## Step 7 — 전체 검증` 절은 Claude(AI)가 `pnpm check`와 `pnpm test:e2e`를 실제로 실행하고 결과를 정리한 것이다. 1차 E2E 실패가 코드 회귀가 아니라 `reuseExistingServer`에 걸린 측정용 서버 때문이라는 판별, WebKit 플래키를 6주차 기록과 같은 방법(`--repeat-each=5`)으로 다시 재어 회귀가 아님을 확인한 것도 Claude(AI)다. 서버를 내리는 조작은 작성자가 했다.
 
 이 절에서 Claude(AI)의 예측이 두 번 빗나갔다. `cache()`를 떼면 `/api/home` 요청이 늘 것으로 봤으나 1회로 같았고(원인이 QueryClient 공유가 아니라 request memoization이었다), JS 비활성에서 홈은 콘텐츠가 보일 것으로 봤으나 홈도 스켈레톤이었다(fallback 교체 자체가 JS다). 두 번째는 작성자의 캡처로 드러났다.
 
