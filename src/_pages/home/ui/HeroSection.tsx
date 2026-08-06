@@ -11,6 +11,9 @@ import styles from './HeroSection.module.css'
 // 표시 폭에 맞춘 1200w/2400w WebP로 교체했다 — 시각 크기·비율·피사체·문구는 그대로다.
 // 원본 hero-original.jpg는 Before 재현용으로 남겨둔다.
 //
+// 섹션 이름도 같은 이유로 데이터에 묶지 않는다. 원래는 카피의 h2를 aria-labelledby로 가리켰는데,
+// 카피가 Suspense 뒤로 가면서 첫 flush에는 참조 대상이 없는 상태가 됐다.
+//
 // 배너가 API에서 오는 슬라이드로 바뀌면 이미지 URL이 데이터가 되므로 이 분리는 성립하지 않는다.
 type HeroSectionProps = {
   children: ReactNode
@@ -18,7 +21,7 @@ type HeroSectionProps = {
 
 export const HeroSection = ({ children }: HeroSectionProps) => {
   return (
-    <section className={styles.hero} aria-labelledby="hero-title">
+    <section className={styles.hero} aria-label="추천 배너">
       {/* eslint-disable-next-line @next/next/no-img-element -- 후보 파일을 직접 만들어 srcset으로 제공한다. 런타임 변환이 없어 측정이 재현된다. */}
       <img
         className={styles.image}

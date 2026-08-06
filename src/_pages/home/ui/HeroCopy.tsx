@@ -17,7 +17,7 @@ export const HeroCopy = async () => {
   return (
     <div className={styles.copy}>
       <p className={styles.eyebrow}>이번 주의 발견</p>
-      <h2 id="hero-title">{banner.title}</h2>
+      <h2>{banner.title}</h2>
       <p>{banner.description}</p>
     </div>
   )
