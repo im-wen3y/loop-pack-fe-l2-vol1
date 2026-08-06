@@ -406,11 +406,20 @@ Hero 안에서 데이터 소유권이 갈린다. `<img>`의 `src`는 정적 경�
 
 ### Suspense 경계가 둘인데 요청은 1회다
 
-`getServerQueryClient`가 React `cache()`로 감싸져 있어 같은 요청 안에서 같은 QueryClient를 돌려준다. `HeroCopy`와 `HomeData`가 각각 조회해도 두 번째는 채워진 query cache를 읽는다. 같은 render/request의 동일 native fetch도 memoization 대상이라 방어가 이중이다.
+`HeroCopy`와 `HomeData`가 각각 조회해도 `/api/home` 요청은 1회다. 측정 당시에는 `getServerQueryClient`가 React `cache()`로 감싸져 있어 요청 단위로 같은 QueryClient를 공유하는 것을 원인으로 적었다. **Step 6에서 이 근거가 틀린 것으로 확인됐다.**
 
-명세 141줄은 서버에서 `getQueryClient()`를 호출할 때마다 새 QueryClient를 만들라고 요구한다. 현재 구현은 요청 단위로 공유하므로 명세 문구를 그대로 따르는지는 확정하지 않았고, Step 6에서 서버 호출 계수와 함께 판단한다 — 두 해석과 결정 기준은 [plan.md의 "아직 판단하지 않은 것"](plan.md#아직-판단하지-않은-것--getserverqueryclient의-cache)에 정리했다.
+Step 6 서버 호출 계수에서 `cache()`를 뗀 채로 같은 측정을 반복했더니 `/api/home`은 그대로 1회였다.
 
-`cache()`를 떼면 QueryClient 공유가 사라지고 fetch memoization만 남는다. 이 개입 4의 "요청 1회"가 그때도 성립하는지는 서버 측 계수로 다시 확인해야 한다.
+| 조건           | `/api/home` | `/api/products` |
+| -------------- | ----------- | --------------- |
+| `cache()` 유지 | 1회         | 1회             |
+| `cache()` 제거 | 1회         | 1회             |
+
+요청을 합치던 것은 QueryClient 공유가 아니라 Next의 **request memoization**이다. 같은 render 안에서 URL과 options가 같은 native `fetch`는 실제로 한 번만 나간다. `generateMetadata`·`HomeData`·`HeroCopy`가 모두 같은 `${getApiBaseUrl()}/api/home`을 옵션 없이 호출하므로 세 호출이 하나로 합쳐진다. 이 memoization은 Data Cache(`fetch`의 `cache` 옵션, Next 15부터 기본 `no-store`)와 다른 층이라 캐시를 끈 상태에서도 동작한다.
+
+`/api/products`의 1회는 이 판단의 근거가 되지 못한다. 상품 목록은 홈과 달리 서버 prefetch가 없고 `ProductListContent`가 클라이언트에서 조회하므로, 서버 호출은 `generateMetadata` 하나뿐이라 `cache()` 유무와 무관하게 1회다.
+
+명세 141줄은 서버에서 `getQueryClient()`를 호출할 때마다 새 QueryClient를 만들라고 요구한다. 요청 손실이 0이므로 `cache()`를 제거해 명세 문구를 그대로 따르기로 했다. 두 해석은 [plan.md의 "판단이 갈렸던 것"](plan.md#판단이-갈렸던-것--getserverqueryclient의-cache)에 정리해 두었고, 실측으로 논쟁이 필요 없어진 경우다.
 
 ### 반증 기준과 결과
 
@@ -1030,17 +1039,68 @@ CLS만 미충족으로 남는다. [6번 반증 실험](#6-cls-037의-원인--반
 
 ## metadata 증거
 
-| 상황                           | 증거                                        | 기록 |
-| ------------------------------ | ------------------------------------------- | ---- |
-| normal                         | document 응답 / 초기 HTML                   |      |
-| 정상 empty                     | URL 조건 / 0건 metadata / OG fallback image |      |
-| metadata query failure         | root 공통 metadata 상속 여부                |      |
-| 서버 호출 계수                 | 임시 로그 계수 / 제거 여부                  |      |
-| 일반 UA vs facebookexternalhit | `time_starttransfer`, `time_total`          |      |
+> **요약** — 홈과 상품 목록에 `generateMetadata`를 붙이고 normal·정상 empty·query failure 세 상황의 document를 남겼다. 정상 empty는 0건을 설명하는 페이지 metadata에 OG fallback image를, query failure는 루트 metadata 상속을 보여 fallback이 갈린다.
+>
+> 서버 호출 계수는 `cache()` 유무와 무관하게 `/api/home` 1회여서 `cache()`를 제거했다. 요청을 합치던 것은 QueryClient 공유가 아니라 Next의 request memoization이었고, **개입 4에 적어둔 근거가 이 측정으로 반증됐다.**
+>
+> `facebookexternalhit`는 일반 UA보다 첫 바이트가 67배 늦다(7.7ms → 516.5ms). 총 시간은 같으므로 metadata 비용을 치르는 쪽이 사용자가 아니라 크롤러다.
+>
+> 미충족 1건 — 상품 목록 초기 HTML에 상품 링크가 없다. 목록 조회가 클라이언트 전용이라 문서에 데이터가 실리지 않는다.
+
+실행 환경은 `APP_ORIGIN=http://localhost:3000`, production build(`Next.js 16.2.10`, Turbopack), `pnpm start`다. `/products`는 `generateMetadata`가 `searchParams`를 읽어 `ƒ (Dynamic)`으로 잡힌다.
+
+임시 계수 로그를 넣고 → 그게 필요한 측정(normal·정상 empty·서버 호출 계수·UA 비교)을 몰아서 하고 → 빼고 → 나머지(query failure·초기 HTML)를 재는 순서로 진행했다. 계측이 들어간 채로 실패 재현이나 JS 비활성 캡처를 하면 증거에 계측이 섞인다.
+
+| 상황                           | 증거                                        | 기록                                                                                                                                                                                                                                                                                                       |
+| ------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| normal                         | document 응답 / 초기 HTML                   | `<title>상품 목록 \| Commerce</title>`, `og:site_name=Commerce`·`og:locale=ko_KR`·`og:type=website` 유지, `og:image=http://localhost:3000/images/products/p26.jpg`(첫 상품), `robots` 0건, `<h1>상품 목록</h1>` 1개. 홈은 `<title>매일 새롭게 발견하는 취향 \| Commerce</title>`(`banner.title`), `h1` 1개 |
+| 정상 empty                     | URL 조건 / 0건 metadata / OG fallback image | `/products?q=zzzzqqq` 및 `?q=없는상품`(HTTP 200). `<title>'zzzzqqq' 검색 결과 - 결과 없음 \| Commerce</title>`, `og:description=조건에 맞는 상품이 없습니다.`, **`og:image=…/images/week-07/hero-1200.webp`**(fallback 유지)                                                                               |
+| metadata query failure         | root 공통 metadata 상속 여부                | `APP_ORIGIN=http://127.0.0.1:9`로 build·start. `<title>Commerce</title>`, `description`·`og:title`·`og:description`이 루트 값, `og:site_name`·`locale`·`type` 유지, `og:image=http://127.0.0.1:9/images/week-07/hero-1200.webp`. HTTP 200, `h1` 1개, `robots` 0건                                          |
+| 서버 호출 계수                 | 임시 로그 계수 / 제거 여부                  | 임시 `console.log` 계수 기준 `cache()` 유지·제거 모두 `/api/home` 1회, `/api/products` 1회. 계측은 관찰 후 제거했고 `pnpm exec vitest run app/api` 38건 통과로 원상복구 확인                                                                                                                               |
+| 일반 UA vs facebookexternalhit | `time_starttransfer`, `time_total`          | 3회 중앙값 — 일반 `start=0.0077s / total=0.5153s`, `facebookexternalhit/1.1` `start=0.5165s / total=0.5177s`. 첫 바이트가 **67배** 차이나고 총 시간은 같다. 크롤러 응답에도 `<title>`·`og:title`·`og:image`가 모두 실린다                                                                                  |
+| 초기 HTML (JS 비활성)          | `h1` / 설명 / 주요 링크 / 구조              | 홈·상품 목록 모두 `h1`·페이지 설명·헤더 탐색 링크가 보인다. 화면은 둘 다 스켈레톤이지만 **문서에 실린 내용이 다르다** — 아래 참조                                                                                                                                                                          |
+
+### 두 fallback이 실제로 갈렸다
+
+명세는 정상 empty와 metadata query failure가 서로 다른 fallback을 보이라고 요구한다. 같은 `og:image`(`hero-1200.webp`)를 쓰지만 도달 경로가 다르다.
+
+|                         | 정상 empty                                    | metadata query failure                               |
+| ----------------------- | --------------------------------------------- | ---------------------------------------------------- |
+| `generateMetadata` 반환 | 0건을 설명하는 페이지 metadata                | `{}` (catch)                                         |
+| `title`                 | `'zzzzqqq' 검색 결과 - 결과 없음 \| Commerce` | `Commerce` (루트 `title.default`)                    |
+| `description`           | 조건에 맞는 상품이 없습니다.                  | 루트 `SITE_DESCRIPTION`                              |
+| `og:image` 지정 주체    | 페이지가 명시적으로 fallback 지정             | 루트 `openGraph` 상속                                |
+| `og:image` 호스트       | `localhost:3000`                              | `127.0.0.1:9` (`metadataBase`가 `APP_ORIGIN`을 따름) |
+
+실패 쪽 응답이 오히려 빠르다(`total=10.9ms`, 정상은 515ms). 닿지 않는 origin은 연결이 즉시 거부되어 mock의 500ms 대기를 타지 않기 때문이다. **시간만 보면 개선으로 오독할 수 있는 값**이라 함께 기록한다.
+
+### JS 비활성 — 화면과 문서가 다르다
+
+![JS 비활성 상품 목록](assets/metadata-nojs-products.png)
+
+![JS 비활성 홈](assets/metadata-nojs-home.png)
+
+두 페이지 모두 JS를 끄면 스켈레톤에 머문다. Suspense fallback을 실제 콘텐츠로 교체하는 것이 React의 인라인 스크립트이기 때문이고, 서버가 본문을 스트리밍했는지와 무관하다.
+
+문서를 직접 세면 갈린다.
+
+|                                         | 홈       | 상품 목록         |
+| --------------------------------------- | -------- | ----------------- |
+| 문서 크기                               | 52,046 B | 37,548 B          |
+| 카테고리 이름(`패션`·`디지털`·`캐주얼`) | 각 2회   | **0회**           |
+| `href="/products…"` 링크                | 6개      | 1개 (헤더 탐색뿐) |
+
+홈은 `HomeData`의 서버 prefetch 결과가 문서에 실려 있고, 상품 목록은 `ProductListContent`가 클라이언트에서 조회하므로 문서에 데이터가 없다. 명세의 "초기 응답에 주요 링크와 구조"를 상품 목록이 충족하지 못한다.
+
+이번 단계에서는 고치지 않았다. 2단계에서 목록의 6상태(최초 로딩·갱신·갱신 실패·최초 실패·빈 결과·취소)를 클라이언트 조회 전제로 설계했고, 서버 prefetch를 넣으면 그 상태 설계를 다시 짜야 한다. 범위를 넘는 변경이라 발견 사실로 남긴다.
 
 ---
 
-이 문서는 [plan.md](plan.md)에서 분리했다. 측정과 스크린샷 캡처는 작성자가 직접 수행했고, `before-home-record.json` 트레이스에서 filmstrip 프레임·paint 마커·Network 요청을 추출해 표로 정리하고 스크린샷의 값을 표에 옮긴 것은 Claude(AI)다. 빈 표는 틀만 만들어 두었고 작성자가 채운다.
+이 문서는 [plan.md](plan.md)에서 분리했다. 측정과 스크린샷 캡처는 작성자가 직접 수행했고, `before-home-record.json` 트레이스에서 filmstrip 프레임·paint 마커·Network 요청을 추출해 표로 정리하고 스크린샷의 값을 표에 옮긴 것은 Claude(AI)다.
+
+`## metadata 증거` 절은 다음과 같이 나뉜다. production build 실행, 서버 기동, `APP_ORIGIN`을 바꾼 재빌드, 서버 터미널의 호출 계수 확인, JS 비활성 캡처 2장은 작성자가 직접 수행했다. `curl`로 document를 받아 `<head>`를 뽑고 UA별 응답 시점을 3회씩 잰 것, 문서에 실린 내용을 세어 홈과 상품 목록을 대조한 것, 표를 채운 것은 Claude(AI)다. `cache()` 제거 결정은 작성자가 실측을 보고 내렸다.
+
+이 절에서 Claude(AI)의 예측이 두 번 빗나갔다. `cache()`를 떼면 `/api/home` 요청이 늘 것으로 봤으나 1회로 같았고(원인이 QueryClient 공유가 아니라 request memoization이었다), JS 비활성에서 홈은 콘텐츠가 보일 것으로 봤으나 홈도 스켈레톤이었다(fallback 교체 자체가 JS다). 두 번째는 작성자의 캡처로 드러났다.
 
 "개입 1"부터 "개입 요약과 다음 병목"까지의 절은 다음과 같이 나뉜다.
 

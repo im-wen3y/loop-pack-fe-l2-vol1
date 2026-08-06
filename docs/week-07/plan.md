@@ -12,7 +12,7 @@
 
 - slow scenario — `app/api/home/route.ts`, `app/api/products/route.ts` 둘 다 `?scenario=slow`(1.5초) 지원
 - 2단계 재료 상당수 — `placeholderData: keepPreviousData`, `ProductGridSkeleton`, 0건·에러·재시도 UI, nuqs 기반 URL 상태, 서버 응답을 Zustand에 복사하지 않음
-- `getServerQueryClient`가 `cache()`로 요청 단위 분리 — 요청 간에는 섞이지 않는다. 다만 **3단계 요구사항과 일치하는지는 아직 확정하지 않았다**(아래 참고)
+- `getServerQueryClient`가 `cache()`로 요청 단위 분리 — 요청 간에는 섞이지 않는다. **3단계 요구사항과 일치하는지는 Step 6에서 실측으로 확정했다**(아래 참고)
 - Advanced A 측정 화면 — `app/performance-lab/inp/page.tsx`(24개 카드)
 
 ### 아직 없는 것
@@ -22,7 +22,7 @@
 - 루트 title template·공통 Open Graph 없음 — 페이지 `openGraph`가 shallow merge로 덮어쓸 대상 자체가 없다 → Step 6에서 `app/layout.tsx`에 정의
 - Hero 이미지 최적화 없음 — `<img>`로 7.5MB 원본을 그대로 요청 → Step 4에서 측정 근거 확보 후 개입
 
-### 아직 판단하지 않은 것 — `getServerQueryClient`의 `cache()`
+### 판단이 갈렸던 것 — `getServerQueryClient`의 `cache()`
 
 명세 141줄은 "서버에서는 `getQueryClient()`를 호출할 때마다 새 QueryClient를 만들어요. metadata와 본문이 QueryClient 캐시를 공유하게 만들려고 singleton이나 영속 캐시로 바꾸지 않아요"라고 적혀 있다.
 
@@ -35,9 +35,19 @@
 | 금지 대상은 요청을 넘어 사는 캐시뿐이다   | 141줄 뒷문장이 `singleton이나 영속 캐시`를 명시한다                | 현재 구현 유지 |
 | 문자 그대로 호출마다 새 인스턴스여야 한다 | 체크리스트 262줄이 "호출마다 새 인스턴스가 만들어지고"로 못 박는다 | `cache()` 제거 |
 
-**Step 6에서 확정한다.** 이 판단은 개입 4와 얽혀 있다 — `HeroCopy`와 `HomeData`가 각각 조회해도 요청이 1회인 근거가 이 `cache()`이므로, 떼면 native fetch memoization만 남고 홈 요청 횟수를 서버 측 계수로 다시 세야 한다. Step 6이 어차피 서버 호출 계수를 요구하므로 그 측정에 함께 넣는다.
+이 판단은 개입 4와 얽혀 있었다 — `HeroCopy`와 `HomeData`가 각각 조회해도 요청이 1회인 근거를 이 `cache()`로 적어두었기 때문이다. 떼면 그 근거가 사라지므로 홈 요청 횟수를 서버 측 계수로 다시 세야 했다.
 
-관련 관찰은 [measurement.md의 "Suspense 경계가 둘인데 요청은 1회다"](measurement.md#suspense-경계가-둘인데-요청은-1회다)에 있다.
+#### 결론 — `cache()` 제거 (Step 6에서 실측)
+
+임시 서버 로그로 세어보니 **`cache()` 유무와 무관하게 `/api/home` 1회, `/api/products` 1회**였다. 요청을 합치던 것은 QueryClient 공유가 아니라 Next의 request memoization(같은 render에서 URL·options가 같은 native fetch는 한 번만 나간다)이었다.
+
+요청 손실이 0이므로 두 해석 중 어느 쪽이 맞는지 다툴 필요가 없어졌다. 체크리스트 262줄을 문자 그대로 만족하는 쪽(`cache()` 제거)을 택했다.
+
+부수적으로 **개입 4에 적어둔 근거가 틀린 것으로 드러났다.** `src/shared/api/query-client.ts`, `src/_pages/home/ui/HomePage.tsx`, [measurement.md](measurement.md#suspense-경계가-둘인데-요청은-1회다)의 설명을 함께 고쳤다.
+
+`/api/products`의 1회는 이 판단의 근거가 되지 못한다. 상품 목록은 서버 prefetch가 없어 서버 호출이 `generateMetadata` 하나뿐이라, `cache()` 유무와 무관하게 1회다.
+
+측정 절차와 전체 결과는 [measurement.md의 `## metadata 증거`](measurement.md#metadata-증거)에 있다.
 
 ### 경로 매핑
 
@@ -176,20 +186,29 @@ Before 6건과 After 6건을 같은 절차로 녹화해 대조했다. 근거는 
 - **After 뷰포트가 945×963으로 Before(945×929)와 34px 다르다.** 폭이 같아 시나리오 2의 CLS가 소수점 16자리까지 일치했지만, Step 7의 "완전히 같은 조건" 요구를 생각하면 홈 재측정 때는 창 크기를 먼저 맞춰야 한다.
 - 취소 시나리오의 전환 간격이 Before(968~~1,443ms)와 After(1,986~~3,307ms)에서 달랐다. 재현하려면 전환 간격을 응답 시간(1.5초)보다 짧게 유지해야 한다.
 
-### Step 6. 3단계 — metadata와 Open Graph
+### Step 6. 3단계 — metadata와 Open Graph (완료)
 
-이번 주 신규 작업량의 대부분이다. 시작 시점의 코드 상태와 선행 차단 요소는 [step-6-handoff.md](step-6-handoff.md)에 정리해 두었다.
+이번 주 신규 작업량의 대부분이다. 측정 절차와 결과는 [measurement.md의 `## metadata 증거`](measurement.md#metadata-증거)에 있다.
 
-- 루트 title template·공통 Open Graph 정의
-- 홈·상품 목록에 `generateMetadata` 추가, 본문 prefetch와 **같은 query factory** 사용
-- shallow merge로 `siteName`·`locale`·`type`이 날아가지 않게 처리
-- title·description 규칙: 검색어 → title 우선, category·sort → description, 2페이지 이상 → title에 페이지 번호
-- 정상 empty는 0건을 설명하고 OG fallback image 유지 / query failure는 root 공통 metadata 상속
-- `robots: noindex` 넣지 않기
-- `getServerQueryClient`의 `cache()` 유지 여부 확정 (위 "아직 판단하지 않은 것" 참고)
-- 서버 호출 계수는 임시 서버 로그로 세고 **관찰 후 계측 제거**
-- 일반 UA vs `facebookexternalhit` 응답 시점 비교
-- 초기 HTML 확인 (View Source 또는 JS 비활성 요청)
+- [x] `getProductList`에 `getApiBaseUrl()` 적용 (선행 차단 요소) — 서버 호출이 상대경로로 실패하던 것을 풀었다
+- [x] 루트 title template·공통 Open Graph 정의 — `src/shared/config/site.ts`, `app/layout.tsx`
+- [x] 홈·상품 목록에 `generateMetadata` 추가, 본문 prefetch와 **같은 query factory** 사용
+- [x] shallow merge로 `siteName`·`locale`·`type`이 날아가지 않게 처리 — 페이지가 `sharedOpenGraph`를 spread한다
+- [x] title·description 규칙: 검색어 → title 우선, category·sort → description, 2페이지 이상 → title에 페이지 번호
+- [x] 정상 empty는 0건을 설명하고 OG fallback image 유지 / query failure는 root 공통 metadata 상속
+- [x] `robots: noindex` 넣지 않기 — document에서 `robots` 0건 확인
+- [x] `getServerQueryClient`의 `cache()` 유지 여부 확정 — 제거(위 "판단이 갈렸던 것" 참고)
+- [x] 서버 호출 계수는 임시 서버 로그로 세고 **관찰 후 계측 제거** — `pnpm exec vitest run app/api` 38건으로 원상복구 확인
+- [x] 일반 UA vs `facebookexternalhit` 응답 시점 비교 — 첫 바이트 7.7ms vs 516.5ms
+- [x] 초기 HTML 확인 — `curl` document와 JS 비활성 캡처 두 가지로 확인
+
+`generateMetadata` 본체는 라우팅 파일이 아니라 `_pages` 슬라이스에 두고 라우팅 파일에서 재export했다. 상품 목록 metadata가 `productListQueryParsers`로 URL을 정규화해야 하는데 그 parser가 `_pages/product-list`의 소유이고, 라우팅 파일에 두면 슬라이스 내부 경로를 우회 import하게 되기 때문이다.
+
+#### Step 6에서 함께 고친 것과 남긴 것
+
+- **상품 목록 `h1`이 초기 HTML에 두 벌 실렸다.** Suspense fallback과 본문이 각각 `h1`을 가져서다. DOM에서는 React가 fallback을 걷어내 하나만 남으므로 브라우저로는 안 보이는 결함이었다. `h1`을 `ProductListPage`가 소유하도록 경계 밖으로 옮겼다.
+- **상품 목록 초기 HTML에 상품 링크가 0개다.** 목록 조회가 클라이언트 전용이라 문서에 데이터가 실리지 않는다(홈은 서버 prefetch가 있어 실린다). 명세의 "초기 응답에 주요 링크와 구조"를 충족하지 못하지만, 서버 prefetch를 넣으면 2단계에서 설계한 6상태를 다시 짜야 해서 이번 범위를 넘는다. 발견 사실로 남겼다.
+- `description`에 사용자가 지정하지 않은 정렬(`sort` 기본값 `latest`)까지 설명하던 것을 원본 `searchParams`에 키가 있을 때만 붙이도록 고쳤다.
 
 ### Step 7. 4단계 — After와 회귀
 
