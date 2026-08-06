@@ -25,10 +25,7 @@ export const ProductListContent = () => {
 
   return (
     <>
-      <section className="layout-section">
-        <h1>상품 목록</h1>
-        {query.isPending ? <ProductFiltersSkeleton /> : <ProductFilters categories={categories} />}
-      </section>
+      {query.isPending ? <ProductFiltersSkeleton /> : <ProductFilters categories={categories} />}
       <section className="layout-section" aria-label="상품 검색 결과">
         <ProductListResults query={query} fallbackData={fallbackData} />
       </section>
