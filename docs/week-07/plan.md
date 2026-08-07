@@ -221,7 +221,7 @@ Step 3과 같은 조건에서 재측정했다. **After SHA는 `a081464`**(코드
 - [x] LCP element, Hero 전송 크기, 요청 시작 순서, 가장 길었던 구간의 변화 비교
 - [x] Step 4에서 미확인으로 남긴 두 가지 → 위 "fallback과 layout shift 확인 결과" 참고
 - [x] 회귀 확인 → [Step 7 — 회귀 확인](measurement.md#step-7--회귀-확인). URL 복원 4종·뒤로/앞으로, Header 개수, 로딩·에러·빈 상태·재시도, 이미지 품질 전부 통과
-- [x] FSD 의존 방향과 Public API 우회 여부 확인 — lint 통과, `eslint-disable` 0건, 우회 import 0건
+- [x] FSD 의존 방향과 Public API 우회 여부 확인 — lint 통과, `boundaries` 예외 0건, 우회 import 0건. `eslint-disable`은 `HeroSection.tsx`의 `@next/next/no-img-element` 1건(의도적 예외)
 - [x] 효과가 없거나 악화된 변경은 되돌리거나 유지 이유 기록 — 개입 3(preload)은 되돌렸고, 갱신 중 CLS 0.37은 유지 근거를 남겼다
 - [x] `pnpm test`, `pnpm check` 통과 확인 — `pnpm check` 통과, E2E 35/36(WebKit 1건은 6주차부터 기록된 플래키)
 
@@ -233,6 +233,16 @@ Step 3과 같은 조건에서 재측정했다. **After SHA는 `a081464`**(코드
 - **다음 병목은 폰트다.** Hero를 줄이자 전송량의 79%가 폰트가 됐다. 이번 주 범위 밖이다
 
 `generateMetadata`가 prefetch 시작을 94.1ms → 109ms로 밀었다는 관찰도 남겼다. FCP는 오히려 좋아졌고 원인은 확정하지 못했다.
+
+#### Step 9(셀프 리뷰)에서 After SHA 이후에 고친 것
+
+측정이 끝난 뒤 셀프 리뷰에서 상품 목록의 결함을 하나 찾아 고쳤다. **After SHA `a081464` 이후의 코드 변경**이므로 그 사실과 측정 유효성 판단을 함께 남긴다.
+
+`ProductListResults`가 최초 로딩(`isPending`) 중에도 폴백 목록이 있으면 skeleton 대신 그것을 그렸다. 다른 조건의 캐시가 남아 있는 상태로 목록에 처음 진입하면 주소창은 새 조건인데 화면은 이전 조건의 목록이고, `isPlaceholderData`가 false라 로딩 표시도 실패 알림도 없다. 2단계 완료조건("현재 URL의 active query와 화면이 같아야", "최초 진입에는 목록 크기를 예상할 수 있는 pending UI")에 걸린다. 재현 경로는 `/products` 방문 → 홈 → 홈의 카테고리 링크(`/products?category=…`)다.
+
+**측정값은 유효하다.** 6상태 녹화는 전부 화면 안에서 조건을 바꾼 경우(같은 observer)라 이 경로를 지나지 않는다. 변경은 `isPending` 분기 하나이고 `placeholderData` 전환·갱신 실패·취소·0건 경로의 동작은 그대로다.
+
+이 결함이 측정과 리뷰에서 안 잡힌 이유는 상태별 분기에 테스트가 없었기 때문이라, 같이 `ProductListResults.test.tsx`에 4분기 테스트를 추가했다. 최초 진입 + 캐시 케이스는 수정 전 실제로 실패한다.
 
 ### Step 8. Advanced A (선택) — 완료
 

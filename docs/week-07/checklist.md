@@ -145,7 +145,7 @@ Advanced B(Next Cache)는 하지 않는다. 과제 명세의 선택 원칙대로
 - [x] 검색·카테고리·정렬·페이지가 URL에서 복원되는가 — 5개 상태 왕복, 주소창과 컨트롤이 전부 일치
 - [x] 뒤로 가기와 앞으로 가기가 같은 화면을 복원하는가
 - [x] 장바구니·위시리스트와 Header 개수가 일치하는가 — persist와 두 store 독립성까지 확인
-- [x] FSD 의존 방향과 Public API가 유지되는가 — lint 통과, `eslint-disable` 0건, 우회 import 0건
+- [x] FSD 의존 방향과 Public API가 유지되는가 — lint 통과, `boundaries` 예외 0건, 우회 import 0건. `eslint-disable`은 `HeroSection.tsx`의 `@next/next/no-img-element` 1건뿐이고, 후보 파일을 직접 만들어 런타임 변환 없이 측정을 재현하려는 의도적 예외다
 - [x] 로딩·에러·빈 상태·재시도가 동작하는가 — 차단 해제 후 `다시 시도`로 복구되는 것까지 확인
 - [x] 효과가 없던 변경을 되돌리거나 유지 이유를 기록했는가 — 개입 3(preload)은 되돌렸고, 갱신 중 CLS 0.37은 유지 근거를 남겼다
 - [x] `pnpm check`가 통과하는가 — 통과. E2E는 35/36(WebKit 1건은 6주차부터 기록된 플래키)
