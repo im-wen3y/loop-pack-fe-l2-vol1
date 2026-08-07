@@ -1,5 +1,7 @@
 # 7주차 측정 기록
 
+> 전체 결과와 핵심 판단을 먼저 보려면 [7주차 성능 측정 및 개선 요약](README.md)을 확인한다.
+
 Before / After 측정값과 관찰 결과다. 진행 순서는 [plan.md](plan.md), 체크 항목은 [checklist.md](checklist.md)에 있다.
 
 Step 3(Before)과 Step 7(After)에서 같은 표를 채운다.
@@ -129,9 +131,9 @@ Chrome DevTools Performance 패널의 Insights → `LCP breakdown`에서 읽은 
 
 | 구간                   | Before                 | After               | Before 비중 | 비고                                                  |
 | ---------------------- | ---------------------- | ------------------- | ----------- | ----------------------------------------------------- |
-| Time to first byte     | 19ms                   | **11ms**            | 3%          | head와 `loading.tsx` fallback이 먼저 flush            |
+| Time to first byte     | 19ms                   | **11ms**            | 3%          | head와 shell fallback이 먼저 flush                    |
 | Resource load delay    | **514ms**              | **5ms**             | 78%         | document가 533.6ms에 끝나야 `<img>`가 도착            |
-| Resource load duration | 47ms                   | **5ms**             | 7%          | 7.4MB를 localhost에서 받는 시간                       |
+| Resource load duration | 47ms                   | **5ms**             | 7%          | 7.5MB를 localhost에서 받는 시간                       |
 | Element render delay   | 83ms                   | **76ms**            | 13%         | 디코딩·래스터화                                       |
 | **실측 LCP**           | **662.1ms**            | **96.6ms** (−85.4%) |             | Performance 패널 LCP 마커                             |
 | Hero 전송 크기         | 7,368.7KB (원본 7.5MB) | **175.1KB**         |             | `hero-1200.webp` 1200×675                             |
@@ -219,7 +221,7 @@ DevTools 설명대로 LCP 시간은 대기가 아니라 리소스 로딩에 쓰�
 
 ![Insights LCP request discovery - fetchpriority 미적용 1건, 나머지 2건 통과, /hero-original.jpg 7.5MB](./assets/lcp-request-discovery.png)
 
-같은 녹화의 Insights에 `Legacy JavaScript`(Est savings 13.8kB), `Render-blocking requests`, `Network dependency tree`도 함께 잡혔다. JS 청크 합계가 178.8KB로 Hero 7.4MB에 비해 두 자릿수 작으므로 이번 병목과 무관하다고 보고 다루지 않는다. 판단이 틀렸다면 Hero를 줄인 뒤에도 LCP가 안 내려가는 것으로 드러날 것이다.
+같은 녹화의 Insights에 `Legacy JavaScript`(Est savings 13.8kB), `Render-blocking requests`, `Network dependency tree`도 함께 잡혔다. JS 청크 합계가 178.8KB로 Hero 7.5MB에 비해 두 자릿수 작으므로 이번 병목과 무관하다고 보고 다루지 않는다. 판단이 틀렸다면 Hero를 줄인 뒤에도 LCP가 안 내려가는 것으로 드러날 것이다.
 
 ### CLS
 
@@ -622,7 +624,7 @@ LCP·CLS 수치에는 나타나지 않는다. 이름 없는 `<section>`은 landm
 | 나머지                       | 248,924 B       | 9.5%      |
 | **총계**                     | **2,625,628 B** |           |
 
-Before에서는 Hero 7.4MB에 가려 보이지 않던 항목이다. `simulate`의 10,240Kbps 모델에서 폰트 2MB는 약 1.6초에 해당하고, 남은 LCP 2,307.6ms의 상당 부분이 여기 있을 가능성이 크다.
+Before에서는 Hero 7.5MB에 가려 보이지 않던 항목이다. `simulate`의 10,240Kbps 모델에서 폰트 2MB는 약 1.6초에 해당하고, 남은 LCP 2,307.6ms의 상당 부분이 여기 있을 가능성이 크다.
 
 **이번 주에는 개입하지 않는다.** 명세 1단계는 Hero 이미지의 LCP 병목을 다루고 폰트는 범위에 없다. 관찰 사실만 남기고, 손대려면 subset 범위·`font-display`·variable font의 weight 축 범위를 함께 봐야 한다는 것을 다음 작업의 시작점으로 기록한다.
 
@@ -1399,7 +1401,7 @@ Step 6에서 슬라이스 3개(`_pages/home`, `_pages/product-list`, `entities/p
 | INP 중앙값        | 107.2ms → 35.6ms (`−67%`)                                       |
 | processing 중앙값 | 79.26ms → 8.59ms (`−89%`)                                       |
 | 개입              | `wishlistIds` 배열 구독 → 카드별 `selected` boolean 구독        |
-| 상태              | 측정·정적 검사 완료, 회귀 확인과 Profiler `Why` 캡처 남음       |
+| 상태              | 완료 — 측정·개입·회귀 4항목·정적 검사·Profiler `Why` 캡처 전부  |
 
 Before Profiler에서 `SyncExternalStore` 변경으로 관계없는 카드 23장까지 렌더되는 것을 확인한 뒤 selector를 변경했다. After에서는 누른 카드 1장만 렌더됐고, 감소한 총 71.6ms 중 70.7ms가 processing에서 나왔다. 상세 계산식, raw 결과, Profiler 대체 경로와 남은 증빙은 별도 문서를 기준으로 한다.
 
@@ -1425,6 +1427,19 @@ Before Profiler에서 `SyncExternalStore` 변경으로 관계없는 카드 23장
 | 서버 호출 계수                 | 임시 로그 계수 / 제거 여부                  | 임시 `console.log` 계수 기준 `cache()` 유지·제거 모두 `/api/home` 1회, `/api/products` 1회. 계측은 관찰 후 제거했고 `pnpm exec vitest run app/api` 38건 통과로 원상복구 확인                                                                                                                               |
 | 일반 UA vs facebookexternalhit | `time_starttransfer`, `time_total`          | 3회 중앙값 — 일반 `start=0.0077s / total=0.5153s`, `facebookexternalhit/1.1` `start=0.5165s / total=0.5177s`. 첫 바이트가 **67배** 차이나고 총 시간은 같다. 크롤러 응답에도 `<title>`·`og:title`·`og:image`가 모두 실린다                                                                                  |
 | 초기 HTML (JS 비활성)          | `h1` / 설명 / 주요 링크 / 구조              | 홈·상품 목록 모두 `h1`·페이지 설명·헤더 탐색 링크가 보인다. 화면은 둘 다 스켈레톤이지만 **문서에 실린 내용이 다르다** — 아래 참조                                                                                                                                                                          |
+| title·description 규칙         | 조건별 document 응답                        | `?category=fashion&sort=price-asc` → `description="카테고리 패션 · 낮은 가격순 · 총 6개의 상품을 볼 수 있습니다."`. `?page=2` → `<title>상품 목록 (2페이지) \| Commerce</title>`. 검색어 title은 정상 empty 행 참조                                                                                        |
+
+### title·description 규칙 세 가지가 각각 다른 자리에 나타난다
+
+명세는 검색어를 title에, category·sort를 description에, 2페이지 이상은 title의 페이지 번호에 반영하라고 요구한다. 조건을 하나씩 건 document 응답으로 확인했다.
+
+| 조건                               | 확인한 값                                                                     | 읽는 법                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `?q=zzzzqqq`                       | `<title>'zzzzqqq' 검색 결과 - 결과 없음 \| Commerce</title>`                  | 검색어가 title을 차지한다                                                     |
+| `?category=fashion&sort=price-asc` | `description="카테고리 패션 · 낮은 가격순 · 총 6개의 상품을 볼 수 있습니다."` | category·sort는 title로 올라가지 않고 description에만 있다                    |
+| `?page=2`                          | `<title>상품 목록 (2페이지) \| Commerce</title>`                              | 페이지 번호가 title에 붙고, 루트 template(`%s \| Commerce`)도 그대로 적용된다 |
+
+`sort`는 URL에 실제로 있을 때만 description에 넣는다. parser가 기본값 `latest`를 채우므로 정규화 결과만 보면 사용자가 고르지 않은 정렬까지 설명하게 되기 때문이다(`src/_pages/product-list/model/generate-metadata.ts`). 위 응답에서 `낮은 가격순`이 나온 것은 `sort=price-asc`를 명시했기 때문이고, `?page=2`처럼 sort가 없는 요청의 description에는 정렬 문구가 붙지 않는다.
 
 ### 두 fallback이 실제로 갈렸다
 
