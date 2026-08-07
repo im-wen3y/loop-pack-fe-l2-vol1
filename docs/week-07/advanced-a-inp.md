@@ -6,6 +6,8 @@
 
 전달할 때는 단계별로 끊어서 줘도 된다.
 
+> **트레이스 원본(`results/*.json`)은 레포에 두지 않는다.** 6건 226MB이고 Interaction 구간 값은 1·5절 표에 회차별로 전부 옮겨 적었다. 문서에 남은 `results/…` 표기는 그 값을 어느 녹화에서 뽑았는지 밝히는 출처 표시다.
+
 > **현재 상태 (2026-08-07) — 완료.** 1·2절의 Before 측정으로 병목을 확인한 뒤 3절의 selector 변경을 적용했고, 4·5절의 After 측정과 6절 회귀·정적 검사까지 끝냈다. **Before SHA `8aa15c5`, After SHA `f50b925`**다.
 
 ---
@@ -62,7 +64,23 @@
 
 ### 측정 결과 — 완료
 
-3회 모두 processing duration이 약 79–82ms로 가장 컸다. 중앙값은 총 107.2ms, input delay 1.04ms, processing 79.26ms, presentation 25.89ms다. 따라서 클릭 수신 지연이 아니라 클릭 뒤 렌더 처리에 시간이 몰린다는 전제가 확인됐다.
+`results/adv-a-before-1.json` ~ `-3.json`의 `EventTiming` 이벤트에서 계산했다. 5절 After와 같은 식이다.
+
+```text
+input delay        = pointerup.processingStart − pointerup.timeStamp
+processing         = click.processingEnd − pointerup.processingStart
+presentation delay = (pointerup.timeStamp + duration) − click.processingEnd
+```
+
+| 회차       | 총(INP)     | input delay | processing  | presentation |
+| ---------- | ----------- | ----------- | ----------- | ------------ |
+| 1          | 104.2ms     | 0.64ms      | 79.23ms     | 24.34ms      |
+| 2          | 109.2ms     | 1.72ms      | 81.57ms     | 25.89ms      |
+| 3          | 107.2ms     | 1.04ms      | 79.26ms     | 26.93ms      |
+| **중앙값** | **107.2ms** | **1.04ms**  | **79.26ms** | **25.89ms**  |
+| 범위       | 104.2–109.2 | 0.6–1.7     | 79.2–81.6   | 24.3–26.9    |
+
+3회 모두 processing duration이 약 79–82ms로 가장 컸다. 따라서 클릭 수신 지연이 아니라 클릭 뒤 렌더 처리에 시간이 몰린다는 전제가 확인됐다.
 
 ![Before Interaction 1회차](assets/adv-a-before-interaction-1.png)
 ![Before Interaction 2회차](assets/adv-a-before-interaction-2.png)
@@ -189,18 +207,18 @@ After 트레이스 3건과 Interaction 캡처 3장을 남겼다. 중앙값은 �
 
 ## 7. 전달 목록
 
-| 순번    | 파일                                                                      | 상태                    |
-| ------- | ------------------------------------------------------------------------- | ----------------------- |
-| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`        |
-| 0-6     | 뷰포트 값                                                                 | 완료 — 960 × 929, dpr 1 |
-| 8       | `adv-a-performance-settings.png`                                          | 완료                    |
-| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 완료                    |
-| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                    |
-| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                    |
-| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | 완료                    |
-| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 완료                    |
-| 29      | After SHA                                                                 | 완료 — `f50b925`        |
-| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 완료 — 4항목 전부 통과  |
+| 순번    | 파일                                                                      | 상태                       |
+| ------- | ------------------------------------------------------------------------- | -------------------------- |
+| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`           |
+| 0-6     | 뷰포트 값                                                                 | 완료 — 960 × 929, dpr 1    |
+| 8       | `adv-a-performance-settings.png`                                          | 완료                       |
+| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 값 전사 완료 (원본 미보관) |
+| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                       |
+| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                       |
+| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | 완료                       |
+| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 값 전사 완료 (캡처는 보관) |
+| 29      | After SHA                                                                 | 완료 — `f50b925`           |
+| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 완료 — 4항목 전부 통과     |
 
 ---
 

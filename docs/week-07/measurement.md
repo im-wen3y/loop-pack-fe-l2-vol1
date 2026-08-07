@@ -6,6 +6,8 @@ Before / After 측정값과 관찰 결과다. 진행 순서는 [plan.md](plan.md
 
 Step 3(Before)과 Step 7(After)에서 같은 표를 채운다.
 
+> **트레이스·리포트 원본(`results/*.json`)은 레포에 두지 않는다.** Lighthouse 5회 raw, LCP 구간, `LayoutShift` 집계, `didFail` 건수 등 판단에 쓴 값은 전부 아래 표에 옮겨 적었다. 문서에 남은 `results/…` 표기는 그 값을 어느 녹화에서 뽑았는지 밝히는 출처 표시다.
+
 ## 홈 — 측정 조건
 
 | 항목               | Before                                    | After                                     |
@@ -25,7 +27,23 @@ Step 3(Before)과 Step 7(After)에서 같은 표를 채운다.
 | 뷰포트             | **미기록**                                | **945 × 929**                             |
 | 측정 일시          | 2026-08-04 21:42~21:44 KST                | 2026-08-06 18:41~18:46 KST                |
 
-After의 `throttlingMethod`·`throttling`·`screenEmulation`은 리포트 JSON의 `configSettings`에서 직접 대조했다(`results/after-final-lh-1.json`). 값이 Before와 문자열까지 같다.
+After의 `throttlingMethod`·`throttling`·`screenEmulation`은 리포트 JSON의 `configSettings`에서 직접 대조했다(`results/after-final-lh-1.json`). 값이 Before와 문자열까지 같다. 원본을 지울 것이므로 대조에 쓴 값을 그대로 옮겨 둔다.
+
+```json
+"lighthouseVersion": "13.3.0",
+"formFactor": "desktop",
+"channel": "devtools",
+"throttlingMethod": "simulate",
+"throttling": {
+  "rttMs": 40, "throughputKbps": 10240, "requestLatencyMs": 0,
+  "downloadThroughputKbps": 0, "uploadThroughputKbps": 0, "cpuSlowdownMultiplier": 1
+},
+"screenEmulation": { "mobile": true, "width": 412, "height": 823, "deviceScaleFactor": 1.75, "disabled": true }
+```
+
+`screenEmulation`에 `mobile: true`와 412 × 823이 남아 있지만 `disabled: true`라 적용되지 않는다. Lighthouse가 기본값을 그대로 실은 것이고, `formFactor: desktop`과 실제 창 크기로 측정된다. UA는 `Chrome/150.0.0.0` (macOS)다.
+
+LCP를 8초대로 만든 `throughputKbps: 10240`이 여기 있다 — [LCP 구간 분해](#lcp-구간-분해)에서 실측 662.1ms와 12배 벌어진 원인이다.
 
 **뷰포트는 Before가 미기록이다.** `screenEmulation: disabled: true`라 실제 창 크기로 재는데, Before 홈 측정 당시 창 크기를 남기지 않았다. 945 × 929는 상품 목록 녹화에서 확인된 값이라 After를 거기에 맞췄지만, **홈 Before가 같은 크기였다는 보장은 없다.** 조건을 맞췄다고 적을 수 없는 항목이므로 그대로 남긴다.
 
