@@ -5,14 +5,25 @@ import { Pagination } from '@/shared/ui/Pagination/Pagination'
 import { ProductGrid, ProductGridSkeleton } from '@/widgets/product-card'
 import styles from './ProductListResults.module.css'
 
+// 이 컴포넌트가 실제로 읽는 조회 결과 필드만 받는다. UseQueryResult 전체를 요구하면
+// 테스트가 25개 필드짜리 union을 채워야 해서 단언 없이는 더블을 만들 수 없다.
+export type ProductListQueryView = Pick<
+  UseQueryResult<GetProductListResponse>,
+  'data' | 'isPending' | 'isError' | 'isPlaceholderData'
+> & {
+  // 재조회는 호출만 하고 결과를 읽지 않으므로 반환을 좁힌다. 실제 refetch도 이 계약에 맞고,
+  // 테스트 더블이 QueryObserverResult를 통째로 만들지 않아도 된다.
+  refetch: () => void
+}
+
 type ProductListResultsProps = {
-  query: UseQueryResult<GetProductListResponse>
+  query: ProductListQueryView
   // 현재 query key에 데이터가 없을 때 화면에 유지할 직전 목록. 캐시 조회 결과이며 복사본이 아니다.
   fallbackData: GetProductListResponse | undefined
 }
 
 // 상품 목록의 로딩·에러·빈 상태·목록을 단계별로 그리는 라우트 전용 컴포넌트.
-// - isPending(최초 로드, 표시할 데이터 없음): skeleton 뼈대.
+// - isPending(최초 로드): 캐시에 다른 조건의 목록이 남아 있어도 skeleton 뼈대를 보여준다.
 // - 최초 실패(표시할 데이터 없음): 목록 자리에 실패 이유와 재시도를 보여준다.
 // - 갱신 실패(표시할 데이터 있음): 직전 목록을 그대로 두고 흐름 밖 알림으로 실패와 재시도를 알린다.
 // - isPlaceholderData(조건 전환, 이전 목록 유지 중): 목록을 갈아끼우지 않고 흐리게만 처리해 깜빡임을 막는다.
@@ -27,7 +38,9 @@ export const ProductListResults = ({ query, fallbackData }: ProductListResultsPr
     PRODUCT_PAGE_SIZE,
   )
 
-  if (isPending && !displayData) {
+  // 폴백이 있어도 최초 진입은 최초 진입이다. 여기서 폴백을 그리면 다른 조건의 캐시가 남아 있을 때
+  // 주소창은 새 조건인데 화면은 이전 목록이고, isPlaceholderData도 false라 로딩 표시조차 없다.
+  if (isPending) {
     return <ProductGridSkeleton count={pageSize} />
   }
 
