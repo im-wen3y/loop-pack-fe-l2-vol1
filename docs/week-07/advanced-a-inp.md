@@ -1,10 +1,12 @@
 # Advanced A — INP 측정 및 개선
 
+> 7주차 전체 결과를 먼저 보려면 [7주차 성능 측정 및 개선 요약](README.md)을 확인한다.
+
 선택 과제 Advanced A의 측정 절차, Before/After 결과, 개입 근거를 한 문서에 기록한다. 번호 순서대로 하면 되고 결과물 경로는 각 단계 옆에 적어뒀다.
 
 전달할 때는 단계별로 끊어서 줘도 된다.
 
-> **현재 상태 (2026-08-07)** — 1·2절의 Before 측정으로 병목을 확인한 뒤 3절의 selector 변경을 적용했고, 4·5절의 After 측정까지 끝냈다. **Before SHA `8aa15c5`, After SHA `f50b925`**이고 6절 정적 검사도 통과했다. 남은 것은 4절의 `Why did this render?` 캡처, 0-6의 뷰포트 값, 6절 회귀 4항목 확인이다.
+> **현재 상태 (2026-08-07) — 완료.** 1·2절의 Before 측정으로 병목을 확인한 뒤 3절의 selector 변경을 적용했고, 4·5절의 After 측정과 6절 회귀·정적 검사까지 끝냈다. **Before SHA `8aa15c5`, After SHA `f50b925`**다.
 
 ---
 
@@ -25,6 +27,8 @@
 5. 시크릿 창에서 `http://localhost:3000/performance-lab/inp?pageSize=24` 를 연다.
    `pageSize`는 화면이 읽지 않는다(fixture가 24개 고정). 명세가 지정한 URL이라 그대로 쓴다.
 6. 뷰포트 크기를 기록한다. Console에 `window.innerWidth, window.innerHeight` → 값 메모.
+
+   **기록값 — 960 × 929, dpr 1.** 스크롤바를 뺀 콘텐츠 폭은 945다. 트레이스의 `PaintTimingVisualizer::Viewport`가 Before 3회는 945, After 3회는 960으로 갈렸는데 둘 다 같은 창의 값이고 높이 929는 전 회차 동일하다. 카드 그리드는 `max-width: 960px` 구간이라 945든 960이든 **3열로 같다**(`app/performance-lab/inp/performance-lab.module.css`). 폭 표기 차이가 레이아웃이나 렌더 대상을 바꾸지 않았다.
 
 ---
 
@@ -126,13 +130,15 @@
     📸 캡처 2장 → `assets/adv-a-after-profiler-ranked.png`, `assets/adv-a-after-profiler-why.png`
     → 카드별 boolean selector에서는 toggle로 값이 바뀐 **누른 카드 1장**만 렌더돼야 한다
 
-### 확인 결과 — 일부 증빙 남음
+### 확인 결과 — 완료
 
 찜이 모두 해제된 초기 상태에서 첫 번째 카드를 눌렀을 때 렌더된 `PerformanceProductCard`가 24장에서 `p1` 한 장으로 줄었다. 관계없는 23장의 렌더가 사라졌으므로 selector 변경이 의도대로 동작했다.
 
 ![After Profiler Ranked — 카드 1장](assets/adv-a-after-profiler-ranked.png)
 
-`assets/adv-a-after-profiler-why.png`는 아직 남기지 않았다. Ranked 화면만으로 렌더 범위 감소는 확인됐지만 전달 목록을 완성하려면 렌더 원인 화면을 한 장 더 캡처해야 한다.
+렌더 원인 화면도 남겼다. 클릭 커밋(`1 / 1`)의 `p1`을 선택하면 `Why did this render?`가 **Before와 똑같이** `Hook changed: BoundStore > Store > SyncExternalStore`로 표시된다. 원인 문구가 그대로인 것이 맞다. 카드는 여전히 store를 구독하고 있고 selector가 반환하는 값만 배열에서 boolean으로 좁아졌기 때문이다. 바뀐 것은 **알림을 받는 카드의 범위**이지 구독 자체가 아니다. `memo`를 붙였다면 이 문구가 사라졌겠지만 그 방향은 택하지 않았다.
+
+![After Profiler 렌더 원인 — p1 한 장만 SyncExternalStore로 렌더](assets/adv-a-after-profiler-why.png)
 
 ---
 
@@ -165,34 +171,36 @@ After 트레이스 3건과 Interaction 캡처 3장을 남겼다. 중앙값은 �
 
 ## 6. 회귀 확인
 
-> **정적 검사만 완료** — 아래 30–33번 동작 확인을 마치기 전에는 Advanced A 전체 완료로 표시하지 않는다.
+> **완료** — 30–33번 동작 확인과 34번 정적 검사를 모두 통과했다.
 
-30. `/performance-lab/inp?pageSize=24`에서 카드가 **24장 그대로**인지
-31. `화면 계산 {숫자}` 가 카드마다 여전히 표시되는지 (필수 계산을 지우지 않았다는 증거)
-32. 찜 버튼이 **누르는 즉시** `찜하기` ↔ `찜 해제`로 바뀌는지
-33. 여러 카드를 연달아 눌러도 각자의 상태가 독립적으로 유지되는지
+30. `/performance-lab/inp?pageSize=24`에서 카드가 **24장 그대로**인지 — **통과**. 마지막 카드가 `성능 측정 상품 24`다
+31. `화면 계산 {숫자}` 가 카드마다 여전히 표시되는지 (필수 계산을 지우지 않았다는 증거) — **통과**
+32. 찜 버튼이 **누르는 즉시** `찜하기` ↔ `찜 해제`로 바뀌는지 — **통과**
+33. 여러 카드를 연달아 눌러도 각자의 상태가 독립적으로 유지되는지 — **통과**. 누른 카드만 `찜 해제`로 남는다
 34. 정적 검사 — **통과**. `pnpm lint` 경고 0건, `pnpm exec tsc --noEmit` 오류 0건
 
     ```bash
     pnpm lint && pnpm exec tsc --noEmit
     ```
 
+30–33번은 이상이 없었으므로 별도 캡처를 남기지 않았다. selector를 좁히면서 카드 수·필수 계산·즉시 피드백 중 어느 것도 줄이지 않았음이 확인된다.
+
 ---
 
 ## 7. 전달 목록
 
-| 순번    | 파일                                                                      | 상태                       |
-| ------- | ------------------------------------------------------------------------- | -------------------------- |
-| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`           |
-| 0-6     | 뷰포트 값                                                                 | 확인 필요                  |
-| 8       | `adv-a-performance-settings.png`                                          | 완료                       |
-| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 완료                       |
-| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                       |
-| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                       |
-| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | Ranked 완료, Why 캡처 필요 |
-| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 완료                       |
-| 29      | After SHA                                                                 | 완료 — `f50b925`           |
-| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 확인 필요                  |
+| 순번    | 파일                                                                      | 상태                    |
+| ------- | ------------------------------------------------------------------------- | ----------------------- |
+| 0-3     | Before SHA                                                                | 완료 — `8aa15c5`        |
+| 0-6     | 뷰포트 값                                                                 | 완료 — 960 × 929, dpr 1 |
+| 8       | `adv-a-performance-settings.png`                                          | 완료                    |
+| 16      | `results/adv-a-before-1.json` ~ `-3.json`                                 | 완료                    |
+| 17      | `adv-a-before-interaction-1.png` ~ `-3.png`                               | 완료                    |
+| 22 · 23 | `adv-a-before-profiler-ranked.png`, `-why.png`                            | 완료                    |
+| 26      | `adv-a-after-profiler-ranked.png`, `-why.png`                             | 완료                    |
+| 28      | `results/adv-a-after-1.json` ~ `-3.json`, `adv-a-after-interaction-*.png` | 완료                    |
+| 29      | After SHA                                                                 | 완료 — `f50b925`        |
+| 30–33   | 회귀 4항목 통과 여부 (캡처는 이상 있을 때만)                              | 완료 — 4항목 전부 통과  |
 
 ---
 
@@ -303,6 +311,6 @@ Before 절에 "presentation delay 26ms는 24장을 다시 그리는 비용으로
 
 ---
 
-After SHA `f50b925`는 Claude(AI)가 커밋 로그에서 확인해 채웠고, 34번 정적 검사도 AI가 `pnpm lint`와 `pnpm exec tsc --noEmit`을 실제로 실행해 통과를 확인한 것이다. 30–33번 회귀 확인과 4절 `Why` 캡처, 0-6 뷰포트 값은 아직 남아 있고 작성자가 직접 수행한다.
+After SHA `f50b925`는 Claude(AI)가 커밋 로그에서 확인해 채웠고, 34번 정적 검사도 AI가 `pnpm lint`와 `pnpm exec tsc --noEmit`을 실제로 실행해 통과를 확인한 것이다. 4절 `Why` 캡처와 30–33번 회귀 확인은 작성자가 직접 수행했고, 캡처를 읽고 문서에 옮긴 것은 AI다. 0-6 뷰포트 값은 AI가 트레이스 6건의 `PaintTimingVisualizer::Viewport`에서 추출하고 작성자가 브라우저에서 대조했다.
 
 이 문서는 Claude(AI)가 `docs/assignments/week-07.md` Advanced A와 [checklist.md](checklist.md)를 대조해 작성했다. Before·After 수치는 AI가 작성자가 직접 측정한 트레이스 6건을 파싱해 계산하고 해석한 것이다. 3절의 개입 후보는 처음에는 코드를 읽고 세운 가설이었고, 작성자가 2절 Profiler에서 관계없는 카드 23장의 렌더와 `SyncExternalStore` 변경 원인을 확인한 뒤 적용했다.

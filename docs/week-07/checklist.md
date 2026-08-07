@@ -1,5 +1,7 @@
 # 7주차 체크리스트
 
+> 전체 결과와 핵심 판단을 먼저 보려면 [7주차 성능 측정 및 개선 요약](README.md)을 확인한다.
+
 7주차 발제(성능 최적화: 사용자 경로별 병목 측정과 개선)의 체크리스트다. 진행 순서는 [plan.md](plan.md), Basic 측정 기록은 [measurement.md](measurement.md), 선택 과제는 [Advanced A — INP 측정 및 개선](advanced-a-inp.md)에 있다.
 
 ⚠️ 발제 슬라이드와 과제 명세(`docs/assignments/week-07.md`)가 어긋나는 항목은 **명세를 따른다.** 슬라이드는 정적 `metadata`면 충분하다고 하지만 명세 3단계는 `generateMetadata`와 Open Graph를 요구한다.
@@ -83,12 +85,12 @@ Elements 패널은 JavaScript 실행 뒤의 DOM이다. 서버가 만든 HTML은 
 - [x] Profiler에서 Before의 전체 카드 렌더를 확인했는가 — `PerformanceProductCard` `p1`~`p24`
 - [x] selector 또는 컴포넌트 경계를 바꾼 근거가 있는가 — `SyncExternalStore` 변경으로 관계없는 23장까지 렌더되는 것을 확인한 뒤 selector 변경
 - [x] After에서 관계없는 카드의 렌더가 줄었는가 — 24장 → 누른 카드 1장
-- [ ] 카드 수·필수 계산·즉시 피드백을 제거하지 않았는가
+- [x] 카드 수·필수 계산·즉시 피드백을 제거하지 않았는가 — 회귀 4항목 전부 통과. 카드 24장, `화면 계산` 표시, 즉시 토글 유지
 - [x] Lighthouse TBT를 INP 증거로 제출하지 않았는가 — production Performance 트레이스의 EventTiming만 사용
 
 측정 없이 `memo`부터 붙이지 않는다. 넓은 selector(`state.wishlistIds` 배열 전체 구독)를 필요한 값(boolean)으로 좁혔다. 렌더 원인은 webpack dev 서버(`pnpm exec next dev --webpack`)에서 확인했고, 그 commit 시간을 일반 production build 숫자와 직접 비교하지 않았다. `pnpm next build --profile`은 Next 16(build 기본이 Turbopack)에서 무시돼 React DevTools가 붙지 않았다 — 근거는 [Advanced A — INP 측정 및 개선](advanced-a-inp.md#react-profiler를-붙이는-데-네-번-걸렸다)에 적었다.
 
-### 진행 결과 — 측정 완료, 최종 검증 남음
+### 진행 결과 — 완료
 
 선행 조건인 Basic 4단계를 끝내고 [측정 화면](../../app/performance-lab/inp/page.tsx)에서 Before를 측정했다. production 트레이스에서는 processing이 79.26ms로 가장 컸고, Profiler에서는 첫 번째 카드 한 장을 눌렀을 때 24장이 모두 `SyncExternalStore` 변경으로 렌더됐다.
 
@@ -105,11 +107,11 @@ Elements 패널은 JavaScript 실행 뒤의 DOM이다. 서버가 만든 HTML은 
 
 `app/performance-lab/` 안에서만 고치면 홈·상품 목록의 After SHA(`a081464`)가 가리키는 측정에는 영향이 없다. Advanced A는 별도 SHA로 기록한다.
 
-아래 항목을 마쳐야 Advanced A 전체 완료다.
+전달 항목을 모두 마쳤다.
 
-- [ ] After Profiler의 `Why did this render?` 캡처
-- [ ] 측정 뷰포트 값 기록
-- [ ] 카드 24장·필수 계산·즉시 피드백·복수 카드 상태 회귀 확인
+- [x] After Profiler의 `Why did this render?` 캡처 — 클릭 커밋에서 `p1` 한 장만 `SyncExternalStore`로 렌더. 원인 문구는 Before와 같고 범위만 줄었다
+- [x] 측정 뷰포트 값 기록 — 960 × 929, dpr 1(스크롤바 제외 콘텐츠 폭 945). 두 값 모두 3열 구간이라 레이아웃은 동일하다
+- [x] 카드 24장·필수 계산·즉시 피드백·복수 카드 상태 회귀 확인 — 4항목 전부 통과
 - [x] `pnpm lint && pnpm exec tsc --noEmit` — 통과
 - [x] Advanced A After SHA 기록 — **`f50b925`** (Before `8aa15c5`)
 
@@ -156,4 +158,4 @@ Basic의 미흡함을 Advanced 구현으로 상쇄하지 않는다. Advanced A�
 
 이 문서는 Claude(AI)가 7주차 발제 자료를 이 레포 기준으로 정리해 작성했다.
 
-체크 표시는 Claude(AI)가 각 항목을 코드와 [measurement.md](measurement.md), [advanced-a-inp.md](advanced-a-inp.md)의 근거에 대조해 채웠다. 근거를 찾지 못한 Basic 두 항목(RSC의 Route Handler HTTP 호출, 상품 목록 초기 HTML의 상품 데이터)은 체크하지 않고 사유를 적었다. 측정과 스크린샷은 작성자가 직접 수행했다. Advanced A의 개입 후보는 처음에는 AI가 코드를 읽고 세운 가설이었고, 작성자가 Before Profiler에서 카드 24장의 렌더와 `SyncExternalStore` 변경 원인을 확인한 뒤 적용했다. 트레이스 6건의 계산과 해석은 AI가 수행했다.
+체크 표시는 Claude(AI)가 각 항목을 코드와 [measurement.md](measurement.md), [advanced-a-inp.md](advanced-a-inp.md)의 근거에 대조해 채웠다. Advanced A의 회귀 4항목과 After `Why` 캡처는 작성자가 직접 확인·수행한 결과를 AI가 옮겨 적었다. 근거를 찾지 못한 Basic 두 항목(RSC의 Route Handler HTTP 호출, 상품 목록 초기 HTML의 상품 데이터)은 체크하지 않고 사유를 적었다. 측정과 스크린샷은 작성자가 직접 수행했다. Advanced A의 개입 후보는 처음에는 AI가 코드를 읽고 세운 가설이었고, 작성자가 Before Profiler에서 카드 24장의 렌더와 `SyncExternalStore` 변경 원인을 확인한 뒤 적용했다. 트레이스 6건의 계산과 해석은 AI가 수행했다.
