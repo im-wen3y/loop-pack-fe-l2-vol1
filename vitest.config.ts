@@ -1,17 +1,52 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+// tsconfig의 paths와 같은 별칭. app이 root로 이동하며 @app이 추가됐다.
+// inline project는 자체 Vite 설정이라 resolve를 상속하지 않으므로 각 project에 넘긴다.
+const alias = {
+  '@app': fileURLToPath(new URL('./app', import.meta.url)),
+  '@': fileURLToPath(new URL('./src', import.meta.url)),
+}
+
+// MSW 서버의 listen/reset/close를 담당한다. 두 project 모두 필요하다.
+const setupFiles = ['./vitest.setup.ts']
+
 export default defineConfig({
-  resolve: {
-    alias: {
-      // tsconfig의 paths와 같은 별칭을 유지한다. app이 root로 이동하며 @app이 추가됐다.
-      '@app': fileURLToPath(new URL('./app', import.meta.url)),
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
+  resolve: { alias },
   test: {
-    environment: 'node',
-    // Route Handler 테스트는 app/ 아래에 있다. src만 보면 0개가 잡힌다.
-    include: ['src/**/*.test.ts', 'app/**/*.test.ts'],
+    projects: [
+      {
+        resolve: { alias },
+        test: {
+          name: 'node',
+          environment: 'node',
+          setupFiles,
+          include: [
+            'src/**/*.test.ts',
+            // Route Handler 테스트는 app/ 아래에 있다. src만 보면 0개가 잡힌다.
+            'app/**/*.test.ts',
+            // HeroSection.test.tsx는 .tsx지만 renderToStaticMarkup으로 문자열만 검사해
+            // DOM이 필요 없다. 과제 레포에서 내려온 파일이라 docblock을 추가하는 대신
+            // 여기서 node로 가른다.
+            'src/examples/**/*.test.tsx',
+          ],
+        },
+      },
+      {
+        resolve: { alias },
+        test: {
+          name: 'jsdom',
+          environment: 'jsdom',
+          setupFiles,
+          // MSW는 상대 경로 요청을 document.location 기준으로 절대화한다.
+          // node 환경에는 location이 없으므로 여기서 base URL을 명시한다.
+          environmentOptions: {
+            jsdom: { url: 'http://localhost:3000' },
+          },
+          include: ['src/**/*.test.tsx'],
+          exclude: ['src/examples/**'],
+        },
+      },
+    ],
   },
 })
