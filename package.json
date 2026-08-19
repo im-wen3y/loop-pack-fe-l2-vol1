@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "pnpm test && pnpm lint && pnpm typecheck && pnpm build"
+    "verify": "pnpm test && pnpm lint && pnpm typecheck",
+    "check": "pnpm verify && pnpm build"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
