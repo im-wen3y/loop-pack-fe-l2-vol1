@@ -21,8 +21,20 @@
 - production build 기반 Chromium·WebKit E2E 통과
 - `waitForTimeout`, `getByTestId`, skip, snapshot, `toBeTruthy()` 없음
 - Technical Writing 초안: `/Users/wendy/dev-wil/week-08.md`
+- 1단계 계획서와 테스트 코드 대조 — 어긋난 자리와 원인은 `docs/week-08/step2-review.md`
 
-현재 변경은 아직 커밋하지 않았다. 사용자 소유 변경과 untracked 파일이 있으므로 임의로 stage·commit하거나 다른 변경을 되돌리지 않는다.
+### 대조에서 고친 것
+
+구현을 끝낸 뒤 계획서와 코드를 대조해 어긋난 자리를 정리했다.
+
+- MSW 핸들러가 `route.ts`와 같은 조건에서 400을 주도록 수정(잘못된 쿼리에도 200을 주던 상태)
+- 계획에 없던 `onUrlUpdate` 단언 제거, 안 쓰는 헬퍼 옵션·`queryClient.clear()` 정리
+- `HeaderCart.test.tsx` → `Header.test.tsx`(존재하지 않는 컴포넌트 이름), `fireEvent` → `userEvent`
+- `PRODUCT_PAGE_SIZE` 하드코딩 제거, 로딩 단언을 요청 시작 이후로 이동
+- 각 테스트 파일 상단에 계획서 항목 번호 주석 추가
+- 계획서의 11번·7번·「모킹 경계」·「3단계 예고」를 구현 결과에 맞춰 개정
+
+2단계까지의 변경은 커밋했다. 대조에서 나온 수정분은 아직 커밋하지 않았다. 사용자 소유 변경과 untracked 파일이 있으므로 임의로 stage·commit하거나 다른 변경을 되돌리지 않는다.
 
 ### 바로 해야 할 일: 단위·통합·E2E 변형 실험
 
@@ -34,7 +46,7 @@
 | 2   | 통합 | `src/_pages/product-list/model/useProductFilters.ts`의 `setCategory`에서 `page: 1`만 제거한다         | `pnpm exec vitest run src/_pages/product-list/ui/ProductListContent.test.tsx`                        | 3페이지에서 카테고리를 바꾸면 1페이지로 돌아가는 테스트         |
 | 3   | E2E  | `src/shared/lib/create-collection-store.ts`의 `partialize`가 `{ ids: [] }`를 저장하도록 임시 변경한다 | `pnpm build && pnpm exec playwright test e2e/week-05-state.spec.ts --grep "목록에서 찜·담기한 상태"` | 클릭 직후 상태는 유지되지만 새로고침 뒤 Header 개수 복원이 실패 |
 
-E2E 후보로 **persist storage key 이름만 바꾸지 않는다.** 같은 실행 안에서 새 key에 저장하고 같은 key로 다시 읽기 때문에 새로고침 복원이 그대로 통과할 수 있어 의도한 결함이 아니다. `partialize` 변경은 화면의 즉시 상태는 유지하면서 저장 데이터만 비워 통합과 E2E 경계를 구분한다.
+E2E 후보로 **persist storage key 이름만 바꾸지 않는다**(1단계 문서의 「3단계 예고」도 같은 결론으로 갱신했다)** 같은 실행 안에서 새 key에 저장하고 같은 key로 다시 읽기 때문에 새로고침 복원이 그대로 통과할 수 있어 의도한 결함이 아니다. `partialize` 변경은 화면의 즉시 상태는 유지하면서 저장 데이터만 비워 통합과 E2E 경계를 구분한다.
 
 ### 실험별 기록 형식
 
@@ -79,22 +91,22 @@ Advanced의 Stryker mutation testing은 선택 사항이다. 사용자가 별도
 
 ## 0. 시작 전에 알아야 할 것
 
-**2단계는 0단계가 끝나야 시작된다.** 테스트 도구가 아직 하나도 설치되어 있지 않다.
+> **아래 「0. 시작 전에 알아야 할 것」부터 「남아 있는 위험」까지는 2단계를 진행할 때 쓴 계획이고, 지금은 전부 완료된 이력이다.** 다음 작업자는 위의 「현재 인계 상태」만 보면 된다. 아래는 판단 근거를 되짚을 때 참고한다.
+
+의존성은 모두 설치를 마쳤다.
 
 | 패키지                        | 상태              |
 | ----------------------------- | ----------------- |
-| `@testing-library/react`      | 미설치            |
-| `@testing-library/user-event` | 미설치            |
-| `@testing-library/jest-dom`   | 미설치            |
-| `jsdom`                       | 미설치            |
-| `msw`                         | 미설치            |
+| `@testing-library/react`      | 설치됨 (^16.3.2)  |
+| `@testing-library/user-event` | 설치됨 (^14.6.5)  |
+| `@testing-library/jest-dom`   | 설치됨 (^7.0.1)   |
+| `jsdom`                       | 설치됨 (^30.0.1)  |
+| `msw`                         | 설치됨 (^2.15.0)  |
 | `@playwright/test`            | 설치됨 (^1.61.1)  |
 | `vitest`                      | 설치됨 (^4.1.10)  |
 | `nuqs`                        | 설치됨 (^2.9.0)   |
 | `@tanstack/react-query`       | 설치됨 (^5.101.2) |
 | `zustand`                     | 설치됨 (^5.0.14)  |
-
-작업을 재개할 때는 위 표부터 다시 확인한다. 이미 설치되어 있다면 Phase 0의 해당 단계는 건너뛴다.
 
 ```bash
 node -e "const p=require('./package.json');const a={...p.dependencies,...p.devDependencies};['@testing-library/react','jsdom','msw'].forEach(n=>console.log(n, a[n]??'미설치'))"
@@ -114,7 +126,9 @@ node -e "const p=require('./package.json');const a={...p.dependencies,...p.devDe
 
 ---
 
-## Phase 0 — 0단계 마무리 (선행 조건)
+## Phase 0 — 0단계 마무리 (선행 조건, 완료)
+
+0-1~0-7 전부 완료했다. E2E workflow는 `.github/workflows/e2e.yml`, `playwright.config.ts`의 `webServer.command`는 `pnpm start`, 셋업 시간 비교는 `step0-status.md`의 「환경 셋업 시간 비교」에 있다.
 
 `step0-status.md`의 「다음 작업 순서」와 같다. 그 문서에 각 결정의 근거가 있으니 막히면 거기를 본다.
 
@@ -226,9 +240,13 @@ E2E는 production build 위에서 돌리고, `sleep` 없이 조건 기반 대기
 
 ---
 
-## 결정이 필요한 것
+## 결정이 필요했던 것 (전부 결정 완료)
 
-단언 내용과 모킹 경계는 작성자가 정한다(과제 43행). 아래 세 가지는 아직 정해지지 않았다.
+단언 내용과 모킹 경계는 작성자가 정한다(과제 43행). 아래 세 가지가 구현 중에 정해졌다.
+
+- **①** `vi.mock('next/navigation')`으로 `usePathname`을 막았다(`Header.test.tsx`). 링크 강조는 12번의 관심사가 아니라 가장 싼 방법을 골랐다.
+- **②** "요청이 시작된 뒤에도 상품이 없다"로 관측한다. 렌더 직후를 보면 구현과 무관하게 항상 참이라 아무것도 보장하지 못해, MSW 핸들러에서 요청 시작 플래그를 세우고 그 뒤에 부재를 단언한다.
+- **③** 경계 케이스 — 4번은 위의 요청 시작 시점, 7번은 두 번 실패 후 성공, 12번은 담았다가 다시 빼는 왕복이다.
 
 **① Header의 `usePathname()` 처리** — 12번에서 Header를 렌더하는데 `usePathname`은 App Router 컨텍스트를 요구해서 jsdom에서 그냥 렌더하면 깨진다. 선택지는 세 가지다.
 
