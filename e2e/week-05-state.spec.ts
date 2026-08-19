@@ -6,6 +6,7 @@ const expectSearchParam = async (page: Page, key: string, value: string | null) 
 
 const LONG_SEARCH_QUERY = '없는상품'.repeat(250)
 
+// 계획서 11·13·14·15번 — docs/rfc/week08-test-plan.md
 test.describe('5주차 상태 연동', () => {
   test('홈 데이터는 hydration 후 브라우저에서 중복 요청하지 않는다', async ({ page }) => {
     let browserHomeRequestCount = 0

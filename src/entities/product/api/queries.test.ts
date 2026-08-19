@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { productQueryKeys, shouldThrowProductListError } from './queries'
 import { ApiError } from '@/shared/api/api-error'
 
+// 계획서 2번 (query key 조립) · 6번 에러 분류 규칙 — docs/rfc/week08-test-plan.md
 describe('shouldThrowProductListError', () => {
   it('HTTP 오류는 목록 내부에서 처리한다', () => {
     const error = new ApiError('서버 오류', { kind: 'http', status: 500 })

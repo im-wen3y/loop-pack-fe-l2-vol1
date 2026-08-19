@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { productListParsers } from './search-params'
 
+// 계획서 2번 (URL 조건 정규화) — docs/rfc/week08-test-plan.md
 describe('productListParsers', () => {
   it.each(['0', '-1', 'not-a-number'])('유효하지 않은 page=%s를 첫 페이지로 정규화한다', (page) => {
     expect(productListParsers.page.parseServerSide(page)).toBe(1)

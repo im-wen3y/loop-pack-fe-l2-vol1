@@ -1,6 +1,8 @@
 /**
  * @vitest-environment jsdom
  *
+ * 계획서 「기존 테스트와의 관계」의 "검증 대상 유지, 파일 개편" — docs/rfc/week08-test-plan.md
+ *
  * getProductList가 `/api/products` 상대 경로로 요청한다. MSW 인터셉터는
  * location.href를 기준으로 Request를 만들므로 이 파일에만 jsdom 환경을 사용한다.
  */

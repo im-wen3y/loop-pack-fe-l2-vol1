@@ -14,6 +14,7 @@ vi.mock('nuqs', () => ({
   ],
 }))
 
+// 계획서 13번 (RTL 쪽 — 디바운스 취소) — docs/rfc/week08-test-plan.md
 describe('useProductFilters 검색어 debounce', () => {
   beforeEach(() => {
     vi.useFakeTimers()

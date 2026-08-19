@@ -16,6 +16,7 @@ const createMemoryStorage = (): Storage => {
   }
 }
 
+// 계획서 1번 — docs/rfc/week08-test-plan.md
 describe('createCollectionStore', () => {
   beforeEach(() => {
     const storage = createMemoryStorage()

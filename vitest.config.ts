@@ -25,7 +25,9 @@ export default defineConfig({
             'src/**/*.test.ts',
             // Route Handler 테스트는 app/ 아래에 있다. src만 보면 0개가 잡힌다.
             'app/**/*.test.ts',
-            // HeroSection.test.tsx는 .tsx지만 renderToStaticMarkup으로 문자열만 검사해
+            // 환경은 확장자로 가르는 것이 기본이고 예외가 둘이다.
+            // ① api.test.ts는 .ts지만 파일 docblock으로 jsdom을 쓴다(MSW의 상대 URL 처리).
+            // ② HeroSection.test.tsx는 .tsx지만 renderToStaticMarkup으로 문자열만 검사해
             // DOM이 필요 없다. 과제 레포에서 내려온 파일이라 docblock을 추가하는 대신
             // 여기서 node로 가른다.
             'src/examples/**/*.test.tsx',

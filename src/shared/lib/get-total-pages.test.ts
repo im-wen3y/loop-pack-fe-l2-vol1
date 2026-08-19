@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getTotalPages } from './get-total-pages'
 
+// 계획서 3번 — docs/rfc/week08-test-plan.md
 describe('getTotalPages', () => {
   it.each([
     { totalCount: 0, pageSize: 12, expected: 1 },
