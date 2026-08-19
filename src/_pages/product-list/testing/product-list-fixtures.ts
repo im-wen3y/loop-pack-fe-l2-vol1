@@ -1,4 +1,4 @@
-import type { Category, Product } from '@/entities/product'
+import { PRODUCT_PAGE_SIZE, type Category, type Product } from '@/entities/product'
 
 export const productListCategories: Category[] = [
   { id: 'casual', name: '캐주얼' },
@@ -27,7 +27,9 @@ const createProduct = (
   createdAt,
 })
 
-const fillerProducts = Array.from({ length: 11 }, (_, offset) => {
+// casual 상품이 한 페이지를 넘기도록 채운다(이름 있는 casual 2개 + filler).
+// 페이지 크기가 바뀌어도 "2페이지가 된다"는 전제가 유지된다.
+const fillerProducts = Array.from({ length: PRODUCT_PAGE_SIZE - 1 }, (_, offset) => {
   const number = offset + 1
 
   return createProduct(
