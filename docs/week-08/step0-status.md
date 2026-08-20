@@ -33,7 +33,7 @@
 | 환경 셋업 시간 비교 기록                  | 충족 | 아래 「환경 셋업 시간 비교」에 기록                             |
 | MSW setup과 unhandled request 차단        | 충족 | 공통 `setupServer`와 `onUnhandledRequest: 'error'` 적용         |
 | 앱 코드 HTTP 클라이언트 직접 모킹 제거    | 충족 | `api.test.ts`의 세 시나리오를 MSW 핸들러로 교체                 |
-| Playwright를 production build 위에서 실행 | 충족 | production build 성공 후 Chromium·WebKit에서 E2E 20개 통과      |
+| Playwright를 production build 위에서 실행 | 충족 | production build 성공 후 Chromium·WebKit에서 E2E 18개 통과      |
 | E2E를 `pnpm test`에 넣을지 결정하고 근거  | 충족 | 별도 명령(`test:e2e`) 유지, CI도 별도 workflow. 근거는 3번 항목 |
 
 ### 환경 셋업 시간 비교
