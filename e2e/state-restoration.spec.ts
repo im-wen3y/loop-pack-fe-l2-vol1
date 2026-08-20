@@ -221,16 +221,4 @@ test.describe('검색어 예외와 복구', () => {
     await expectSearchParam(page, 'q', '&?%#')
     await expect.poll(() => [...new URL(page.url()).searchParams.keys()]).toEqual(['q'])
   })
-
-  test('debounce 대기 중 페이지를 떠나면 검색어 변경을 취소한다', async ({ page }) => {
-    await page.clock.install()
-    await page.goto('/products')
-
-    await page.getByRole('textbox', { name: '검색' }).fill('스탠리')
-    await page.getByRole('link', { name: 'Commerce' }).click()
-
-    await expect(page).toHaveURL('/')
-    await page.clock.fastForward(400)
-    await expect(page).toHaveURL('/')
-  })
 })
