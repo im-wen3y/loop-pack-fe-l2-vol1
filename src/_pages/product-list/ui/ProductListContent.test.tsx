@@ -130,6 +130,55 @@ describe('ProductListContent', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
+  // 6번 경계 — 최초 실패가 아니라 갱신 실패다. 표시할 직전 목록이 있는 쪽 분기.
+  it('직전 목록이 있는 상태에서 조건 변경이 실패하면 이전 목록과 갱신 실패 알림을 함께 보여준다', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(<ProductListContent />)
+    await screen.findByRole('heading', { level: 2, name: '캐주얼 신상품' })
+
+    server.use(http.get('/api/products', () => new HttpResponse(null, { status: 500 })))
+    await user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), 'digital')
+
+    const alert = await screen.findByRole('alert')
+    expect(
+      within(alert).getByText(
+        '현재 조건의 상품 목록을 불러오지 못했어요. 아래는 이전 조건의 결과예요.',
+      ),
+    ).toBeInTheDocument()
+    expect(within(alert).getByRole('button', { name: '다시 시도' })).toBeEnabled()
+    // 목록이 빈 화면으로 바뀌지 않고 직전 조건의 결과가 남는다.
+    expect(screen.getByRole('heading', { level: 2, name: '캐주얼 신상품' })).toBeInTheDocument()
+    // 최초 실패의 문구는 이 경로에서 나오지 않는다. 두 분기가 실제로 갈라지는지를 본다.
+    expect(screen.queryByText('상품 목록을 불러오지 못했어요.')).not.toBeInTheDocument()
+  })
+
+  // 7번 경계 — 갱신 실패에서 빠져나오는 경로.
+  it('갱신 실패에서 다시 시도가 성공하면 알림이 사라지고 새 조건의 목록으로 바뀐다', async () => {
+    const user = userEvent.setup()
+    let shouldFail = false
+    server.use(
+      http.get('/api/products', ({ request }) =>
+        shouldFail ? new HttpResponse(null, { status: 500 }) : productListFixtureResponse(request),
+      ),
+    )
+
+    renderWithProviders(<ProductListContent />)
+    await screen.findByRole('heading', { level: 2, name: '캐주얼 신상품' })
+
+    shouldFail = true
+    await user.selectOptions(screen.getByRole('combobox', { name: '카테고리' }), 'digital')
+    const alert = await screen.findByRole('alert')
+
+    shouldFail = false
+    await user.click(within(alert).getByRole('button', { name: '다시 시도' }))
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: '디지털 실속상품' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('3페이지에서 카테고리를 바꾸면 1페이지의 해당 상품을 요청한다', async () => {
     const user = userEvent.setup()
 
