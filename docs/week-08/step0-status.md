@@ -1,7 +1,12 @@
 # 8주차 0단계 — 현재 상태 점검
 
-과제 문서: `docs/assignments/week-08.md` 0단계
-점검 시점 기준 브랜치: `feat/week-08`
+> **관련 문서**
+>
+> - 과제 — [week-08.md](../assignments/week-08.md) 0단계
+> - 1단계 — [테스트 계획](../rfc/week08-test-plan.md)
+> - 2단계 — [대조 기록](./step2-review.md)
+>
+> 점검 시점 기준 브랜치는 `feat/week-08`이다.
 
 ## 요약
 
@@ -23,8 +28,8 @@
 
 | 요구사항                                  | 상태 | 근거                                                            |
 | ----------------------------------------- | ---- | --------------------------------------------------------------- |
-| 두 종류 테스트가 한 명령으로 함께 통과    | 충족 | `pnpm test`: 13개 파일, 75개 테스트 통과                        |
-| 필요한 테스트만 DOM 환경에서 실행         | 충족 | Vitest의 node/jsdom project와 파일 패턴으로 분리                |
+| 두 종류 테스트가 한 명령으로 함께 통과    | 충족 | `pnpm test`: 14개 파일, 92개 테스트 통과                        |
+| 필요한 테스트만 DOM 환경에서 실행         | 충족 | Vitest의 node/jsdom project와 확장자 규칙, 파일 docblock 예외   |
 | 환경 셋업 시간 비교 기록                  | 충족 | 아래 「환경 셋업 시간 비교」에 기록                             |
 | MSW setup과 unhandled request 차단        | 충족 | 공통 `setupServer`와 `onUnhandledRequest: 'error'` 적용         |
 | 앱 코드 HTTP 클라이언트 직접 모킹 제거    | 충족 | `api.test.ts`의 세 시나리오를 MSW 핸들러로 교체                 |
@@ -33,18 +38,26 @@
 
 ### 환경 셋업 시간 비교
 
-75개 테스트를 같은 시점에 한 번씩 실행한 Vitest의 `Duration`을 비교했다.
+90개 테스트를 각 구성마다 3회씩 실행한 Vitest 출력의 중앙값이다(6·7번에 갱신 실패 테스트 2개를 추가하기 전 시점).
 
-| 환경 구성               | 명령                                       | Duration |
-| ----------------------- | ------------------------------------------ | -------- |
-| node/jsdom project 분리 | `pnpm test`                                | 1.44초   |
-| 전체 jsdom 강제         | `pnpm exec vitest run --environment jsdom` | 1.46초   |
+| 환경 구성               | 명령                                                             | Duration | environment |
+| ----------------------- | ---------------------------------------------------------------- | -------- | ----------- |
+| node/jsdom project 분리 | `pnpm test`                                                      | 1.75초   | 2.26초      |
+| 전체 jsdom 강제         | node docblock 제거 후 `pnpm exec vitest run --environment jsdom` | 1.75초   | 3.59초      |
 
-이번 규모에서는 차이가 0.02초로 작고 단일 실행값이라 환경 분리가 더 빠르다고 일반화할 수 없다. 분리의 현재 이점은 실행 시간보다 테스트가 필요로 하는 환경을 명시하고 불필요한 DOM 의존을 막는 데 있다.
+`Duration`은 두 구성이 같고, 갈리는 것은 괄호 안의 `environment` 값이다. 2.26초에서 3.59초로 약 1.3초 늘어난다. Vitest가 파일을 병렬로 돌리므로 환경 셋업에 쓴 시간의 합이 벽시계 시간에 그대로 나타나지는 않는다. **이 규모에서 분리의 이점은 실행 시간 단축이 아니다.**
+
+측정 방법에 주의할 점이 하나 있다. `--environment jsdom` 플래그는 기본 환경만 바꾸고 파일 상단의 `@vitest-environment` docblock을 이기지 못한다. 플래그만 주면 node docblock이 붙은 파일 2개가 그대로 node로 남아 "전부 DOM으로 돌렸을 때"가 되지 않는다. 그래서 위 두 번째 줄은 두 파일의 docblock을 임시로 지운 뒤 측정하고 되돌린 값이다.
+
+앞선 측정(75개 테스트 기준 1.44초 / 1.46초)은 이 함정을 모르고 플래그만 준 값이라 두 구성의 차이가 거의 없게 나왔다. 지금 값으로 대체한다.
+
+분리의 이점은 여전히 실행 시간보다 테스트가 필요로 하는 환경을 명시하고 불필요한 DOM 의존을 막는 데 있다. 다만 `environment` 합계에서는 차이가 측정된다.
 
 `pnpm check`는 이미 존재한다. `pnpm test && pnpm lint && pnpm typecheck && pnpm build` 순서로 실행된다.
 
 ## 고쳐야 할 지점
+
+> **이 절 전체의 전제가 틀렸다.** 아래 조사는 7주차 작업이 머지되지 않은 레포를 보고 쓴 것이다. 원래는 7주차가 머지된 `develop`에서 8주차를 시작했어야 하고, 그랬다면 아래 다섯 항목 중 세 곳의 진단이 달랐다. 어디가 어떻게 달랐는지는 [`step2-review.md`](./step2-review.md) 6장의 대조표에 있다. 기록으로서의 값이 있어 지우지 않고, 어긋난 자리에만 주석을 붙인다.
 
 ### 1. `vitest.config.ts` — 단일 node 환경
 
@@ -57,6 +70,8 @@ test: {
 
 - 환경이 하나뿐이라 컴포넌트 테스트를 추가할 자리가 없다.
 - include 패턴이 `*.test.ts`여서 **`.tsx` 파일이 잡히지 않는다.** `src/examples/week-07-performance/HeroSection.test.tsx`가 현재 실행 대상에서 빠져 있다.
+
+> **정정.** 7주차가 머지된 상태였다면 빠지는 파일이 두 개다. 이 파일은 `src/_pages/home/ui/HeroSection.test.tsx`로 이동해 있었고, `src/_pages/product-list/ui/ProductListResults.test.tsx`가 하나 더 있었다.
 
 #### 어떤 테스트를 어느 계층에서 검증할지 정하는 순서
 
@@ -95,6 +110,8 @@ jsdom에서도 통과하므로 동작 때문에 예외를 두는 것이 아니�
 
 이 파일은 7주차 과제 커밋(`3d42a44`)으로 과제 레포에서 내려온 코드라 테스트 방식을 임의로 바꾸지 않고 예외로 처리한다.
 
+> **정정.** 이 문단의 전제 두 가지가 애초에 성립하지 않았다. 7주차가 머지된 상태였다면 이 파일은 이미 `src/_pages/home/ui/HeroSection.test.tsx`로 이동했고 내용도 수정된 뒤라, "손대지 않은 과제 코드"라는 근거가 없다. `src/examples/**` 경로도 존재하지 않으니 **경로로 예외를 건다는 선택지 자체가 나오지 않았을 것**이다. 지금은 파일 docblock으로 예외를 건다. 경위는 아래 「잘못된 베이스에서 시작한 결과」에 있다.
+
 ### 2. `fetch` 직접 모킹 — 과제 명시 금지 대상
 
 `src/entities/product/api/api.test.ts`
@@ -118,6 +135,12 @@ jsdom에서도 통과하므로 동작 때문에 예외를 두는 것이 아니�
 ```ts
 response = await fetch(`/api/products${query}`)
 ```
+
+> **정정.** 7주차가 머지된 상태의 실제 코드는 아래와 같다. 결론(jsdom 환경이 필요하다)은 그대로지만 이유에 조건이 하나 붙는다 — 코드가 상대 경로를 하드코딩해서가 아니라, 브라우저와 jsdom에서 `getApiBaseUrl()`이 빈 문자열을 돌려주기 때문에 상대 경로가 되는 것이다. 서버에서는 절대 URL이 된다.
+>
+> ```ts
+> response = await fetch(`${getApiBaseUrl()}/api/products${query}`, { signal })
+> ```
 
 #### MSW를 쓰는 두 가지 방식
 
@@ -189,6 +212,8 @@ environmentOptions: {
 docblock은 파일 맨 위, `import`보다 앞에 있어야 vitest가 읽는다.
 
 이 예외가 3개를 넘어가면 "확장자는 대략의 신호"라는 설명이 성립하지 않는 것이므로 분리 규칙 자체를 다시 본다.
+
+> **현재 3개다.** `api.test.ts`(node → jsdom), `HeroSection.test.tsx`(jsdom → node), `ProductListResults.test.tsx`(jsdom → node). 임계값에 정확히 닿았으므로 다음에 예외가 하나 더 필요해지면 확장자 규칙을 유지할지부터 다시 판단한다.
 
 ### 3. `playwright.config.ts` — dev 서버 위에서 실행
 
@@ -316,6 +341,8 @@ jsdom으로 옮기면 실제 `localStorage`가 제공되어 `createMemoryStorage
 
 ### 5. 테스트 파일이 7개인 이유 (확인 완료)
 
+> **정정.** 7주차가 머지된 상태였다면 9개다. 아래 「과제가 준 5개」 중 `HeroSection.test.tsx`는 이미 7주차가 `src/_pages/home/ui/`로 옮기고 내용도 고친 뒤였고, `ProductListResults.test.tsx`가 직접 추가한 쪽에 하나 더 들어간다.
+
 과제 문서는 "지금 레포의 테스트 5개"라고 적는데 현재 include 패턴에 잡히는 파일은 7개다. 기준 레포와 갈라진 것이 아니라 직접 추가한 테스트가 섞여 있는 것이다.
 
 | 출처          | 파일                                                                                                                                                                                                      |
@@ -327,22 +354,30 @@ jsdom으로 옮기면 실제 `localStorage`가 제공되어 `createMemoryStorage
 
 ## 현재 테스트 파일 목록
 
-include 패턴에 잡히는 파일:
+`pnpm test` 기준 14개 파일 92개 테스트가 모두 실행된다. 실행되지 않는 파일은 없다.
+
+node 환경 (DOM 없이 값·상태만 확인):
 
 ```
 app/api/home/route.test.ts
 app/api/products/route.test.ts
 app/api/_data/commerce.test.ts
-src/app/performance-lab/inp/products.test.ts
-src/entities/product/api/api.test.ts
+app/performance-lab/inp/products.test.ts
+src/_pages/product-list/model/search-params.test.ts
 src/entities/product/api/queries.test.ts
 src/shared/lib/create-collection-store.test.ts
+src/shared/lib/get-total-pages.test.ts
+src/_pages/home/ui/HeroSection.test.tsx                       ← docblock 예외
+src/_pages/product-list/ui/ProductListResults.test.tsx        ← docblock 예외
 ```
 
-패턴에서 빠져 실행되지 않는 파일:
+jsdom 환경 (렌더링된 요소와 상호작용):
 
 ```
-src/examples/week-07-performance/HeroSection.test.tsx
+src/_pages/product-list/model/useProductFilters.test.tsx
+src/_pages/product-list/ui/ProductListContent.test.tsx
+src/widgets/header/Header.test.tsx
+src/entities/product/api/api.test.ts                          ← docblock 예외
 ```
 
 E2E:
@@ -350,6 +385,30 @@ E2E:
 ```
 e2e/week-05-state.spec.ts
 ```
+
+Vitest 출력의 `|node|`·`|jsdom|` 라벨은 **project 이름이지 환경이 아니다.** docblock 예외가 붙은 파일 3개는 라벨과 실제 환경이 서로 반대로 나온다. 환경을 확인하려면 라벨이 아니라 파일 상단의 docblock을 본다.
+
+## 잘못된 베이스에서 시작한 결과
+
+8주차는 7주차 PR이 머지된 `develop`에서 시작했어야 하는데, 머지 시점이 늦어 7주차 작업이 빠진 코드 위에서 0단계를 진행했다. 위 「고쳐야 할 지점」의 조사가 그 상태를 보고 쓴 것이다.
+
+가장 눈에 띄게 드러난 곳이 `vitest.config.ts`다. node project include에 `'src/examples/**/*.test.tsx'`가 있었다. 「현재 확인된 예외」에서 정한 HeroSection 예외를 **파일 경로로** 건 것인데, 7주차 작업에서 그 디렉터리는 이미 삭제되고 파일은 `src/_pages/home/ui/`로 이동해 있었다. 나중에 머지하자 패턴이 아무 파일도 잡지 못하게 되면서 예외가 조용히 풀렸고, DOM이 필요 없는 테스트가 jsdom에서 돌기 시작했다.
+
+처음부터 7주차 코드를 보고 있었다면 `src/examples/**`라는 경로를 쓸 일이 없었다. 즉 이건 머지가 만든 사고가 아니라, 없어질 구조를 보고 예외를 건 것이 뒤늦게 드러난 것이다.
+
+같은 이유로 `src/_pages/product-list/ui/ProductListResults.test.tsx`도 8주차 분리 기준을 적용받은 적이 없다. `renderToStaticMarkup`만 쓰는데 jsdom에 있었다.
+
+환경 밖에서도 같은 일이 있었다. 7주차가 `ProductListResults`에 갱신 실패 분기를 넣었는데 1단계 계획서 6번이 그걸 모른 채 에러를 한 갈래로 다뤘다. 자세한 내용과 대조표는 [`step2-review.md`](./step2-review.md) 6장에 있다.
+
+| 무엇을                                 | 어떻게                                                           |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| `vitest.config.ts`의 죽은 include 패턴 | 삭제. jsdom project의 `exclude: ['src/examples/**']`도 함께 삭제 |
+| `HeroSection.test.tsx`                 | `@vitest-environment node` docblock 추가                         |
+| `ProductListResults.test.tsx`          | 같은 docblock 추가                                               |
+
+**경로 대신 docblock을 고른 이유.** 같은 사고가 다시 나지 않게 하려면 예외의 근거가 파일 밖에 있으면 안 된다. 경로 패턴은 파일이 움직이면 깨지는데, 깨져도 테스트는 계속 통과하므로 아무도 모른다. docblock은 파일과 같이 움직인다. 이 방식은 「환경 분리 방식」에서 이미 규칙으로 적어둔 것이고, 이번에는 그 규칙을 안 따른 자리가 뒤늦게 드러난 것이다.
+
+docblock이 실제로 환경을 바꾸는지는 `expect(typeof document).toBe('undefined')`를 임시로 넣어 확인했다. jsdom project에 매칭된 파일이 node 환경에서 도는 것이 확인됐다.
 
 ## 다음 작업 순서
 
@@ -364,26 +423,10 @@ e2e/week-05-state.spec.ts
 
 ---
 
-이 문서의 현황 조사(설치 현황, 요구사항별 충족 여부, 파일 목록, `stubGlobal` 위치)는 Claude가 레포를 읽고 과제 요구사항과 대조해 작성했다.
+**AI 활용.** 현황 조사(설치 현황, 요구사항별 충족 여부, 파일 목록, `stubGlobal` 위치)와 각 선택의 반례 제시, jsdom·MSW·husky/GitHub Actions의 동작 확인, 셋업 시간 측정을 Claude에게 맡겼다. MSW의 상대 경로 처리는 공식 문서([Intercepting Requests](https://mswjs.io/docs/http/intercepting-requests), [디버깅 런북](https://mswjs.io/docs/runbook))에서 확인했다.
 
-아래 판단은 작성자가 Claude와 논의하며 직접 내렸다.
+**직접 정한 것.** 계층 선택의 세 질문, 확장자 기준 환경 분리, `HeroSection.test.tsx`와 `create-collection-store.test.ts`의 배치, 앱 코드를 고치지 않는다는 원칙, 빌드와 E2E 실행 분리, E2E를 CI 별도 job으로 두는 결정. 경로 예외 대신 docblock으로 가는 선택도 작성자가 골랐다(Claude는 경로 패턴·docblock·파일명 규칙 세 가지를 대가와 함께 제시했다). `api.test.ts`만 jsdom 예외로 두는 방식과 별도 workflow 추가는 Claude가 제안하고 작성자가 받아들였다.
 
-- "어떤 테스트를 어느 계층에서 검증할지 정하는 순서"의 세 질문
-- 확장자 기준 환경 분리 선택
-- `HeroSection.test.tsx`를 예외로 두는 결정
-- `create-collection-store.test.ts`를 node에 유지하는 결정
-- 앱 코드를 고치지 않는다는 결정
-- 빌드와 E2E 실행을 분리한다는 결정
-- E2E를 CI에서 실행한다는 결정과 별도 job 분리
+**Claude가 틀렸다가 고친 것.** 세 가지를 남긴다. ① `waitForMockApi`의 지연이 "production에서만 걸린다"고 잘못 적었다가 코드를 확인하고 dev·production 동일로 고쳤다. ② Vitest 출력의 `|node|`·`|jsdom|` 라벨을 환경으로 읽고 미충족으로 보고했다가, 실측으로 그것이 project 이름임을 확인했다. ③ 죽은 include 패턴을 "머지가 설정을 깼다"는 외부 원인으로 정리했다가, 원래 7주차가 머지된 상태에서 시작했어야 한다는 작성자의 지적으로 전제를 바꿔 이 문서의 진단 네 곳에 정정 주석을 붙였다.
 
-Claude는 각 선택의 반례(`.tsx`인데 DOM이 불필요한 파일, `.ts`인데 DOM이 있으면 편한 파일)와 jsdom 환경의 동작 방식, MSW 인터셉트 구조, husky와 GitHub Actions의 차이를 제시하는 역할을 했다.
-
-`api.test.ts`만 jsdom 예외로 두는 방식과 별도 workflow 파일을 추가하는 방식은 Claude가 제안했고 작성자가 받아들였다.
-
-`waitForMockApi`의 지연이 dev와 production에 동일하게 걸린다는 점은 Claude가 앞서 "production에서만 걸린다"고 잘못 적었던 것을 코드 확인 후 수정한 내용이다.
-
-MSW의 상대 경로 처리 내용은 공식 문서([Intercepting Requests](https://mswjs.io/docs/http/intercepting-requests), [디버깅 런북](https://mswjs.io/docs/runbook))에서 확인한 것이다.
-
-1단계 문서(`docs/rfc/week08-test-plan.md`)와 대조해 요약의 충족 개수, 확장자 규칙에 훅 테스트 자리가 없다는 점, 앱 코드 불변 원칙과 `getTotalPages` 분리 결정의 충돌을 찾아 반영한 것은 Claude다. 테스트 파일 7개의 출처 구분도 Claude가 git 최초 커밋을 확인해 채웠다.
-
-문서 작성 당시에는 테스트를 실행하지 않고 파일 목록과 설정 내용만 정적으로 확인했다. 이후 0-4를 진행하며 node 환경에서는 상대 URL의 `Request` 생성 단계에서 실패해 `request:start`가 발생하지 않고, jsdom에 기준 URL을 제공하면 요청이 정상적으로 매칭되는 것을 관찰했다. 구현 완료 후 정적 검사와 Vitest를 실행하고 환경별 시간도 비교했으며, production build와 Chromium·WebKit Playwright까지 통과했다.
+문서 작성 당시에는 테스트를 실행하지 않고 파일 목록과 설정만 정적으로 확인했다. 이후 구현을 진행하며 정적 검사·Vitest·production build·Chromium·WebKit Playwright를 모두 실행해 통과를 확인했다.
