@@ -5,6 +5,8 @@ import type { GetProductListResponse } from './model'
 import { ApiError } from '@/shared/api/api-error'
 
 // 계획서 2번 (query key 조립) · 6번 에러 분류 규칙 — docs/rfc/week08-test-plan.md
+// 아래 getLatestProductList는 8주차 15개 항목 밖이다. 7주차와 함께 들어온 기존 테스트를
+// 그대로 두기로 한 자리이고, 근거는 계획서 2번 항목 끝에 있다.
 describe('shouldThrowProductListError', () => {
   it('HTTP 오류는 목록 내부에서 처리한다', () => {
     const error = new ApiError('서버 오류', { kind: 'http', status: 500 })

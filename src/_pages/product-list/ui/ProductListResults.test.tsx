@@ -52,6 +52,8 @@ const queryView = (view: Partial<ProductListQueryView>): ProductListQueryView =>
   ...view,
 })
 
+// 계획서 「기존 테스트와의 관계」의 "그대로 유지" — docs/rfc/week08-test-plan.md
+// 조회 상태별 분기를 컴포넌트 단위로 본다. 같은 화면을 MSW 응답부터 훑는 쪽은 4·6번이 맡는다.
 describe('ProductListResults', () => {
   it('데이터가 없는 최초 진입에는 skeleton을 보여준다', () => {
     const markup = renderToStaticMarkup(

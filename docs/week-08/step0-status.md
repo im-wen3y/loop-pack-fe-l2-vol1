@@ -136,7 +136,15 @@ jsdom에서도 통과하므로 동작 때문에 예외를 두는 것이 아니�
 response = await fetch(`/api/products${query}`)
 ```
 
-> **정정.** 7주차가 머지된 상태의 실제 코드는 아래와 같다. 결론(jsdom 환경이 필요하다)은 그대로지만 이유에 조건이 하나 붙는다 — 코드가 상대 경로를 하드코딩해서가 아니라, 브라우저와 jsdom에서 `getApiBaseUrl()`이 빈 문자열을 돌려주기 때문에 상대 경로가 되는 것이다. 서버에서는 절대 URL이 된다.
+> **정정.** 7주차가 머지된 상태의 실제 코드는 아래와 같다. 결론(jsdom 환경이 필요하다)은 그대로지만 **이유가 다르다.** `getApiBaseUrl()`은 `window`가 없으면 절대 URL을 돌려주므로, node 환경에서 요청 URL은 애초에 상대 경로가 아니다. 아래 「상대 경로가 걸리는 지점」의 "`Request` 생성 단계에서 실패한다"는 분석은 이 함수가 없던 시점의 코드를 보고 쓴 것이다.
+>
+> 현재 코드로 docblock을 `node`로 바꿔 실행하면 이렇게 나온다.
+>
+> ```
+> [MSW] Error: intercepted a request without a matching request handler
+> ```
+>
+> 요청은 절대 URL로 정상적으로 나갔고, 걸리는 쪽은 **핸들러의 상대 경로 predicate**(`http.get('/api/products', …)`)다. MSW가 이걸 `location.href` 기준으로 절대화해 매칭하는데 node에는 `location`이 없다. 즉 실패 지점이 요청 생성이 아니라 핸들러 매칭이다. 해결 방법(테스트 환경에 `location`을 제공한다)은 같다.
 >
 > ```ts
 > response = await fetch(`${getApiBaseUrl()}/api/products${query}`, { signal })
@@ -416,7 +424,7 @@ docblock이 실제로 환경을 바꾸는지는 `expect(typeof document).toBe('u
 2. `vitest.config.ts` 환경 분리 (include에 `.tsx` 포함, `environmentOptions.jsdom.url` 명시)
 3. MSW setup 작성, unhandled request 차단
 4. `api.test.ts`의 `fetch` stub 3곳을 MSW로 교체
-   - node 환경에서는 상대 URL로 `Request`를 만드는 단계에서 실패해 `request:start`가 발생하지 않는 것을 확인했다. jsdom에 기준 URL을 제공하면 절대 URL로 이벤트가 발생하고 핸들러가 응답하는 것도 확인했으므로, 이 관찰을 근거로 docblock을 붙인다.
+   - node 환경에서는 상대 URL로 `Request`를 만드는 단계에서 실패해 `request:start`가 발생하지 않는 것을 확인했다. jsdom에 기준 URL을 제공하면 절대 URL로 이벤트가 발생하고 핸들러가 응답하는 것도 확인했으므로, 이 관찰을 근거로 docblock을 붙인다. (7주차 머지 후에는 실패 지점이 핸들러 매칭으로 바뀐다 — 위 정정 참고.)
 5. `playwright.config.ts`의 `webServer.command`를 `pnpm start`로 변경, `test:e2e` 스크립트에 빌드 추가
 6. E2E용 GitHub Actions workflow 추가 (chromium·webkit 설치, `pnpm test:e2e` 실행)
 7. 셋업 시간 비교 측정 후 이 문서에 기록

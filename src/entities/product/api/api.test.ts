@@ -2,9 +2,12 @@
  * @vitest-environment jsdom
  *
  * 계획서 「기존 테스트와의 관계」의 "검증 대상 유지, 파일 개편" — docs/rfc/week08-test-plan.md
+ * 취소 동작 2건은 7주차에서 넘어온 검증 대상이라 MSW 방식으로 옮겨 담았다.
  *
- * getProductList가 `/api/products` 상대 경로로 요청한다. MSW 인터셉터는
- * location.href를 기준으로 Request를 만들므로 이 파일에만 jsdom 환경을 사용한다.
+ * 아래 핸들러의 `'/api/products'`는 상대 경로 predicate이고, MSW는 이를 location.href
+ * 기준으로 절대화해 매칭한다. node 환경에는 location이 없어 절대화가 안 되고, 요청 자체는
+ * 나가지만 "matching request handler 없음"으로 떨어진다(getApiBaseUrl은 window가 없으면
+ * 절대 URL을 돌려주므로 요청 URL은 문제가 아니다). 그래서 이 파일만 jsdom을 쓴다.
  */
 import { HttpResponse, delay, http } from 'msw'
 import { describe, expect, it } from 'vitest'
