@@ -72,6 +72,30 @@ describe('createCollectionStore', () => {
     expect(store.getState().ids).toEqual([])
   })
 
+  // 손상된 저장값을 복원하면 현재 목록도 빈 목록으로 되돌아간다.
+  // 이미 담긴 상태에서 확인해야 하는 이유: 빈 상태에서는 in 가드가 없어 복원이
+  // 예외로 중단돼도(zustand가 hydration 예외를 삼킨다) 결과가 똑같이 빈 목록이라
+  // 가드가 있는지 없는지 구분되지 않는다.
+  it('담긴 상태에서 저장값이 null이면 빈 목록으로 복구한다', async () => {
+    const store = createCollectionStore('null-state-test')
+    store.getState().toggle('p1')
+    localStorage.setItem('null-state-test', JSON.stringify({ state: null, version: 1 }))
+
+    await store.persist.rehydrate()
+
+    expect(store.getState().ids).toEqual([])
+  })
+
+  it('담긴 상태에서 저장값이 객체가 아니면 빈 목록으로 복구한다', async () => {
+    const store = createCollectionStore('primitive-state-test')
+    store.getState().toggle('p1')
+    localStorage.setItem('primitive-state-test', JSON.stringify({ state: 'ids', version: 1 }))
+
+    await store.persist.rehydrate()
+
+    expect(store.getState().ids).toEqual([])
+  })
+
   it('이전 버전의 유효한 ids를 현재 상태로 migration한다', async () => {
     localStorage.setItem('migration-test', JSON.stringify({ state: { ids: ['p1'] }, version: 0 }))
 
