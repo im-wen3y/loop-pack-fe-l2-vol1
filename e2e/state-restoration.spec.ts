@@ -7,7 +7,7 @@ const expectSearchParam = async (page: Page, key: string, value: string | null) 
 const LONG_SEARCH_QUERY = '없는상품'.repeat(250)
 
 // 계획서 11·13·14·15번 — docs/rfc/week08-test-plan.md
-test.describe('5주차 상태 연동', () => {
+test.describe('URL·스토리지에 담긴 상태 복원', () => {
   test('홈 데이터는 hydration 후 브라우저에서 중복 요청하지 않는다', async ({ page }) => {
     let browserHomeRequestCount = 0
 
@@ -184,7 +184,7 @@ test.describe('5주차 상태 연동', () => {
   })
 })
 
-test.describe('5주차 예외와 복구', () => {
+test.describe('검색어 예외와 복구', () => {
   test('검색어를 모두 지우면 debounce 후 q를 제거하고 전체 목록으로 복원한다', async ({ page }) => {
     await page.goto('/products?q=스탠리')
 

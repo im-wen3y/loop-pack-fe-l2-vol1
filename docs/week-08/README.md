@@ -33,7 +33,7 @@
 | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | 단위 | `shared/lib/get-total-pages.test.ts`, `shared/lib/create-collection-store.test.ts`, `entities/product/api/{api,queries}.test.ts`, `_pages/product-list/model/search-params.test.ts` | 순수 계산, URL parser, 에러 분류, persist  |
 | 통합 | `_pages/product-list/ui/ProductListContent.test.tsx`, `_pages/product-list/model/useProductFilters.test.tsx`, `widgets/header/Header.test.tsx`                                      | 로딩·빈 결과·에러·재시도, 필터·정렬·페이지 |
-| E2E  | `e2e/week-05-state.spec.ts` (10개)                                                                                                                                                  | URL 재진입, 뒤로/앞으로, persist 복원      |
+| E2E  | `e2e/state-restoration.spec.ts` (10개)                                                                                                                                              | URL 재진입, 뒤로/앞으로, persist 복원      |
 
 각 테스트 파일 상단에는 1단계 설계의 항목 번호를 주석으로 달아 문서와 코드를 연결했다.
 

@@ -43,11 +43,11 @@
 
 실험 결과는 새 문서 `docs/week-08/step3-result.md`에 기록한다. 각 실험은 **구현 한 곳만 임시로 변경하고 테스트 코드는 건드리지 않은 상태에서** 실행한다. 결과를 기록한 직후 구현을 원래대로 복구한다.
 
-| #   | 계층 | 임시로 망가뜨릴 구현                                                                                  | 실행할 검증                                                                                          | 기대하는 실패                                                   |
-| --- | ---- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 1   | 단위 | `src/shared/lib/get-total-pages.ts`의 `Math.max(1, Math.ceil(...))`를 `Math.ceil(...)`로 바꾼다       | `pnpm exec vitest run src/shared/lib/get-total-pages.test.ts`                                        | 상품 0개의 최소 1페이지 경계 테스트                             |
-| 2   | 통합 | `src/_pages/product-list/model/useProductFilters.ts`의 `setCategory`에서 `page: 1`만 제거한다         | `pnpm exec vitest run src/_pages/product-list/ui/ProductListContent.test.tsx`                        | 3페이지에서 카테고리를 바꾸면 1페이지로 돌아가는 테스트         |
-| 3   | E2E  | `src/shared/lib/create-collection-store.ts`의 `partialize`가 `{ ids: [] }`를 저장하도록 임시 변경한다 | `pnpm build && pnpm exec playwright test e2e/week-05-state.spec.ts --grep "목록에서 찜·담기한 상태"` | 클릭 직후 상태는 유지되지만 새로고침 뒤 Header 개수 복원이 실패 |
+| #   | 계층 | 임시로 망가뜨릴 구현                                                                                  | 실행할 검증                                                                                              | 기대하는 실패                                                   |
+| --- | ---- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1   | 단위 | `src/shared/lib/get-total-pages.ts`의 `Math.max(1, Math.ceil(...))`를 `Math.ceil(...)`로 바꾼다       | `pnpm exec vitest run src/shared/lib/get-total-pages.test.ts`                                            | 상품 0개의 최소 1페이지 경계 테스트                             |
+| 2   | 통합 | `src/_pages/product-list/model/useProductFilters.ts`의 `setCategory`에서 `page: 1`만 제거한다         | `pnpm exec vitest run src/_pages/product-list/ui/ProductListContent.test.tsx`                            | 3페이지에서 카테고리를 바꾸면 1페이지로 돌아가는 테스트         |
+| 3   | E2E  | `src/shared/lib/create-collection-store.ts`의 `partialize`가 `{ ids: [] }`를 저장하도록 임시 변경한다 | `pnpm build && pnpm exec playwright test e2e/state-restoration.spec.ts --grep "목록에서 찜·담기한 상태"` | 클릭 직후 상태는 유지되지만 새로고침 뒤 Header 개수 복원이 실패 |
 
 E2E 후보로 **persist storage key 이름만 바꾸지 않는다**(1단계 문서의 「3단계 예고」도 같은 결론으로 갱신했다)** 같은 실행 안에서 새 key에 저장하고 같은 key로 다시 읽기 때문에 새로고침 복원이 그대로 통과할 수 있어 의도한 결함이 아니다. `partialize` 변경은 화면의 즉시 상태는 유지하면서 저장 데이터만 비워 통합과 E2E 경계를 구분한다.
 
@@ -125,7 +125,7 @@ node -e "const p=require('./package.json');const a={...p.dependencies,...p.devDe
 - `productQueries.list`는 `placeholderData: keepPreviousData`, `staleTime: 5분`, `throwOnError: shouldThrowProductListError`를 쓴다.
 - `ProductListResults`의 분기는 `isPending` → `isError` → `products.length === 0`(안에서 `totalCount > 0`으로 오버플로우 구분) → 목록 순이다.
 - `Header`는 `usePathname()`을 쓴다. 12번에서 이게 걸린다(아래 「결정이 필요한 것」 ①).
-- 기존 E2E는 `e2e/week-05-state.spec.ts` 하나이고 그 안에 19개 테스트가 있다. **Phase 0의 E2E 축소 전 기준이다** — 축소 후에는 10개이고 Chromium·WebKit 합쳐 20개가 실행된다.
+- 기존 E2E는 `e2e/state-restoration.spec.ts` 하나이고 그 안에 19개 테스트가 있다. **Phase 0의 E2E 축소 전 기준이다** — 축소 후에는 10개이고 Chromium·WebKit 합쳐 20개가 실행된다.
 
 ---
 

@@ -391,7 +391,7 @@ src/entities/product/api/api.test.ts                          ← docblock 예�
 E2E:
 
 ```
-e2e/week-05-state.spec.ts
+e2e/state-restoration.spec.ts
 ```
 
 Vitest 출력의 `|node|`·`|jsdom|` 라벨은 **project 이름이지 환경이 아니다.** docblock 예외가 붙은 파일 3개는 라벨과 실제 환경이 서로 반대로 나온다. 환경을 확인하려면 라벨이 아니라 파일 상단의 docblock을 본다.

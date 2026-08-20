@@ -40,13 +40,13 @@
 
 ### 1-1. 실험 3 — E2E (`partialize`)
 
-| 항목        | 내용                                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------------ |
-| 망가뜨릴 곳 | `src/shared/lib/create-collection-store.ts`의 `partialize: (state) => ({ ids: state.ids })`            |
-| 어떻게      | `partialize: () => ({ ids: [] })`                                                                      |
-| 실행할 검증 | `pnpm build` 후 `pnpm exec playwright test e2e/week-05-state.spec.ts --grep "목록에서 찜·담기한 상태"` |
-| 기대        | 클릭 직후 헤더 개수는 정상, `page.reload()` 뒤 복원이 실패                                             |
-| 함께 볼 것  | 같은 변형으로 12번 RTL(`Header.test.tsx`)은 **초록불로 남아야** 한다                                   |
+| 항목        | 내용                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------- |
+| 망가뜨릴 곳 | `src/shared/lib/create-collection-store.ts`의 `partialize: (state) => ({ ids: state.ids })`                |
+| 어떻게      | `partialize: () => ({ ids: [] })`                                                                          |
+| 실행할 검증 | `pnpm build` 후 `pnpm exec playwright test e2e/state-restoration.spec.ts --grep "목록에서 찜·담기한 상태"` |
+| 기대        | 클릭 직후 헤더 개수는 정상, `page.reload()` 뒤 복원이 실패                                                 |
+| 함께 볼 것  | 같은 변형으로 12번 RTL(`Header.test.tsx`)은 **초록불로 남아야** 한다                                       |
 
 마지막 줄이 이 실험의 진짜 목적이다. 통합과 E2E를 나눠둔 것이 값을 하는지가 여기서만 드러난다 — RTL이 잡아버리면 15번 E2E는 12번의 중복이라는 뜻이 된다.
 
