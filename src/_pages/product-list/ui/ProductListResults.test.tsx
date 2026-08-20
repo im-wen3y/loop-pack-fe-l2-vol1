@@ -1,3 +1,9 @@
+/**
+ * @vitest-environment node
+ *
+ * HeroSection.test.tsx와 같은 이유다. renderToStaticMarkup으로 찍은 문자열만
+ * 검사하고 document도 window도 쓰지 않는다.
+ */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import type { GetProductListResponse } from '@/entities/product'

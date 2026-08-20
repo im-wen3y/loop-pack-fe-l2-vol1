@@ -8,6 +8,10 @@ const alias = {
   '@': fileURLToPath(new URL('./src', import.meta.url)),
 }
 
+// 환경은 파일 확장자로 가르는 것이 기본이고, 어긋나는 파일은 여기가 아니라
+// 파일 상단의 @vitest-environment docblock으로 예외를 선언한다.
+// 경로로 예외를 걸면 파일이 이동했을 때 예외가 조용히 풀린다(실제로 한 번 겪었다).
+
 // MSW 서버의 listen/reset/close를 담당한다. 두 project 모두 필요하다.
 const setupFiles = ['./vitest.setup.ts']
 
@@ -25,12 +29,6 @@ export default defineConfig({
             'src/**/*.test.ts',
             // Route Handler 테스트는 app/ 아래에 있다. src만 보면 0개가 잡힌다.
             'app/**/*.test.ts',
-            // 환경은 확장자로 가르는 것이 기본이고 예외가 둘이다.
-            // ① api.test.ts는 .ts지만 파일 docblock으로 jsdom을 쓴다(MSW의 상대 URL 처리).
-            // ② HeroSection.test.tsx는 .tsx지만 renderToStaticMarkup으로 문자열만 검사해
-            // DOM이 필요 없다. 과제 레포에서 내려온 파일이라 docblock을 추가하는 대신
-            // 여기서 node로 가른다.
-            'src/examples/**/*.test.tsx',
           ],
         },
       },
@@ -46,7 +44,6 @@ export default defineConfig({
             jsdom: { url: 'http://localhost:3000' },
           },
           include: ['src/**/*.test.tsx'],
-          exclude: ['src/examples/**'],
         },
       },
     ],

@@ -1,3 +1,9 @@
+/**
+ * @vitest-environment node
+ *
+ * renderToStaticMarkup으로 컴포넌트를 문자열 HTML로 찍고 그 문자열만 검사한다.
+ * document도 window도 쓰지 않으므로 DOM 환경 셋업 비용을 치르지 않는다.
+ */
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
