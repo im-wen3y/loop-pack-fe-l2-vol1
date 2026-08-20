@@ -1,8 +1,11 @@
 # 8주차 2단계 실행 계획
 
-> 과제 문서: `docs/assignments/week-08.md` 2단계
-> 0단계 현황: `docs/week-08/step0-status.md`
-> 1단계 설계: `docs/rfc/week08-test-plan.md`
+> **관련 문서**
+>
+> - 과제 — [week-08.md](../assignments/week-08.md) 2단계
+> - 0단계 — [현황 점검](./step0-status.md)
+> - 1단계 — [테스트 계획](../rfc/week08-test-plan.md)
+> - 이 계획의 대조 결과 — [step2-review.md](./step2-review.md)
 
 이 문서만 읽고 작업을 이어갈 수 있도록 쓴다. 항목 번호(1~15번)는 1단계 문서 「1. 검증 방법」 표의 번호다.
 
@@ -273,4 +276,4 @@ E2E는 production build 위에서 돌리고, `sleep` 없이 조건 기반 대기
 
 _이 문서는 Claude가 작성했다. 과제 2단계 요구사항과 0·1단계 문서를 대조하고, 설치 현황·`tsconfig`의 jsx 설정·nuqs 서브패스·QueryClient 구성·`ProductListResults` 분기·`Header`의 `usePathname` 사용을 코드에서 확인해 Phase를 나눴다._
 
-_「결정이 필요한 것」 세 가지는 Claude가 지목만 했고 판단은 작성자가 한다. 단언의 내용과 모킹 경계는 과제가 넘기지 말라고 한 결정이다._
+_「결정이 필요했던 것」 세 가지는 Claude가 지목만 했고 판단은 작성자가 내렸다(전부 결정 완료). 단언의 내용과 모킹 경계는 과제가 넘기지 말라고 한 결정이라 작성자가 직접 정했다._

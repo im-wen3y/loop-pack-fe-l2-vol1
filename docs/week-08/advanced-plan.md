@@ -1,9 +1,13 @@
 # 8주차 Advanced 실행 계획 — mutation testing을 기계에 맡긴다
 
-> 과제 문서: `docs/assignments/week-08.md` Advanced
-> 1단계 설계: `docs/rfc/week08-test-plan.md`
-> 3단계 결과: `docs/week-08/step3-result.md`
-> **실행 결과: [`docs/week-08/advanced-result.md`](./advanced-result.md)** — §2-3의 전용 vitest 설정은 실측에서 불필요한 것으로 확인돼 만들지 않았다.
+> **관련 문서**
+>
+> - 과제 — [week-08.md](../assignments/week-08.md) Advanced
+> - 1단계 — [테스트 계획](../rfc/week08-test-plan.md)
+> - 3단계 — [실험 결과](./step3-result.md)
+> - **이 계획의 결과 — [advanced-result.md](./advanced-result.md)**
+>
+> §2-3의 전용 vitest 설정은 실측에서 불필요한 것으로 확인돼 만들지 않았다.
 
 3단계에서 손으로 세 곳을 망가뜨렸다. Advanced는 같은 일을 Stryker가 전수로 돌린다. 결과는 `docs/week-08/advanced-result.md`에 쓴다.
 
@@ -193,4 +197,4 @@ C는 "왜 좁혀야 하는가"의 근거를 실측으로 만든다는 값어치�
 
 _이 문서는 Claude가 작성했다. Stryker 10.0.0의 peer 범위와 이 저장소의 vitest 버전을 확인하고, `vitest.config.ts`의 projects 구성이 실행 범위에 걸린다는 점을 찾아 §2-3으로 분리한 것이 Claude다._
 
-_§1의 변형 대상은 1단계에서 작성자가 단위로 분류한 항목을 그대로 따랐다. §6의 세 가지는 Claude가 선택지만 제시했고 판단은 작성자가 한다. 살아남은 변형 중 무엇을 "진짜 구멍"으로 볼지는 곧 "무엇을 지킬 것인가"라 과제가 넘기지 말라고 한 결정이다(과제 43행)._
+_§1의 변형 대상은 1단계에서 작성자가 단위로 분류한 항목을 그대로 따랐다. §6의 세 가지는 Claude가 선택지만 제시했고 작성자가 정했다. 살아남은 변형 중 무엇을 "진짜 구멍"으로 볼지는 곧 "무엇을 지킬 것인가"라 과제가 넘기지 말라고 한 결정이고(과제 43행), 판정 결과는 [`advanced-result.md`](./advanced-result.md) §3·§8에 있다._

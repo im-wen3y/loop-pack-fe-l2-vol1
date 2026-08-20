@@ -1,8 +1,11 @@
 # 8주차 3단계 결과 — 구현을 망가뜨려 테스트를 검증한 기록
 
-> 과제 문서: `docs/assignments/week-08.md` 3단계
-> 1단계 설계: `docs/rfc/week08-test-plan.md` 「3단계 예고」
-> 3단계 계획: `docs/week-08/step3-plan.md`
+> **관련 문서**
+>
+> - 과제 — [week-08.md](../assignments/week-08.md) 3단계
+> - 1단계 — [테스트 계획](../rfc/week08-test-plan.md) 「3단계 예고」
+> - 이 결과의 계획 — [step3-plan.md](./step3-plan.md)
+> - Advanced — [실행 결과](./advanced-result.md)
 
 단위·통합·E2E 각 계층에서 구현을 한 곳씩 망가뜨리고, 테스트 코드는 건드리지 않은 채 대상 테스트를 돌렸다. 실험마다 결과를 기록한 직후 구현을 원복하고 다시 통과하는지 확인했다.
 
