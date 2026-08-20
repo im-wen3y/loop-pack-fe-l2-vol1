@@ -76,7 +76,7 @@ describe('ProductListContent', () => {
 
 파일 상단 주석 한 줄이면 된다. 코드를 고치는 사람에게 "이 단언에는 문서에 근거가 있다"가 보이고, 근거를 넘어서는 단언을 추가할 때 걸린다.
 
-적용 결과 8개 파일에 붙었다. 항목 번호가 곧바로 붙는 5개(`search-params`·`get-total-pages`·`ProductListContent`·`useProductFilters`·`Header`) 외에 세 개가 더 나왔다 — 1번(`create-collection-store.test.ts`, "기존 테스트를 그대로 쓴다"도 결정이다), 2번과 6번에 걸친 `queries.test.ts`, 번호 대신 「기존 테스트와의 관계」 행을 가리키는 `api.test.ts`다. 번호를 심는 작업 자체가 문서와 코드의 대응을 다시 세게 만들었다.
+적용 결과 9개 파일에 붙었다. 항목 번호가 곧바로 붙는 6개(`search-params`·`get-total-pages`·`ProductListContent`·`useProductFilters`·`Header`·`week-05-state.spec.ts`) 외에 세 개가 더 나왔다 — 1번(`create-collection-store.test.ts`, "기존 테스트를 그대로 쓴다"도 결정이다), 2번과 6번에 걸친 `queries.test.ts`, 번호 대신 「기존 테스트와의 관계」 행을 가리키는 `api.test.ts`다. 번호를 심는 작업 자체가 문서와 코드의 대응을 다시 세게 만들었다.
 
 ### ③ 구현 중 바뀐 결정을 그때그때 계획서에 적는다
 

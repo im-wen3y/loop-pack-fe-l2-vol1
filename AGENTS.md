@@ -26,7 +26,7 @@
 - `pnpm format`: Prettier로 저장소 전체를 포맷한다.
 - `pnpm test:e2e`: Chromium과 WebKit에서 Playwright 테스트를 실행한다.
 
-특정 테스트만 실행하려면 `pnpm exec playwright test e2e/home-select.spec.ts`를 사용한다.
+특정 테스트만 실행하려면 `pnpm exec playwright test e2e/week-05-state.spec.ts`를 사용한다.
 
 ## 코드 스타일 및 네이밍
 

@@ -122,7 +122,7 @@ node -e "const p=require('./package.json');const a={...p.dependencies,...p.devDe
 - `productQueries.list`는 `placeholderData: keepPreviousData`, `staleTime: 5분`, `throwOnError: shouldThrowProductListError`를 쓴다.
 - `ProductListResults`의 분기는 `isPending` → `isError` → `products.length === 0`(안에서 `totalCount > 0`으로 오버플로우 구분) → 목록 순이다.
 - `Header`는 `usePathname()`을 쓴다. 12번에서 이게 걸린다(아래 「결정이 필요한 것」 ①).
-- 기존 E2E는 `e2e/week-05-state.spec.ts` 하나이고 그 안에 19개 테스트가 있다.
+- 기존 E2E는 `e2e/week-05-state.spec.ts` 하나이고 그 안에 19개 테스트가 있다. **Phase 0의 E2E 축소 전 기준이다** — 축소 후에는 10개이고 Chromium·WebKit 합쳐 20개가 실행된다.
 
 ---
 
