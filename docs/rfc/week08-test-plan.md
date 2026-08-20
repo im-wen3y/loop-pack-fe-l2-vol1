@@ -6,6 +6,8 @@
 > 2단계 대조 기록: [`docs/week-08/step2-review.md`](../week-08/step2-review.md) — 이 문서와 테스트 코드가 어긋난 자리
 > 3단계 실험 계획: [`docs/week-08/step3-plan.md`](../week-08/step3-plan.md)
 > 3단계 실험 결과: [`docs/week-08/step3-result.md`](../week-08/step3-result.md)
+> Advanced 실행 계획: [`docs/week-08/advanced-plan.md`](../week-08/advanced-plan.md)
+> Advanced 실행 결과: [`docs/week-08/advanced-result.md`](../week-08/advanced-result.md) — Stryker mutation testing
 
 이 문서는 테스트 코드보다 먼저 커밋한다.
 
