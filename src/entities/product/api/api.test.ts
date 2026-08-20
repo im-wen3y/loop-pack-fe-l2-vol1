@@ -6,7 +6,7 @@
  * getProductList가 `/api/products` 상대 경로로 요청한다. MSW 인터셉터는
  * location.href를 기준으로 Request를 만들므로 이 파일에만 jsdom 환경을 사용한다.
  */
-import { HttpResponse, http } from 'msw'
+import { HttpResponse, delay, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { getProductList } from './api'
 import { server } from '@/shared/test/msw-server'
@@ -32,6 +32,30 @@ describe('getProductList', () => {
     )
 
     await expect(getProductList({ page: 1 })).resolves.toEqual(response)
+  })
+
+  // week-07에서 fetch stub으로 검증하던 취소 동작을 이 파일의 MSW 방식으로 옮겼다.
+  it('호출자가 넘긴 AbortSignal을 진행 중인 요청에 연결한다', async () => {
+    server.use(
+      http.get('/api/products', async () => {
+        await delay('infinite')
+      }),
+    )
+    const controller = new AbortController()
+
+    const pending = getProductList({ page: 1 }, controller.signal)
+    controller.abort()
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('취소된 요청은 네트워크 오류로 바꾸지 않는다', async () => {
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(getProductList({ page: 1 }, controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
+    })
   })
 
   it('HTTP 오류의 status를 보존한다', async () => {
