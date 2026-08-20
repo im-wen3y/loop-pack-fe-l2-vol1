@@ -100,7 +100,7 @@ Error: element(s) not found
 
 세 줄 모두 "대부분 통과하고 경계 하나만 빨개졌다"는 형태다. 반환값을 통째로 지우는 쉬운 변형이었다면 해당 파일이 우수수 빨개졌을 텐데 그렇지 않았다. 이 근거로 추가 실험 없이 마감했다.
 
-다만 이번에 확인하지 않은 자리는 남는다. `setSort`의 `page: 1`은 `setCategory`와 같은 구조라 실험 2가 대신 본 것으로 취급했고, 실제로 변형해보지는 않았다. `getTotalPages`도 `Math.max` 쪽만 봤고 `Math.ceil` → `Math.floor` 같은 다른 경계는 남겨뒀다. 계층당 하나라는 과제 요구를 넘어서는 범위라 이번에는 하지 않기로 정한 것이고, 못 한 것과 구분해 적어둔다.
+다만 이번에 확인하지 않은 자리는 남는다. `setSort`의 `page: 1`은 `setCategory`와 같은 구조라 실험 2가 대신 본 것으로 취급했고, 실제로 변형해보지는 않았다. `getTotalPages`도 `Math.max` 쪽만 봤고 `Math.ceil` → `Math.floor` 같은 다른 경계는 남겨뒀다. (이 자리는 이후 Advanced에서 확인했다 — [`docs/week-08/advanced-result.md`](./advanced-result.md) §3.) 계층당 하나라는 과제 요구를 넘어서는 범위라 이번에는 하지 않기로 정한 것이고, 못 한 것과 구분해 적어둔다.
 
 ---
 
