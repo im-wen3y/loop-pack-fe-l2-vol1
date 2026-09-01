@@ -1,5 +1,5 @@
-import { queryOptions } from '@tanstack/react-query'
-import { getOrderList } from '@/entities/order/api/api'
+import { mutationOptions, queryOptions } from '@tanstack/react-query'
+import { createOrder, getOrderList } from '@/entities/order/api/api'
 
 export const orderQueryKeys = {
   all: ['order'] as const,
@@ -11,7 +11,16 @@ export const orderQueries = {
     queryOptions({
       queryKey: orderQueryKeys.list(),
       queryFn: ({ signal }) => getOrderList(signal),
-      // 주문은 사용자가 방금 만든 것이 바로 보여야 한다. 상품 목록과 달리 캐시를 오래 두지 않는다.
-      staleTime: 0,
+      // 주문 직후 이동은 mutation이 미리 받은 목록을 사용한다. 짧은 시간 동안 fresh로 두어
+      // /orders가 마운트되며 같은 요청을 다시 보내지 않게 한다.
+      staleTime: 5_000,
+    }),
+}
+
+export const orderMutations = {
+  create: () =>
+    mutationOptions({
+      mutationKey: [...orderQueryKeys.all, 'create'],
+      mutationFn: createOrder,
     }),
 }
