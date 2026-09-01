@@ -1,5 +1,6 @@
 import { LoginForm } from '@/features/login'
 import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
+import { RETURN_URL_PARAM } from '@/shared/lib/to-login-path'
 import { toSafeReturnPath } from '@/shared/lib/to-safe-return-path'
 import '@/shared/styles/layout.css'
 
@@ -14,7 +15,7 @@ type LoginPageProps = {
 // 그만큼 폼이 늦게 붙는다. 값 하나를 읽는 데 그럴 이유가 없다.
 export const LoginPage = async ({ searchParams }: LoginPageProps) => {
   const params = await searchParams
-  const returnUrl = params.returnUrl
+  const returnUrl = params[RETURN_URL_PARAM]
 
   // 같은 이름이 여러 번 오면 배열이 된다. 그런 요청은 정상 흐름이 아니라 홈으로 대체된다.
   const returnPath = toSafeReturnPath(typeof returnUrl === 'string' ? returnUrl : null)
