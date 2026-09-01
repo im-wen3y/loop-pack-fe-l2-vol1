@@ -12,7 +12,8 @@ export const MyProfile = async () => {
   const cookieHeader = (await cookies()).toString()
   const user = await getSession(cookieHeader)
 
-  // 다음 단계에서 proxy.ts 가드가 이 자리를 대신한다. 그때는 미로그인이 여기까지 오지 않는다.
+  // proxy.ts 가드가 앞에서 막으므로 미로그인은 여기까지 오지 않는다. 이 분기는 위조·만료 쿠키가
+  // 가드를 통과한 경우에만 걸린다(decisions.md 10번) — 그때 화면이 비지 않게 남겨 둔다.
   if (user === null) {
     return <p>로그인이 필요한 화면입니다.</p>
   }
