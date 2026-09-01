@@ -1,0 +1,19 @@
+.profile {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 24px;
+  margin: 0 0 24px;
+}
+
+.profile dt {
+  color: #5a6472;
+}
+
+.profile dd {
+  margin: 0;
+}
+
+.links {
+  display: flex;
+  gap: 16px;
+}
