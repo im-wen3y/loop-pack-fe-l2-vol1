@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { useState } from 'react'
+import { CollectionOwnerSync } from '@/_app/ui/CollectionOwnerSync'
 
 type ProvidersProps = {
   children: React.ReactNode
@@ -15,7 +16,11 @@ export const Providers = ({ children }: ProvidersProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NuqsAdapter>{children}</NuqsAdapter>
+      <NuqsAdapter>
+        {/* 세션이 정해지면 장바구니·위시리스트의 소유자를 맞춘다. 그리는 것은 없다. */}
+        <CollectionOwnerSync />
+        {children}
+      </NuqsAdapter>
     </QueryClientProvider>
   )
 }
