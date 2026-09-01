@@ -1,0 +1,22 @@
+'use client'
+
+import { selectWishlistItems, useWishlistStore } from '@/entities/wishlist'
+import { useHasHydrated } from '@/shared/lib/useHasHydrated'
+import { ProductGrid } from '@/widgets/product-card'
+
+// 카드는 기존 widgets/product-card를 그대로 쓴다. 담기·찜 버튼도 목록 화면과 같은 것이라
+// 위시리스트 전용 카드를 만들 이유가 없다.
+export const WishlistContent = () => {
+  const items = useWishlistStore(selectWishlistItems)
+  const hasHydrated = useHasHydrated(useWishlistStore)
+
+  if (!hasHydrated) {
+    return null
+  }
+
+  if (items.length === 0) {
+    return <p>찜한 상품이 없습니다.</p>
+  }
+
+  return <ProductGrid products={items} titleLevel={2} />
+}

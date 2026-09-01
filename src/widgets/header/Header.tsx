@@ -29,8 +29,16 @@ export const Header = () => {
         <Link href="/products" aria-current={pathname === '/products' ? 'page' : undefined}>
           상품
         </Link>
-        <span>위시리스트 {wishlistCount}</span>
-        <span>장바구니 {cartCount}</span>
+        {/*
+          두 화면이 생기면서 span에서 Link가 됐다. 하는 일이 화면 이동이라 button이 아니라 Link이고,
+          보호 경로라 미로그인으로 누르면 가드가 /login으로 보낸다 — 여기에는 분기 코드가 없다.
+        */}
+        <Link href="/wishlist" aria-current={pathname === '/wishlist' ? 'page' : undefined}>
+          위시리스트 {wishlistCount}
+        </Link>
+        <Link href="/cart" aria-current={pathname === '/cart' ? 'page' : undefined}>
+          장바구니 {cartCount}
+        </Link>
       </nav>
     </header>
   )
