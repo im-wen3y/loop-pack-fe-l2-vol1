@@ -5,7 +5,7 @@ import { useCartStore } from '@/entities/cart'
 import { selectWishlistItems, useWishlistStore } from '@/entities/wishlist'
 import { AddCartButton } from '@/features/add-to-cart'
 import { WishlistButton } from '@/features/add-to-wishlist'
-import { Header } from '@/widgets/header/Header'
+import { HeaderNav } from '@/widgets/header/HeaderNav'
 import { renderWithProviders } from '@/shared/test/render-with-providers'
 
 vi.mock('next/navigation', () => ({
@@ -15,6 +15,12 @@ vi.mock('next/navigation', () => ({
 // 두 store가 소유자별로 목록을 나눠 들게 되면서, 소유자가 없으면 아무것도 담기지 않는다.
 // 테스트용 소유자를 세우고 시작한다.
 const TEST_OWNER = 'test-user'
+
+// Header는 세션을 서버에서 읽는 async Server Component가 되어 jsdom에서 렌더할 수 없다.
+// 배지 숫자를 그리는 것은 그 안쪽 HeaderNav이고, 세션은 prop으로 받는다.
+// 여기서 보는 것은 "버튼을 누르면 헤더 숫자가 따라 움직인다"라서 로그인 상태로 고정한다
+// (숫자 자체가 로그인 상태에서만 붙는다).
+const TEST_USER = { id: TEST_OWNER, name: '테스트 사용자', email: 'test@example.com' }
 
 // store가 담은 시점의 표시 정보를 함께 들게 되면서 버튼이 상품 전체를 받는다.
 // 이 테스트가 보는 것은 헤더 숫자라, 표시 필드는 형태만 맞춘 값으로 채운다.
@@ -58,7 +64,7 @@ describe('Header와 담기·찜 버튼', () => {
     const user = userEvent.setup()
     renderWithProviders(
       <>
-        <Header />
+        <HeaderNav user={TEST_USER} />
         <WishlistButton product={testProduct('product-1', '테스트 상품')} />
         <AddCartButton product={testProduct('product-1', '테스트 상품')} />
       </>,
@@ -77,7 +83,7 @@ describe('Header와 담기·찜 버튼', () => {
     const user = userEvent.setup()
     renderWithProviders(
       <>
-        <Header />
+        <HeaderNav user={TEST_USER} />
         <AddCartButton product={testProduct('product-1', '첫 번째 상품')} />
         <AddCartButton product={testProduct('product-2', '두 번째 상품')} />
       </>,
