@@ -20,21 +20,32 @@ export const MyProfile = async () => {
 
   return (
     <>
-      {/* GET /api/auth/me가 주는 것이 전부다. 그 외 필드는 API에 없다. */}
-      <dl className={styles.profile}>
-        <dt>이름</dt>
-        <dd>{user.name}</dd>
-        <dt>이메일</dt>
-        <dd>{user.email}</dd>
-      </dl>
+      <div className={styles.identity}>
+        <span className={styles.avatar} aria-hidden="true">
+          {user.name.slice(0, 2).toUpperCase()}
+        </span>
+        {/* GET /api/auth/me가 주는 것이 전부다. 그 외 필드는 API에 없다. */}
+        <dl className={styles.profile}>
+          <dt>이름</dt>
+          <dd>{user.name}</dd>
+          <dt>이메일</dt>
+          <dd>{user.email}</dd>
+        </dl>
+      </div>
       {/*
         이 화면은 요약만 하고 목록은 각 화면이 소유한다.
         로그아웃 버튼을 두지 않는 것은 헤더가 이 화면에도 떠 있어 진입점이 이미 있기 때문이다.
         두 곳에 두면 같은 이름의 요소가 둘이라 role+name 셀렉터가 Playwright strict mode에 걸린다.
       */}
       <nav className={styles.links} aria-label="내 정보 바로가기">
-        <Link href="/orders">주문 내역</Link>
-        <Link href="/wishlist">위시리스트</Link>
+        <Link href="/orders">
+          <span>주문 내역</span>
+          <strong>바로가기</strong>
+        </Link>
+        <Link href="/wishlist">
+          <span>위시리스트</span>
+          <strong>바로가기</strong>
+        </Link>
       </nav>
     </>
   )
