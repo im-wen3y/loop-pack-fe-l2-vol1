@@ -2,7 +2,10 @@
 
 import { selectHasCartOwner, useCartStore } from '@/entities/cart'
 import type { ProductSummary } from '@/entities/product'
+import { useRouter } from 'next/navigation'
+import { useRef, useState } from 'react'
 import { toLoginPath } from '@/shared/lib/to-login-path'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog/ConfirmDialog'
 import styles from './AddCartButton.module.css'
 
 type AddCartButtonProps = {
@@ -16,9 +19,10 @@ type AddCartButtonProps = {
 //
 // id만이 아니라 상품 전체를 받는 것은 store가 담은 시점의 표시 정보를 함께 들기 때문이다.
 // 장바구니·주문서가 상품을 그려야 하는데 상품을 id로 조회하는 API가 없다.
-//
-// TODO(다음 단계): 담은 뒤 장바구니로 갈지 묻는 확인 창을 붙인다. 지금은 담아도 화면 반응이 없다.
 export const AddCartButton = ({ product }: AddCartButtonProps) => {
+  const router = useRouter()
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const addToCart = useCartStore((state) => state.add)
   const hasOwner = useCartStore(selectHasCartOwner)
 
@@ -37,16 +41,35 @@ export const AddCartButton = ({ product }: AddCartButtonProps) => {
     }
 
     addToCart(product)
+    setIsConfirmOpen(true)
+  }
+
+  const handleClose = () => {
+    setIsConfirmOpen(false)
+    requestAnimationFrame(() => triggerRef.current?.focus())
   }
 
   return (
-    <button
-      className={styles.button}
-      type="button"
-      aria-label={`${product.name} 장바구니`}
-      onClick={handleClick}
-    >
-      담기
-    </button>
+    <>
+      <button
+        ref={triggerRef}
+        className={styles.button}
+        type="button"
+        aria-label={`${product.name} 장바구니`}
+        onClick={handleClick}
+      >
+        담기
+      </button>
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        title="장바구니 페이지로 이동하겠습니까?"
+        confirmLabel="장바구니 이동"
+        onCancel={handleClose}
+        onConfirm={() => {
+          setIsConfirmOpen(false)
+          router.push('/cart')
+        }}
+      />
+    </>
   )
 }
