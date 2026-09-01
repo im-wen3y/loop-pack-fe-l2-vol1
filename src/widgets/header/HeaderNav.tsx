@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
 import { selectCartCount, useCartStore } from '@/entities/cart'
 import type { SessionUser } from '@/entities/session'
 import { selectWishlistCount, useWishlistStore } from '@/entities/wishlist'
 import { LogoutButton } from '@/features/logout'
+import { toLoginPath } from '@/shared/lib/to-login-path'
 import styles from './Header.module.css'
 
 type HeaderNavProps = {
@@ -15,12 +17,45 @@ type HeaderNavProps = {
 
 export const HeaderNav = ({ user }: HeaderNavProps) => {
   const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   // 개수는 별도 상태로 저장하지 않고 현재 소유자의 목록 길이에서 파생한다.
   // 장바구니 배지는 담긴 상품의 종류 수이고 수량 합이 아니다.
   // persist store를 훅으로 읽으면 zustand가 getServerSnapshot을 초기값으로 돌려줘
   // hydration 렌더에서 서버와 같은 값을 그린다 → 별도 hydration 가드가 필요 없다.
   const wishlistCount = useWishlistStore(selectWishlistCount)
   const cartCount = useCartStore(selectCartCount)
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) {
+        setIsMenuOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMenuOpen])
+
+  const avatarLabel = user?.name.slice(0, 2).toUpperCase() ?? ''
 
   return (
     <header className={styles.header}>
@@ -50,14 +85,35 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
           장바구니{user !== null && ` ${cartCount}`}
         </Link>
         {user === null ? (
-          <Link href="/login" aria-current={pathname === '/login' ? 'page' : undefined}>
+          <Link
+            href={toLoginPath(pathname)}
+            aria-current={pathname === '/login' ? 'page' : undefined}
+          >
             로그인
           </Link>
         ) : (
-          <>
-            <span>{user.name}</span>
-            <LogoutButton />
-          </>
+          <div className={styles.account} ref={menuRef}>
+            <button
+              ref={triggerRef}
+              className={styles.avatar}
+              type="button"
+              aria-label={`${user.name} 계정 메뉴`}
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+            >
+              {avatarLabel}
+            </button>
+            {isMenuOpen && (
+              <div className={styles.menu} role="menu" aria-label="계정 메뉴">
+                <p className={styles.accountName}>{user.name}</p>
+                <Link href="/mypage" role="menuitem" onClick={() => setIsMenuOpen(false)}>
+                  마이페이지
+                </Link>
+                <LogoutButton />
+              </div>
+            )}
+          </div>
         )}
       </nav>
     </header>
