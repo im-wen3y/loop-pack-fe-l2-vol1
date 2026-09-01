@@ -1,6 +1,6 @@
 'use client'
 
-import { useWishlistStore } from '@/entities/wishlist'
+import { selectIsWishlisted, useWishlistStore } from '@/entities/wishlist'
 import styles from './WishlistButton.module.css'
 
 type WishlistButtonProps = {
@@ -8,10 +8,9 @@ type WishlistButtonProps = {
   productName: string
 }
 
-// 목표 책임은 위시리스트 추가다. 이번 FSD 전환에서는 동작 기준선을 보존하기 위해
-// 기존 toggle을 임시로 사용하고, 제거 행위는 향후 위시리스트 화면에서 분리한다.
+// 찜은 켜고 끄는 동작이라 toggle을 그대로 쓴다. 장바구니만 add/remove로 갈라졌다.
 export const WishlistButton = ({ productId, productName }: WishlistButtonProps) => {
-  const isWishlisted = useWishlistStore((state) => state.ids.includes(productId))
+  const isWishlisted = useWishlistStore(selectIsWishlisted(productId))
   const toggleWishlist = useWishlistStore((state) => state.toggle)
 
   return (

@@ -8,19 +8,21 @@ type AddCartButtonProps = {
   productName: string
 }
 
-// 목표 책임은 장바구니 추가다. 이번 FSD 전환에서는 동작 기준선을 보존하기 위해
-// 기존 toggle을 임시로 사용하고, 삭제·수정은 향후 장바구니 화면에서 분리한다.
+// 담기만 한다. 제거는 장바구니 화면이 맡는다.
+//
+// aria-pressed를 뗐다. 수량이 생기면서 "다시 누르면 빠진다"가 성립하지 않게 됐고
+// (수량 3에서 다시 누르면?), 눌린 상태를 표시할 대상이 사라졌다. 이제 누를 때마다 수량이 하나 오른다.
+//
+// TODO(다음 단계): 담은 뒤 장바구니로 갈지 묻는 확인 창을 붙인다. 지금은 눌러도 화면 반응이 없다.
 export const AddCartButton = ({ productId, productName }: AddCartButtonProps) => {
-  const isInCart = useCartStore((state) => state.ids.includes(productId))
-  const toggleCart = useCartStore((state) => state.toggle)
+  const addToCart = useCartStore((state) => state.add)
 
   return (
     <button
       className={styles.button}
       type="button"
       aria-label={`${productName} 장바구니`}
-      aria-pressed={isInCart}
-      onClick={() => toggleCart(productId)}
+      onClick={() => addToCart(productId)}
     >
       담기
     </button>

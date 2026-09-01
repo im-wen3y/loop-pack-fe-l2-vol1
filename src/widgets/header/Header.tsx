@@ -2,17 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCartStore } from '@/entities/cart'
-import { useWishlistStore } from '@/entities/wishlist'
+import { selectCartCount, useCartStore } from '@/entities/cart'
+import { selectWishlistCount, useWishlistStore } from '@/entities/wishlist'
 import styles from './Header.module.css'
 
 export const Header = () => {
   const pathname = usePathname()
-  // 개수는 별도 상태로 저장하지 않고 ids 길이에서 파생한다.
+  // 개수는 별도 상태로 저장하지 않고 현재 소유자의 목록 길이에서 파생한다.
+  // 장바구니 배지는 담긴 상품의 종류 수이고 수량 합이 아니다.
   // persist store를 훅으로 읽으면 zustand가 getServerSnapshot을 초기값으로 돌려줘
   // hydration 렌더에서 서버와 같은 값을 그린다 → 별도 hydration 가드가 필요 없다.
-  const wishlistCount = useWishlistStore((state) => state.ids.length)
-  const cartCount = useCartStore((state) => state.ids.length)
+  const wishlistCount = useWishlistStore(selectWishlistCount)
+  const cartCount = useCartStore(selectCartCount)
 
   return (
     <header className={styles.header}>
