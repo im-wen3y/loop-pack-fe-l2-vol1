@@ -22,7 +22,7 @@ export const LoginPage = async ({ searchParams }: LoginPageProps) => {
 
   return (
     <PageContainer>
-      <section className="layout-section">
+      <section className="layout-section login-layout">
         <h1>로그인</h1>
         <LoginForm returnPath={returnPath} />
       </section>

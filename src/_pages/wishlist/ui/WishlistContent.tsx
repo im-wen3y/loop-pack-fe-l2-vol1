@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { selectWishlistItems, useWishlistStore } from '@/entities/wishlist'
 import { useHasHydrated } from '@/shared/lib/useHasHydrated'
 import { ProductGrid } from '@/widgets/product-card'
@@ -15,7 +16,12 @@ export const WishlistContent = () => {
   }
 
   if (items.length === 0) {
-    return <p>찜한 상품이 없습니다.</p>
+    return (
+      <div className="layout-empty">
+        <p>찜한 상품이 없습니다.</p>
+        <Link href="/products">상품 보러 가기</Link>
+      </div>
+    )
   }
 
   return <ProductGrid products={items} titleLevel={2} />

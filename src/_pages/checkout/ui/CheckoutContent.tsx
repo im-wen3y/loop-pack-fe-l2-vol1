@@ -23,7 +23,7 @@ export const CheckoutContent = () => {
 
   if (items.length === 0) {
     return (
-      <p>
+      <p className="layout-empty">
         주문할 상품이 없습니다. <Link href="/cart">장바구니</Link>에서 상품을 담아주세요.
       </p>
     )
@@ -31,6 +31,7 @@ export const CheckoutContent = () => {
 
   return (
     <>
+      <h2 className={styles.sectionTitle}>주문 상품</h2>
       <ul className={styles.list}>
         {items.map((item) => (
           <li key={item.id} className={styles.item}>
@@ -48,7 +49,8 @@ export const CheckoutContent = () => {
         ))}
       </ul>
       <p className={styles.total}>
-        <strong>결제 예정 금액 {formatPrice(totalPrice)}</strong>
+        <span>결제 예정 금액</span>
+        <strong>{formatPrice(totalPrice)}</strong>
       </p>
       <PlaceOrderButton />
     </>
