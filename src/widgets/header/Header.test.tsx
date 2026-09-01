@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCartStore } from '@/entities/cart'
-import { selectWishlistIds, useWishlistStore } from '@/entities/wishlist'
+import { selectWishlistItems, useWishlistStore } from '@/entities/wishlist'
 import { AddCartButton } from '@/features/add-to-cart'
 import { WishlistButton } from '@/features/add-to-wishlist'
 import { Header } from '@/widgets/header/Header'
@@ -16,6 +16,16 @@ vi.mock('next/navigation', () => ({
 // 테스트용 소유자를 세우고 시작한다.
 const TEST_OWNER = 'test-user'
 
+// store가 담은 시점의 표시 정보를 함께 들게 되면서 버튼이 상품 전체를 받는다.
+// 이 테스트가 보는 것은 헤더 숫자라, 표시 필드는 형태만 맞춘 값으로 채운다.
+const testProduct = (id: string, name: string) => ({
+  id,
+  name,
+  brand: '테스트 브랜드',
+  image: '/test.png',
+  price: 1_000,
+})
+
 // store가 모듈 전역이라 테스트 사이에 담긴 id가 남는다. 소비처에서 setState를 쓰지 않는
 // 규칙을 지키기 위해 store가 공개한 action으로만 비운다.
 const resetCollections = () => {
@@ -24,8 +34,8 @@ const resetCollections = () => {
 
   useCartStore.getState().clearAll()
 
-  for (const id of selectWishlistIds(useWishlistStore.getState())) {
-    useWishlistStore.getState().toggle(id)
+  for (const item of selectWishlistItems(useWishlistStore.getState())) {
+    useWishlistStore.getState().toggle(item)
   }
 }
 
@@ -49,8 +59,8 @@ describe('Header와 담기·찜 버튼', () => {
     renderWithProviders(
       <>
         <Header />
-        <WishlistButton productId="product-1" productName="테스트 상품" />
-        <AddCartButton productId="product-1" productName="테스트 상품" />
+        <WishlistButton product={testProduct('product-1', '테스트 상품')} />
+        <AddCartButton product={testProduct('product-1', '테스트 상품')} />
       </>,
     )
     const wishlistButton = screen.getByRole('button', { name: '테스트 상품 위시리스트' })
@@ -68,8 +78,8 @@ describe('Header와 담기·찜 버튼', () => {
     renderWithProviders(
       <>
         <Header />
-        <AddCartButton productId="product-1" productName="첫 번째 상품" />
-        <AddCartButton productId="product-2" productName="두 번째 상품" />
+        <AddCartButton product={testProduct('product-1', '첫 번째 상품')} />
+        <AddCartButton product={testProduct('product-2', '두 번째 상품')} />
       </>,
     )
 
