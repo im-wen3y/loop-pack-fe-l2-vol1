@@ -4,6 +4,7 @@ export { useWishlistStore } from '@/entities/wishlist/model/wishlist-store'
 export {
   selectWishlistItems,
   selectWishlistCount,
+  selectHasWishlistOwner,
   selectIsWishlisted,
 } from '@/entities/wishlist/model/wishlist-store'
 export type { WishlistItem } from '@/entities/wishlist/model/wishlist'

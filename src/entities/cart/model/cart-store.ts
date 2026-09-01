@@ -44,6 +44,11 @@ export const selectCartItems = (state: CartStore): CartItem[] =>
 // 같은 상품을 셋 담아도 1이며, 수량은 장바구니 화면에서 본다.
 export const selectCartCount = (state: CartStore): number => selectCartItems(state).length
 
+// 담기 버튼이 "지금 담을 수 있는가"를 묻는 자리. 세션 쿼리가 아니라 store의 소유자를 본다 —
+// 막는 판정(updateItems)과 보내는 판정(버튼)이 같은 값을 봐야 한다. 세션이 도착하고
+// setOwner가 반영되기 전 사이에는 둘이 갈려, 눌러도 아무 일 없는 순간이 생긴다.
+export const selectHasCartOwner = (state: CartStore): boolean => state.ownerId !== null
+
 export const selectIsInCart =
   (productId: string) =>
   (state: CartStore): boolean =>

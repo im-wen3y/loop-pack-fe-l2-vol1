@@ -1,7 +1,8 @@
 'use client'
 
 import type { ProductSummary } from '@/entities/product'
-import { selectIsWishlisted, useWishlistStore } from '@/entities/wishlist'
+import { selectHasWishlistOwner, selectIsWishlisted, useWishlistStore } from '@/entities/wishlist'
+import { toLoginPath } from '@/shared/lib/to-login-path'
 import styles from './WishlistButton.module.css'
 
 type WishlistButtonProps = {
@@ -15,6 +16,18 @@ type WishlistButtonProps = {
 export const WishlistButton = ({ product }: WishlistButtonProps) => {
   const isWishlisted = useWishlistStore(selectIsWishlisted(product.id))
   const toggleWishlist = useWishlistStore((state) => state.toggle)
+  const hasOwner = useWishlistStore(selectHasWishlistOwner)
+
+  // 미로그인 처리는 담기 버튼과 같다(decisions.md 3번). 이유도 그쪽 주석과 같다.
+  const handleClick = () => {
+    if (!hasOwner) {
+      const { pathname, search } = window.location
+      window.location.assign(toLoginPath(`${pathname}${search}`))
+      return
+    }
+
+    toggleWishlist(product)
+  }
 
   return (
     <button
@@ -22,7 +35,7 @@ export const WishlistButton = ({ product }: WishlistButtonProps) => {
       type="button"
       aria-label={`${product.name} 위시리스트`}
       aria-pressed={isWishlisted}
-      onClick={() => toggleWishlist(product)}
+      onClick={handleClick}
     >
       찜
     </button>

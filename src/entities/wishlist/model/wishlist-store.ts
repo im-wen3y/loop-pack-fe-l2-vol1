@@ -32,6 +32,9 @@ export const selectWishlistItems = (state: WishlistStore): WishlistItem[] =>
 export const selectWishlistCount = (state: WishlistStore): number =>
   selectWishlistItems(state).length
 
+// 찜 버튼이 "지금 찜할 수 있는가"를 묻는 자리. 이유는 cart-store의 selectHasCartOwner와 같다.
+export const selectHasWishlistOwner = (state: WishlistStore): boolean => state.ownerId !== null
+
 export const selectIsWishlisted =
   (productId: string) =>
   (state: WishlistStore): boolean =>
