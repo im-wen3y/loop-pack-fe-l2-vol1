@@ -19,7 +19,7 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
       <div className={styles.info}>
         <p>{item.brand}</p>
         <h2>{item.name}</h2>
-        <strong>{formatPrice(item.price * item.quantity)}</strong>
+        <strong>{formatPrice(item.price)}</strong>
       </div>
       <div className={styles.quantity}>
         {/*
