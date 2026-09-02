@@ -4,6 +4,7 @@ import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-qu
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { useState } from 'react'
 import { CollectionOwnerSync } from '@/_app/ui/CollectionOwnerSync'
+import { AnalyticsInitializer } from '@/_app/ui/AnalyticsInitializer'
 import { ApiError } from '@/shared/api/api-error'
 import { LOGIN_PATH, toLoginPath } from '@/shared/lib/to-login-path'
 
@@ -57,6 +58,7 @@ export const Providers = ({ children }: ProvidersProps) => {
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
         {/* 세션이 정해지면 장바구니·위시리스트의 소유자를 맞춘다. 그리는 것은 없다. */}
+        <AnalyticsInitializer />
         <CollectionOwnerSync />
         {children}
       </NuqsAdapter>
