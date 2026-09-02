@@ -3,6 +3,10 @@
 import { useEffect, useRef } from 'react'
 import styles from './ConfirmDialog.module.css'
 
+// 확인 슬롯은 항상 button이다. 한때 이동만 하는 확인(장바구니 이동)을 Link로 받게 만들었는데,
+// 같은 부품의 확인이 어떤 때는 button이고 어떤 때는 link가 되어 계약이 둘로 갈렸다.
+// 이 창의 확인은 "방금 물어본 그것을 실행한다"는 자리라, 목적지가 있든 없든 모달의 결정 버튼이다.
+// 이동은 그 결정의 결과이고, 어떻게 이동할지는 부르는 쪽이 정한다.
 type ConfirmDialogProps = {
   isOpen: boolean
   title: string

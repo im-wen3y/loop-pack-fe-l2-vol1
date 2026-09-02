@@ -1,6 +1,8 @@
 'use client'
 
 import type { ProductSummary } from '@/entities/product'
+import { APP_EVENT } from '@/analytics/app-events'
+import { track } from '@/analytics/logger'
 import { selectHasWishlistOwner, selectIsWishlisted, useWishlistStore } from '@/entities/wishlist'
 import { toLoginPath } from '@/shared/lib/to-login-path'
 import styles from './WishlistButton.module.css'
@@ -22,11 +24,19 @@ export const WishlistButton = ({ product }: WishlistButtonProps) => {
   const handleClick = () => {
     if (!hasOwner) {
       const { pathname, search } = window.location
-      window.location.assign(toLoginPath(`${pathname}${search}`))
+      window.location.assign(
+        toLoginPath(`${pathname}${search}`, {
+          entryPoint: 'product_wishlist',
+          productId: product.id,
+        }),
+      )
       return
     }
 
     toggleWishlist(product)
+    track(isWishlisted ? APP_EVENT.wishlistRemove : APP_EVENT.wishlistAdd, {
+      product_id: product.id,
+    })
   }
 
   return (

@@ -1,6 +1,9 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
+import { APP_EVENT } from '@/analytics/app-events'
+import { clearFlowId, setAnalyticsUserId } from '@/analytics/browser-context'
+import { reset, track } from '@/analytics/logger'
 import { logout } from '@/features/logout/api/logout'
 
 // 성공하면 홈으로 전체 이동한다. router.push가 아닌 이유는 로그인 상태가 서버 렌더에 들어 있기
@@ -16,6 +19,10 @@ export const useLogout = () => {
   const { mutate, isPending, error } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
+      track(APP_EVENT.logoutComplete)
+      reset()
+      setAnalyticsUserId(null)
+      clearFlowId()
       window.location.assign('/')
     },
   })

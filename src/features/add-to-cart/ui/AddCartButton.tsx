@@ -4,6 +4,8 @@ import { selectHasCartOwner, useCartStore } from '@/entities/cart'
 import type { ProductSummary } from '@/entities/product'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { APP_EVENT } from '@/analytics/app-events'
+import { track } from '@/analytics/logger'
 import { toLoginPath } from '@/shared/lib/to-login-path'
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog/ConfirmDialog'
 import styles from './AddCartButton.module.css'
@@ -36,11 +38,17 @@ export const AddCartButton = ({ product }: AddCartButtonProps) => {
   const handleClick = () => {
     if (!hasOwner) {
       const { pathname, search } = window.location
-      window.location.assign(toLoginPath(`${pathname}${search}`))
+      window.location.assign(
+        toLoginPath(`${pathname}${search}`, {
+          entryPoint: 'product_cart',
+          productId: product.id,
+        }),
+      )
       return
     }
 
     addToCart(product)
+    track(APP_EVENT.cartAdd, { product_id: product.id, quantity: 1 })
     setIsConfirmOpen(true)
   }
 
@@ -67,6 +75,8 @@ export const AddCartButton = ({ product }: AddCartButtonProps) => {
         onCancel={handleClose}
         onConfirm={() => {
           setIsConfirmOpen(false)
+          // 전체 새로고침이 아니라 클라이언트 전환이다. 미로그인 분기의 location.assign과 다른데,
+          // 그쪽은 헤더가 서버에서 세션을 읽어야 해서 새 문서가 필요하고 여기는 그렇지 않다.
           router.push('/cart')
         }}
       />

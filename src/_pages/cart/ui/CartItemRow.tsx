@@ -1,6 +1,8 @@
 'use client'
 
 import Image from 'next/image'
+import { APP_EVENT } from '@/analytics/app-events'
+import { track } from '@/analytics/logger'
 import { useCartStore, type CartItem } from '@/entities/cart'
 import { formatPrice } from '@/shared/lib/format-price'
 import styles from './cart.module.css'
@@ -12,6 +14,11 @@ type CartItemRowProps = {
 export const CartItemRow = ({ item }: CartItemRowProps) => {
   const setQuantity = useCartStore((state) => state.setQuantity)
   const remove = useCartStore((state) => state.remove)
+
+  const handleRemove = () => {
+    remove(item.id)
+    track(APP_EVENT.cartRemove, { product_id: item.id })
+  }
 
   return (
     <li className={styles.item}>
@@ -43,7 +50,7 @@ export const CartItemRow = ({ item }: CartItemRowProps) => {
           +
         </button>
       </div>
-      <button type="button" aria-label={`${item.name} 삭제`} onClick={() => remove(item.id)}>
+      <button type="button" aria-label={`${item.name} 삭제`} onClick={handleRemove}>
         삭제
       </button>
     </li>

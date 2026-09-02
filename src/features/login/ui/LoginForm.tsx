@@ -1,14 +1,37 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+import { APP_EVENT, type LoginEntryPoint } from '@/analytics/app-events'
+import { getOrCreateFlowId } from '@/analytics/browser-context'
+import { track } from '@/analytics/logger'
 import { useLogin } from '@/features/login/model/useLogin'
 import styles from './LoginForm.module.css'
 
 type LoginFormProps = {
   returnPath: string
+  entryPoint: LoginEntryPoint
+  productId?: string
 }
 
-export const LoginForm = ({ returnPath }: LoginFormProps) => {
-  const { login, isPending, error } = useLogin(returnPath)
+export const LoginForm = ({ returnPath, entryPoint, productId }: LoginFormProps) => {
+  const hasTrackedStartRef = useRef(false)
+  const { login, isPending, error } = useLogin({ returnPath })
+
+  useEffect(() => {
+    if (hasTrackedStartRef.current) {
+      return
+    }
+
+    hasTrackedStartRef.current = true
+    // flow id는 sessionStorage에 있다. 렌더 중에 만들면 서버 렌더가 window를 찾다가 터지므로
+    // 마운트 이후인 여기서 만든다. 제출 결과 이벤트는 이 값을 다시 읽어 같은 흐름으로 묶인다.
+    track(APP_EVENT.loginStart, {
+      flow_id: getOrCreateFlowId(),
+      entry_point: entryPoint,
+      return_path: returnPath,
+      ...(productId === undefined ? {} : { product_id: productId }),
+    })
+  }, [entryPoint, productId, returnPath])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

@@ -1,6 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { APP_EVENT } from '@/analytics/app-events'
+import { clearFlowId, getFlowId } from '@/analytics/browser-context'
+import { track } from '@/analytics/logger'
 import { selectCartItems, useCartStore } from '@/entities/cart'
 import { useCreateOrderMutation } from '@/entities/order'
 import styles from './PlaceOrderButton.module.css'
@@ -16,9 +19,22 @@ export const PlaceOrderButton = () => {
   const handleClick = () => {
     // 서버 계약에는 productId와 수량만 싣는다. 표시 정보는 화면용이다.
     const orderItems = items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+    const productIds = items.map((item) => item.id)
+    const flowId = getFlowId()
+
+    track(APP_EVENT.orderStart, {
+      ...(flowId === undefined ? {} : { flow_id: flowId }),
+      product_ids: productIds,
+    })
 
     mutate(orderItems, {
-      onSuccess: () => {
+      onSuccess: ({ order }) => {
+        track(APP_EVENT.orderComplete, {
+          ...(flowId === undefined ? {} : { flow_id: flowId }),
+          order_id: order.id,
+          product_ids: productIds,
+        })
+        clearFlowId()
         clearAll()
         router.push('/orders')
       },
