@@ -8,8 +8,12 @@ import { WishlistButton } from '@/features/add-to-wishlist'
 import { HeaderNav } from '@/widgets/header/HeaderNav'
 import { renderWithProviders } from '@/shared/test/render-with-providers'
 
+// 모듈을 통째로 대체하는 mock이라, 트리에서 쓰는 훅을 여기서 다 돌려줘야 한다.
+// renderWithProviders가 세우는 라우터 context는 이 mock을 지나 오지 않는다.
+// useRouter는 담기 확인 창의 "장바구니 이동"이 쓴다 — 이 테스트가 보는 것은 헤더 숫자라 빈 함수로 둔다.
 vi.mock('next/navigation', () => ({
   usePathname: () => '/products',
+  useRouter: () => ({ push: () => {} }),
 }))
 
 // 두 store가 소유자별로 목록을 나눠 들게 되면서, 소유자가 없으면 아무것도 담기지 않는다.
