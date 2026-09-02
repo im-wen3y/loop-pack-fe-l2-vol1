@@ -42,7 +42,7 @@ export const MyProfile = async () => {
           <span>주문 내역</span>
           <strong>바로가기</strong>
         </Link>
-        <Link href="/wishlist">
+        <Link href="/wishlist?entryPoint=mypage_wishlist">
           <span>위시리스트</span>
           <strong>바로가기</strong>
         </Link>

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { type WishlistEntryPoint } from '@/analytics/app-events'
 import { selectCartCount, useCartStore } from '@/entities/cart'
 import type { SessionUser } from '@/entities/session'
 import { selectWishlistCount, useWishlistStore } from '@/entities/wishlist'
@@ -56,6 +57,8 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
   }, [isMenuOpen])
 
   const avatarLabel = user?.name.slice(0, 2).toUpperCase() ?? ''
+  const wishlistPath = (entryPoint: WishlistEntryPoint) =>
+    `/wishlist?${new URLSearchParams({ entryPoint }).toString()}`
 
   return (
     <header className={styles.header}>
@@ -73,20 +76,31 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
         </Link>
         {/*
           두 화면이 생기면서 span에서 Link가 됐다. 하는 일이 화면 이동이라 button이 아니라 Link이고,
-          보호 경로라 미로그인으로 누르면 proxy.ts 가드가 /login으로 보낸다 — 여기에는 분기 코드가 없다.
+          보호 경로지만 미로그인 링크는 유입 위치를 남기기 위해 로그인 경로를 직접 만든다.
+          서버 가드는 주소 직접 진입을 계속 담당한다.
 
           숫자는 로그인 상태에서만 붙인다(decisions.md 3번). 미로그인에게 "위시리스트 0"을 보여주면
           비어 있다고 읽히는데, 실제로는 목록이 없는 게 아니라 볼 수 없는 상태다.
         */}
-        <Link href="/wishlist" aria-current={pathname === '/wishlist' ? 'page' : undefined}>
+        <Link
+          href={
+            user === null
+              ? toLoginPath('/wishlist', { entryPoint: 'header_wishlist' })
+              : wishlistPath('header_wishlist')
+          }
+          aria-current={pathname === '/wishlist' ? 'page' : undefined}
+        >
           위시리스트{user !== null && ` ${wishlistCount}`}
         </Link>
-        <Link href="/cart" aria-current={pathname === '/cart' ? 'page' : undefined}>
+        <Link
+          href={user === null ? toLoginPath('/cart', { entryPoint: 'header_cart' }) : '/cart'}
+          aria-current={pathname === '/cart' ? 'page' : undefined}
+        >
           장바구니{user !== null && ` ${cartCount}`}
         </Link>
         {user === null ? (
           <Link
-            href={toLoginPath(pathname)}
+            href={toLoginPath(pathname, { entryPoint: 'header_login' })}
             aria-current={pathname === '/login' ? 'page' : undefined}
           >
             로그인

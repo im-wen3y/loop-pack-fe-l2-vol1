@@ -6,6 +6,23 @@
 // 만드는 값은 전부 앱이 아는 현재 경로라 검증할 것이 없고, 검증은 외부에서 들어온 값의 몫이다.
 export const LOGIN_PATH = '/login'
 export const RETURN_URL_PARAM = 'returnUrl'
+export const LOGIN_ENTRY_POINT_PARAM = 'entryPoint'
+export const LOGIN_PRODUCT_ID_PARAM = 'productId'
 
-export const toLoginPath = (returnPath: string): string =>
-  `${LOGIN_PATH}?${new URLSearchParams({ [RETURN_URL_PARAM]: returnPath }).toString()}`
+type LoginPathContext = {
+  entryPoint?: string
+  productId?: string
+}
+
+export const toLoginPath = (returnPath: string, context: LoginPathContext = {}): string => {
+  const params = new URLSearchParams({ [RETURN_URL_PARAM]: returnPath })
+
+  if (context.entryPoint !== undefined) {
+    params.set(LOGIN_ENTRY_POINT_PARAM, context.entryPoint)
+  }
+  if (context.productId !== undefined) {
+    params.set(LOGIN_PRODUCT_ID_PARAM, context.productId)
+  }
+
+  return `${LOGIN_PATH}?${params.toString()}`
+}
