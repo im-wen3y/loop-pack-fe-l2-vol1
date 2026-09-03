@@ -1,5 +1,8 @@
 export const APP_EVENT = {
   productListView: 'product_list_view',
+  categoryFilterChange: 'category_filter_change',
+  sortChange: 'sort_change',
+  pageChange: 'page_change',
   cartAdd: 'cart_add',
   cartRemove: 'cart_remove',
   wishlistView: 'wishlist_view',
