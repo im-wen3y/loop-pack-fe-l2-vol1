@@ -16,4 +16,10 @@ test('담은 상품이 확인 창을 거쳐 장바구니 화면에 나타난다'
 
   await page.waitForURL('**/cart')
   await expect(page.getByRole('heading', { name: CART_TEST_PRODUCT.name })).toBeVisible()
+
+  // 담은 것은 소유자별로 보관하므로 새 문서를 받아도 남아 있어야 한다(OWN-02).
+  // 저장은 localStorage지만 소유자는 매 로드마다 세션이 정하므로, 둘이 다시 만나는지를 여기서 본다.
+  await page.reload()
+
+  await expect(page.getByRole('heading', { name: CART_TEST_PRODUCT.name })).toBeVisible()
 })
