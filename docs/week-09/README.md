@@ -70,7 +70,7 @@ order_start · order_complete
 ## 다음 주(4~5단계)로 넘긴 것
 
 - E2E 구현과 자가 검증
-- `storageState` 경계와 워커별 계정 격리 — 방향은 [RFC 「4단계 예고」](../rfc/week09-e2e-scope.md#4단계-예고--격리와-storagestate-경계)에 미리 적어 뒀다
+- `storageState` 경계와 워커별 계정 격리 — 방향은 [RFC 「4단계 경계」](../rfc/week09-e2e-scope.md#4단계-경계--격리와-storagestate)에 미리 적어 뒀다
 - 세션 만료 쿠키를 어떻게 만들지, 워커 수 상한
 
 ---
