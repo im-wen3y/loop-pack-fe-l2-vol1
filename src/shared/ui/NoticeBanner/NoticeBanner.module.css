@@ -1,0 +1,56 @@
+/* 콘텐츠 흐름을 밀지 않는 고정 배너이며, 복구 동작은 배너 안에 둔다. */
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #3d3d3d;
+  color: #fff;
+  font-size: 14px;
+}
+
+.message {
+  margin: 0;
+  text-align: center;
+}
+
+.action {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+.action button {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #a5a5a5;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.action button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.action button:focus-visible {
+  outline: 3px solid #7aa7ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .banner {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+}
