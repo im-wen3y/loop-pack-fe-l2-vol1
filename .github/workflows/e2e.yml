@@ -26,8 +26,6 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Remove Google Chrome apt source
-        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium webkit
       - name: Run production build
