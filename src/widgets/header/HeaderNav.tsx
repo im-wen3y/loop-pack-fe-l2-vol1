@@ -7,9 +7,10 @@ import { type WishlistEntryPoint } from '@/analytics/app-events'
 import { selectCartCount, useCartStore } from '@/entities/cart'
 import type { SessionUser } from '@/entities/session'
 import { selectWishlistCount, useWishlistStore } from '@/entities/wishlist'
-import { LogoutButton } from '@/features/logout'
+import { LogoutButton, useLogout } from '@/features/logout'
 import { ROUTES } from '@/shared/config/routes'
 import { toLoginPath } from '@/shared/lib/to-login-path'
+import { NoticeBanner } from '@/shared/ui/NoticeBanner/NoticeBanner'
 import styles from './Header.module.css'
 
 type HeaderNavProps = {
@@ -19,6 +20,7 @@ type HeaderNavProps = {
 export const HeaderNav = ({ user }: HeaderNavProps) => {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { logout, isPending: isLogoutPending, error: logoutError, reset: resetLogout } = useLogout()
 
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -69,52 +71,68 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
     : toLoginPath(ROUTES.CART, { entryPoint: 'header_cart' })
 
   return (
-    <header className={styles.header}>
-      <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>
-        Commerce
-      </Link>
-      <nav className={styles.navigation} aria-label="주요 메뉴">
-        <Link href="/products" aria-current={pathname === '/products' ? 'page' : undefined}>
-          상품
+    <>
+      <header className={styles.header}>
+        <Link href="/" aria-current={pathname === '/' ? 'page' : undefined}>
+          Commerce
         </Link>
-        <Link href={wishlistHref} aria-current={pathname === ROUTES.WISHLIST ? 'page' : undefined}>
-          위시리스트{isLoggedIn && ` ${wishlistCount}`}
-        </Link>
-        <Link href={cartHref} aria-current={pathname === ROUTES.CART ? 'page' : undefined}>
-          장바구니{isLoggedIn && ` ${cartCount}`}
-        </Link>
-        {!isLoggedIn ? (
-          <Link
-            href={toLoginPath(pathname, { entryPoint: 'header_login' })}
-            aria-current={pathname === '/login' ? 'page' : undefined}
-          >
-            로그인
+        <nav className={styles.navigation} aria-label="주요 메뉴">
+          <Link href="/products" aria-current={pathname === '/products' ? 'page' : undefined}>
+            상품
           </Link>
-        ) : (
-          <div className={styles.account} ref={menuRef}>
-            <button
-              ref={triggerRef}
-              className={styles.avatar}
-              type="button"
-              aria-label={`${user.name} 계정 메뉴`}
-              aria-haspopup="menu"
-              aria-expanded={isMenuOpen}
-              onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+          <Link
+            href={wishlistHref}
+            aria-current={pathname === ROUTES.WISHLIST ? 'page' : undefined}
+          >
+            위시리스트{isLoggedIn && ` ${wishlistCount}`}
+          </Link>
+          <Link href={cartHref} aria-current={pathname === ROUTES.CART ? 'page' : undefined}>
+            장바구니{isLoggedIn && ` ${cartCount}`}
+          </Link>
+          {!isLoggedIn ? (
+            <Link
+              href={toLoginPath(pathname, { entryPoint: 'header_login' })}
+              aria-current={pathname === '/login' ? 'page' : undefined}
             >
-              {avatarLabel}
+              로그인
+            </Link>
+          ) : (
+            <div className={styles.account} ref={menuRef}>
+              <button
+                ref={triggerRef}
+                className={styles.avatar}
+                type="button"
+                aria-label={`${user.name} 계정 메뉴`}
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen}
+                onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+              >
+                {avatarLabel}
+              </button>
+              {isMenuOpen && (
+                <div className={styles.menu} role="menu" aria-label="계정 메뉴">
+                  <p className={styles.accountName}>{user.name}</p>
+                  <Link href={ROUTES.MYPAGE} role="menuitem" onClick={() => setIsMenuOpen(false)}>
+                    마이페이지
+                  </Link>
+                  <LogoutButton onClick={() => logout()} isPending={isLogoutPending} />
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+      </header>
+      {logoutError !== null && (
+        <NoticeBanner
+          action={
+            <button type="button" onClick={resetLogout} aria-label="로그아웃 오류 닫기">
+              닫기
             </button>
-            {isMenuOpen && (
-              <div className={styles.menu} role="menu" aria-label="계정 메뉴">
-                <p className={styles.accountName}>{user.name}</p>
-                <Link href={ROUTES.MYPAGE} role="menuitem" onClick={() => setIsMenuOpen(false)}>
-                  마이페이지
-                </Link>
-                <LogoutButton />
-              </div>
-            )}
-          </div>
-        )}
-      </nav>
-    </header>
+          }
+        >
+          {logoutError.message}
+        </NoticeBanner>
+      )}
+    </>
   )
 }
