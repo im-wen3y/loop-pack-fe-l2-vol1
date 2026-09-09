@@ -3,9 +3,11 @@ import { flowIdOf, readStoredFlowId, waitForAnalyticsEvent } from './fixtures/an
 import { accountMenu, submitLogin } from './fixtures/login-actions'
 import { accountForSlot, TEST_PASSWORD } from './fixtures/test-accounts'
 
-// 이 파일만 storageState를 쓰지 않는다. 로그인 화면 진입·성공·실패가 검증 대상이라
-// 로그인된 상태를 주입해 버리면 검증할 것이 남지 않는다.
-// 범위와 단언은 docs/rfc/week09-e2e-scope.md의 「4단계 경계」에서 정했다.
+/*
+ * 이 파일만 storageState를 쓰지 않는다. 로그인 화면 진입·성공·실패가 검증 대상이라
+ * 로그인된 상태를 주입해 버리면 검증할 것이 남지 않는다.
+ * 범위와 단언은 docs/rfc/week09-e2e-scope.md의 「4단계 경계」에서 정했다.
+ */
 test.describe('인증 플로우', () => {
   test('미로그인으로 보호 경로에 들어가면 로그인 후 원래 경로로 돌아온다', async ({
     page,
@@ -58,18 +60,22 @@ test.describe('인증 플로우', () => {
     await submitLogin(page, account)
     await expect(accountMenu(page, account)).toBeVisible()
 
-    // 만료된 쿠키를 만들지 않는다. 가드는 쿠키의 존재만 보고 서명·만료 검증은 API에 있으므로,
-    // 유효한 세션에 scenario 쿠키를 더해 API만 401을 내게 한다.
+    /*
+     * 가드는 쿠키의 존재만 보고 서명·만료 검증은 API에 있으므로,
+     * 유효한 세션에 scenario 쿠키를 더해 API만 401을 내게 한다.
+     */
     await context.addCookies([
       { name: 'scenario', value: 'expired', url: new URL(page.url()).origin },
     ])
 
-    // 세션 조회의 401은 null로 흡수되므로 화면이 스스로 알아채지 못한다.
-    // 401을 던지는 쿼리가 있는 화면은 지금 주문 내역 하나뿐이다.
     await page.goto('/orders')
 
     await page.waitForURL('**/login?**')
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/orders')
+    expect(new URL(page.url()).searchParams.get('reason')).toBe('session_expired')
+    await expect(page.getByRole('status')).toHaveText(
+      '세션이 만료되었습니다. 다시 로그인해 주세요.',
+    )
     await expect(page.getByRole('button', { name: '로그인' })).toBeVisible()
   })
 
