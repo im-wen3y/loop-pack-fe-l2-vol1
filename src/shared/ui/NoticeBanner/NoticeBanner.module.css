@@ -1,5 +1,4 @@
-/* 문서 흐름 밖에 둔다. 목록 위에 끼워 넣으면 그 아래 전체가 밀려 layout shift가 생긴다. */
-.refreshError {
+.banner {
   position: fixed;
   top: 0;
   left: 0;
@@ -15,13 +14,16 @@
   font-size: 14px;
 }
 
-.refreshErrorMessage {
+.message {
   margin: 0;
   text-align: center;
 }
 
-.refreshErrorRetry {
+.action {
   flex: none;
+}
+
+.action button {
   min-height: 32px;
   padding: 6px 12px;
   border: 1px solid #a5a5a5;
@@ -32,13 +34,13 @@
   cursor: pointer;
 }
 
-.refreshErrorRetry:focus-visible {
+.action button:focus-visible {
   outline: 3px solid #7aa7ff;
   outline-offset: 2px;
 }
 
 @media (max-width: 720px) {
-  .refreshError {
+  .banner {
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px 16px;
