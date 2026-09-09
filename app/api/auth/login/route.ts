@@ -50,6 +50,7 @@ export async function POST(
   }
 
   const response = NextResponse.json({ user })
+  response.cookies.delete(SCENARIO_COOKIE)
   response.cookies.set({
     name: SESSION_COOKIE,
     value: createSessionToken(user.id),

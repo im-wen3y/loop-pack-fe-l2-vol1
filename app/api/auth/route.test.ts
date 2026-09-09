@@ -46,6 +46,24 @@ describe('POST /api/auth/login', () => {
     expect(cookie).toContain('Max-Age=3600')
   })
 
+  it('clears an expired scenario after a successful login', async () => {
+    const request = loginRequest({ email: accounts[0].email, password: TEST_PASSWORD })
+    request.cookies.set(SCENARIO_COOKIE, 'expired')
+
+    const response = await login(request)
+
+    expect(response.status).toBe(200)
+    expect(
+      response.headers
+        .getSetCookie()
+        .some(
+          (cookie) =>
+            cookie.startsWith(`${SCENARIO_COOKIE}=`) &&
+            cookie.includes('Expires=Thu, 01 Jan 1970 00:00:00 GMT'),
+        ),
+    ).toBe(true)
+  })
+
   it('rejects a wrong password and an unknown email with 401', async () => {
     const wrongPassword = await login(loginRequest({ email: accounts[0].email, password: 'nope' }))
     expect(wrongPassword.status).toBe(401)
