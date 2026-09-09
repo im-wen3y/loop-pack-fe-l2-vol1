@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCartStore } from '@/entities/cart'
 import { selectWishlistItems, useWishlistStore } from '@/entities/wishlist'
@@ -7,6 +8,7 @@ import { AddCartButton } from '@/features/add-to-cart'
 import { WishlistButton } from '@/features/add-to-wishlist'
 import { HeaderNav } from '@/widgets/header/HeaderNav'
 import { renderWithProviders } from '@/shared/test/render-with-providers'
+import { server } from '@/shared/test/msw-server'
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/products',
@@ -71,5 +73,37 @@ describe('Header와 담기·찜 버튼', () => {
     await user.click(screen.getByRole('button', { name: '두 번째 상품 장바구니' }))
 
     expect(screen.getByText('장바구니 2')).toBeInTheDocument()
+  })
+
+  it('로그아웃 요청이 실패하면 팝오버 밖에 오류 배너를 표시하고 이동하지 않는다', async () => {
+    const user = userEvent.setup()
+    const currentUrl = window.location.href
+    server.use(http.post('/api/auth/logout', () => new HttpResponse(null, { status: 500 })))
+
+    renderWithProviders(<HeaderNav user={TEST_USER} />)
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+    await user.click(screen.getByRole('button', { name: '로그아웃' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '로그아웃에 실패했습니다. 다시 시도해 주세요.',
+    )
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(window.location.href).toBe(currentUrl)
+  })
+
+  it('로그아웃 오류 배너를 닫을 수 있다', async () => {
+    const user = userEvent.setup()
+    server.use(http.post('/api/auth/logout', () => new HttpResponse(null, { status: 500 })))
+
+    renderWithProviders(<HeaderNav user={TEST_USER} />)
+    await user.click(screen.getByRole('button', { name: '테스트 사용자 계정 메뉴' }))
+    await user.click(screen.getByRole('button', { name: '로그아웃' }))
+    await screen.findByRole('alert')
+
+    await user.click(screen.getByRole('button', { name: '로그아웃 오류 닫기' }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
