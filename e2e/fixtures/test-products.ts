@@ -12,6 +12,8 @@ export const CART_TEST_PRODUCT: TestProduct = {
   category: 'digital',
 }
 
+export const WISHLIST_TEST_PRODUCT: TestProduct = CART_TEST_PRODUCT
+
 // 카테고리로 좁혀 첫 페이지에서 찾는다. 정렬 기본값과 페이지 크기에 기대지 않으려면
 // 목록 자체를 좁히는 편이 낫다.
 export const productListPath = (product: TestProduct): string =>
