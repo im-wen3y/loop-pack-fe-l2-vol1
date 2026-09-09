@@ -11,8 +11,7 @@ export const orderQueries = {
     queryOptions({
       queryKey: orderQueryKeys.list(),
       queryFn: ({ signal }) => getOrderList(signal),
-      // 주문 직후 이동은 mutation이 미리 받은 목록을 사용한다. 짧은 시간 동안 fresh로 두어
-      // /orders가 마운트되며 같은 요청을 다시 보내지 않게 한다.
+      /* 주문 직후 이동은 mutation이 미리 받은 목록을 사용하므로 잠시 fresh로 유지한다. */
       staleTime: 5_000,
     }),
 }
@@ -22,5 +21,6 @@ export const orderMutations = {
     mutationOptions({
       mutationKey: [...orderQueryKeys.all, 'create'],
       mutationFn: createOrder,
+      networkMode: 'always',
     }),
 }
