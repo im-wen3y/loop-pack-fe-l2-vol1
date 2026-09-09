@@ -42,7 +42,8 @@ test.describe('인증 플로우', () => {
 
     try {
       const scriptlessPage = await scriptlessContext.newPage()
-      await scriptlessPage.goto('/orders')
+      /* /orders는 로딩 경계에서 Header를 생략하므로, 같은 보호 경계의 /cart에서 초기 HTML을 확인한다. */
+      await scriptlessPage.goto('/cart')
 
       await expect(accountMenu(scriptlessPage, account)).toBeVisible()
     } finally {
