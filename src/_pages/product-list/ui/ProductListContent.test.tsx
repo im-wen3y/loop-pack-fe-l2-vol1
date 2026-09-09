@@ -44,6 +44,7 @@ describe('ProductListContent', () => {
       category: 'casual',
       sort: 'price-asc',
     })
+    expect(track).toHaveBeenCalledTimes(1)
     expect(track).not.toHaveBeenCalledWith(
       expect.stringMatching(/^(category_filter_change|sort_change|page_change)$/),
       expect.anything(),
