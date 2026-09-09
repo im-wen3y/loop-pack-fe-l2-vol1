@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { ROUTES } from '@/shared/config/routes'
 import { APP_EVENT } from '@/analytics/app-events'
 import { clearFlowId, getFlowId } from '@/analytics/browser-context'
 import { track } from '@/analytics/logger'
@@ -8,8 +9,7 @@ import { selectCartItems, useCartStore } from '@/entities/cart'
 import { useCreateOrderMutation } from '@/entities/order'
 import styles from './PlaceOrderButton.module.css'
 
-// 주문은 사용자가 수행하는 비즈니스 행위라 feature가 소유한다.
-// 두 entity(장바구니·주문)를 잇는 자리도 여기다 — entity끼리는 서로를 참조할 수 없다.
+/* 주문은 장바구니와 주문 entity를 잇는 feature의 비즈니스 행위다. */
 export const PlaceOrderButton = () => {
   const router = useRouter()
   const items = useCartStore(selectCartItems)
@@ -17,7 +17,7 @@ export const PlaceOrderButton = () => {
   const { mutate, isPending, error } = useCreateOrderMutation()
 
   const handleClick = () => {
-    // 서버 계약에는 productId와 수량만 싣는다. 표시 정보는 화면용이다.
+    /* 서버에는 상품 ID와 수량만 전달한다. */
     const orderItems = items.map((item) => ({ productId: item.id, quantity: item.quantity }))
     const productIds = items.map((item) => item.id)
     const flowId = getFlowId()
@@ -36,7 +36,7 @@ export const PlaceOrderButton = () => {
         })
         clearFlowId()
         clearAll()
-        router.push('/orders')
+        router.push(ROUTES.ORDERS)
       },
     })
   }

@@ -8,23 +8,21 @@ import { selectCartCount, useCartStore } from '@/entities/cart'
 import type { SessionUser } from '@/entities/session'
 import { selectWishlistCount, useWishlistStore } from '@/entities/wishlist'
 import { LogoutButton } from '@/features/logout'
+import { ROUTES } from '@/shared/config/routes'
 import { toLoginPath } from '@/shared/lib/to-login-path'
 import styles from './Header.module.css'
 
 type HeaderNavProps = {
-  // 서버에서 읽은 세션. Header가 넘겨주므로 이 컴포넌트는 세션을 조회하지 않는다.
   user: SessionUser | null
 }
 
 export const HeaderNav = ({ user }: HeaderNavProps) => {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  // 개수는 별도 상태로 저장하지 않고 현재 소유자의 목록 길이에서 파생한다.
-  // 장바구니 배지는 담긴 상품의 종류 수이고 수량 합이 아니다.
-  // persist store를 훅으로 읽으면 zustand가 getServerSnapshot을 초기값으로 돌려줘
-  // hydration 렌더에서 서버와 같은 값을 그린다 → 별도 hydration 가드가 필요 없다.
+
   const wishlistCount = useWishlistStore(selectWishlistCount)
   const cartCount = useCartStore(selectCartCount)
 
@@ -56,9 +54,19 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
     }
   }, [isMenuOpen])
 
-  const avatarLabel = user?.name.slice(0, 2).toUpperCase() ?? ''
+  const isLoggedIn = user !== null
+  const avatarLabel = user?.name.slice(0, 1).toUpperCase() ?? ''
+
   const wishlistPath = (entryPoint: WishlistEntryPoint) =>
-    `/wishlist?${new URLSearchParams({ entryPoint }).toString()}`
+    `${ROUTES.WISHLIST}?${new URLSearchParams({ entryPoint }).toString()}`
+
+  const wishlistHref = isLoggedIn
+    ? wishlistPath('header_wishlist')
+    : toLoginPath(ROUTES.WISHLIST, { entryPoint: 'header_wishlist' })
+
+  const cartHref = isLoggedIn
+    ? ROUTES.CART
+    : toLoginPath(ROUTES.CART, { entryPoint: 'header_cart' })
 
   return (
     <header className={styles.header}>
@@ -66,39 +74,16 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
         Commerce
       </Link>
       <nav className={styles.navigation} aria-label="주요 메뉴">
-        {/*
-          상품 목록에 있을 때도 숨기지 않고 노출한다. 현재 위치는 aria-current="page"로 표시한다.
-          재이동 용도: 필터가 걸린 /products?category=...&sort=... 상태에서 이 링크를 누르면
-          쿼리 없는 /products로 이동해 nuqs 기본값(전체·최신순·1페이지)으로 리셋된다.
-        */}
         <Link href="/products" aria-current={pathname === '/products' ? 'page' : undefined}>
           상품
         </Link>
-        {/*
-          두 화면이 생기면서 span에서 Link가 됐다. 하는 일이 화면 이동이라 button이 아니라 Link이고,
-          보호 경로지만 미로그인 링크는 유입 위치를 남기기 위해 로그인 경로를 직접 만든다.
-          서버 가드는 주소 직접 진입을 계속 담당한다.
-
-          숫자는 로그인 상태에서만 붙인다(decisions.md 3번). 미로그인에게 "위시리스트 0"을 보여주면
-          비어 있다고 읽히는데, 실제로는 목록이 없는 게 아니라 볼 수 없는 상태다.
-        */}
-        <Link
-          href={
-            user === null
-              ? toLoginPath('/wishlist', { entryPoint: 'header_wishlist' })
-              : wishlistPath('header_wishlist')
-          }
-          aria-current={pathname === '/wishlist' ? 'page' : undefined}
-        >
-          위시리스트{user !== null && ` ${wishlistCount}`}
+        <Link href={wishlistHref} aria-current={pathname === ROUTES.WISHLIST ? 'page' : undefined}>
+          위시리스트{isLoggedIn && ` ${wishlistCount}`}
         </Link>
-        <Link
-          href={user === null ? toLoginPath('/cart', { entryPoint: 'header_cart' }) : '/cart'}
-          aria-current={pathname === '/cart' ? 'page' : undefined}
-        >
-          장바구니{user !== null && ` ${cartCount}`}
+        <Link href={cartHref} aria-current={pathname === ROUTES.CART ? 'page' : undefined}>
+          장바구니{isLoggedIn && ` ${cartCount}`}
         </Link>
-        {user === null ? (
+        {!isLoggedIn ? (
           <Link
             href={toLoginPath(pathname, { entryPoint: 'header_login' })}
             aria-current={pathname === '/login' ? 'page' : undefined}
@@ -121,7 +106,7 @@ export const HeaderNav = ({ user }: HeaderNavProps) => {
             {isMenuOpen && (
               <div className={styles.menu} role="menu" aria-label="계정 메뉴">
                 <p className={styles.accountName}>{user.name}</p>
-                <Link href="/mypage" role="menuitem" onClick={() => setIsMenuOpen(false)}>
+                <Link href={ROUTES.MYPAGE} role="menuitem" onClick={() => setIsMenuOpen(false)}>
                   마이페이지
                 </Link>
                 <LogoutButton />
