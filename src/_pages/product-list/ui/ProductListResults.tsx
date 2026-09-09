@@ -5,18 +5,15 @@ import { Pagination } from '@/shared/ui/Pagination/Pagination'
 import { NoticeBanner } from '@/shared/ui/NoticeBanner/NoticeBanner'
 import { ProductGrid, ProductGridSkeleton } from '@/widgets/product-card'
 
-/* 실제로 읽는 조회 결과 필드만 받아 테스트 더블의 계약을 좁힌다. */
 export type ProductListQueryView = Pick<
   UseQueryResult<GetProductListResponse>,
   'data' | 'isPending' | 'isError' | 'isPlaceholderData'
 > & {
-  /* 재조회 결과를 읽지 않으므로 refetch의 반환 계약도 좁힌다. */
   refetch: () => void
 }
 
 type ProductListResultsProps = {
   query: ProductListQueryView
-  // 현재 조건에 데이터가 없을 때 화면에 유지할 직전 목록이다.
   fallbackData: GetProductListResponse | undefined
 }
 
@@ -27,7 +24,6 @@ type ProductListResultsProps = {
 export const ProductListResults = ({ query, fallbackData }: ProductListResultsProps) => {
   const { data, isPending, isError, isPlaceholderData, refetch } = query
   const displayData = data ?? fallbackData
-  // 훅은 early return보다 위에서 호출한다(훅 규칙).
   const { currentPage, totalPages, pageSize, goToPage } = useProductPagination(
     displayData?.totalCount ?? 0,
     PRODUCT_PAGE_SIZE,
@@ -53,6 +49,7 @@ export const ProductListResults = ({ query, fallbackData }: ProductListResultsPr
   /* 갱신 실패는 직전 목록을 유지한 채 흐름 밖의 배너로 알리고, 재시도 성공 시 사라진다. */
   const refreshErrorAlert = isError ? (
     <NoticeBanner
+      label="상품 목록 갱신 오류"
       action={
         <button type="button" onClick={() => refetch()}>
           다시 시도
