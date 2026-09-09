@@ -1,6 +1,8 @@
 import { WishlistContent } from '@/_pages/wishlist/ui/WishlistContent'
 import { isWishlistEntryPoint } from '@/analytics/app-events'
+import { requireSession } from '@/entities/session/server'
 import { Header } from '@/widgets/header'
+import { ROUTES } from '@/shared/config/routes'
 import { PageContainer } from '@/shared/ui/PageContainer/PageContainer'
 import '@/shared/styles/layout.css'
 
@@ -12,6 +14,11 @@ type WishlistPageProps = {
 export const WishlistPage = async ({ searchParams }: WishlistPageProps) => {
   const params = await searchParams
   const entryPoint = isWishlistEntryPoint(params.entryPoint) ? params.entryPoint : 'direct'
+  const returnPath =
+    entryPoint === 'direct'
+      ? ROUTES.WISHLIST
+      : `${ROUTES.WISHLIST}?${new URLSearchParams({ entryPoint }).toString()}`
+  await requireSession(returnPath)
 
   return (
     <PageContainer>
