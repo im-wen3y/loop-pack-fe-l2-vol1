@@ -9,10 +9,9 @@ export const sessionQueries = {
   me: () =>
     queryOptions({
       queryKey: sessionQueryKeys.all,
-      // 클라이언트에서는 쿠키를 브라우저가 붙이므로 인자가 없다.
-      queryFn: () => getSession(),
-      // 세션은 TTL이 1시간이고 화면을 옮길 때마다 다시 물어볼 값이 아니다.
-      // 로그인·로그아웃은 각자 캐시를 직접 갱신하므로 그때는 이 값과 무관하게 즉시 반영된다.
+      /* 클라이언트에서는 쿠키를 브라우저가 붙이므로 Cookie 헤더를 직접 넘기지 않는다. */
+      queryFn: ({ signal }) => getSession(undefined, signal),
+      /* 세션은 화면 이동마다 다시 조회하지 않고, 로그인·로그아웃 성공 시 캐시를 직접 갱신한다. */
       staleTime: 5 * 60 * 1000,
     }),
 }

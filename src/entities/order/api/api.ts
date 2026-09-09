@@ -5,15 +5,16 @@ import type {
 } from '@/entities/order/api/model'
 import type { OrderItem } from '@/entities/order/model/order'
 import { ApiError } from '@/shared/api/api-error'
+import { fetchWithTimeout } from '@/shared/api/fetch-with-timeout'
 import { getApiBaseUrl } from '@/shared/api/get-api-base-url'
 import { isRecord } from '@/shared/lib/is-record'
 
 const ORDERS_URL = () => `${getApiBaseUrl()}/api/orders`
 
-// status를 그대로 실어 올린다. 401을 구분할 수 있어야 전역 만료 처리가 받을 수 있다.
-//
-// 응답 본문의 message를 우선 쓴다. 주문 생성 400의 사유가 셋(빈 목록 / 없는 상품 id /
-// 수량이 1 미만이거나 정수 아님)이라, 화면이 무엇을 고치면 되는지 보여주려면 서버 문구가 필요하다.
+/*
+ * 상태 코드는 그대로 보존해 전역 세션 만료 처리가 401을 구분하게 한다.
+ * 응답의 message를 우선 사용해 주문 요청 오류에서 사용자가 고칠 내용을 보여준다.
+ */
 const toApiError = async (fallbackMessage: string, response: Response) => {
   let message = fallbackMessage
 
@@ -23,7 +24,7 @@ const toApiError = async (fallbackMessage: string, response: Response) => {
       message = body.message
     }
   } catch {
-    // 본문이 JSON이 아니면 기본 문구를 쓴다. 여기서 더 할 수 있는 일이 없다.
+    // JSON이 아니어도 기본 문구를 유지한다.
   }
 
   return new ApiError(message, { kind: 'http', status: response.status })
@@ -33,9 +34,9 @@ export const getOrderList = async (signal?: AbortSignal): Promise<GetOrderListRe
   let response: Response
 
   try {
-    response = await fetch(ORDERS_URL(), { signal })
+    response = await fetchWithTimeout(ORDERS_URL(), { signal })
   } catch (cause) {
-    // 취소는 실패가 아니다. 원본 AbortError를 그대로 올려 호출자가 취소로 인식하게 둔다.
+    // 취소는 오류 UI로 바꾸지 않고 원본 AbortError를 유지한다.
     if (signal?.aborted) {
       throw cause
     }
@@ -59,7 +60,7 @@ export const createOrder = async (items: OrderItem[]): Promise<CreateOrderRespon
   let response: Response
 
   try {
-    response = await fetch(ORDERS_URL(), {
+    response = await fetchWithTimeout(ORDERS_URL(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
