@@ -290,6 +290,8 @@
           <li><a href="#signals">판별 신호</a></li>
           <li><a href="#mapping">변경 범위 매핑</a></li>
           <li><a href="#flow">실행 흐름</a></li>
+          <li><a href="#fallback-fix">fallback 수정 계획</a></li>
+          <li><a href="#fallback-impl">fallback 구현 결과</a></li>
           <li><a href="#branches">브랜치 흐름</a></li>
           <li><a href="#required">required와 생략</a></li>
           <li><a href="#steps">구현 순서</a></li>
@@ -494,6 +496,387 @@ flowchart LR
             브라우저별 독립 required check는 유지한다. 따라서 두 브라우저가 각각 같은 선택 규칙을
             적용하고, 한 브라우저에서만 실패해도 어느 엔진에서 문제가 났는지 확인할 수 있다.
           </p>
+        </section>
+
+        <section id="fallback-fix" class="step">
+          <p class="time">04-A · fallback 수정 계획</p>
+          <h2>감지 실패는 전체 실행으로 복구하고, 테스트 실패는 그대로 중단시킨다</h2>
+          <div class="callout pending">
+            <strong>현재 확인한 문제</strong>
+            <p>
+              <code>changes</code>가 실패한 fallback 경로에서는 각 E2E step의 조건이 계속 참이 될 수
+              있다. 이 상태에서는 checkout이나 설치가 실패해도 뒤의 build와 test가 이어져 최초 실패
+              원인이 흐려질 수 있다. 반면 <code>UNKNOWN=true</code>를 <code>all=true</code>로 바꾸는
+              선택 로직은 같은 입력으로 재현했을 때 정상 동작했다.
+            </p>
+          </div>
+          <pre class="mermaid" aria-label="E2E 변경 감지와 fallback 실패 전파 수정 흐름">
+flowchart TD
+  pr["PR 변경 경로"] --> detect["경로 필터 실행<br/>기능 신호 + unknown 신호"]
+  detect --> detectorResult{"두 감지 step이<br/>모두 성공했나?"}
+
+  detectorResult -->|"아니요"| fallback["scope finalizer<br/>run_e2e=true<br/>all=true · tests=all"]
+  detectorResult -->|"예"| classify{"변경 범위 분류"}
+
+  classify -->|"unknown · shared<br/>fixture · config"| full["전체 실행<br/>run_e2e=true · all=true"]
+  classify -->|"JS/TS 기능 로직"| selected["선택 실행<br/>order + 영향받은 spec"]
+  classify -->|"docs · style only"| skip["무거운 step 생략<br/>run_e2e=false"]
+
+  fallback --> scopeOutput["changes outputs 확정<br/>최종 scope를 로그에 출력"]
+  full --> scopeOutput
+  selected --> scopeOutput
+  skip --> scopeOutput
+
+  scopeOutput --> matrix["Chromium · WebKit job은 항상 표시"]
+  matrix --> shouldRun{"run_e2e=true?"}
+  shouldRun -->|"아니요"| skipped["Report만 남기고 Success<br/>설치 · build · test는 Skipped"]
+  shouldRun -->|"예"| checkout["Checkout"]
+  checkout --> setup["pnpm · Node 설정"]
+  setup --> install["의존성 · 브라우저 설치"]
+  install --> build["Production build"]
+  build --> test["선택된 Playwright 실행"]
+
+  checkout -. "실패" .-> stop["후속 step 중단<br/>해당 브라우저 job은 Failure"]
+  setup -. "실패" .-> stop
+  install -. "실패" .-> stop
+  build -. "실패" .-> stop
+  test -. "실패" .-> stop
+
+  classDef decision fill:#eee7fa,stroke:#7255a5,color:#3e2d5e
+  classDef safe fill:#d7eee8,stroke:#056354,color:#17483f
+  classDef pending fill:#e3eff8,stroke:#2f6f9e,color:#1f4a6b
+  classDef failure fill:#fff0ee,stroke:#b5473c,color:#762820
+  class detectorResult,classify,shouldRun decision
+  class fallback,full,selected,scopeOutput,matrix,test safe
+  class skip,skipped pending
+  class stop failure
+</pre>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                구현과 검증 순서
+              </caption>
+              <thead>
+                <tr>
+                  <th>순서</th>
+                  <th>수정 계획</th>
+                  <th>판정 가능한 완료 기준</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>
+                    두 경로 감지 step의 실패를 scope finalizer가 확인할 수 있게 하고, finalizer는
+                    <code>if: always()</code>로 실행한다.
+                  </td>
+                  <td>감지 step 하나를 실패시켜도 finalizer가 실행된다.</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>
+                    감지 실패나 비정상·누락 출력은 <code>run_e2e=true</code>, <code>all=true</code>,
+                    빈 <code>test_files</code>로 변환한다.
+                  </td>
+                  <td>감지 실패 로그에 fallback 사유와 <code>tests=all</code>이 함께 표시된다.</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>
+                    E2E의 무거운 step 조건에서는 감지 job 실패를 직접 우회하는 식을 제거하고, 확정된
+                    <code>run_e2e</code> 출력만 사용한다.
+                  </td>
+                  <td>checkout 또는 설치가 실패하면 뒤의 build와 test가 실행되지 않는다.</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td>
+                    <code>Select test scope</code>가 입력 신호와 최종
+                    <code>all</code>·<code>run_e2e</code>·<code>tests</code>를 일반 로그에도
+                    출력하게 한다.
+                  </td>
+                  <td>
+                    스크립트 원문을 최종 결과로 오해하지 않고 Detect job에서 판정값을 확인한다.
+                  </td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td>정상 분류, unknown, 감지 실패, 중간 step 실패를 각각 검증한다.</td>
+                  <td>
+                    unknown·감지 실패는 전체 실행되고, docs/style은 생략되며, E2E 준비 실패는 해당
+                    browser job을 실패시킨다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout cold">
+            <strong>현재 단계</strong>
+            <p>
+              이 절은 아직 구현·Actions 재검증 전인 수정 계획이다. workflow 변경 후 실제 PR 로그를
+              확인하기 전에는 완료로 표시하지 않는다.
+            </p>
+          </div>
+        </section>
+
+        <section id="fallback-impl" class="step">
+          <p class="time">04-B · fallback 구현 결과 · 2026-09-11</p>
+          <h2>계획을 구현하며 바꾼 것과 그 이유</h2>
+          <p>
+            앞 절 <a href="#fallback-fix">04-A fallback 수정 계획</a>은 그대로 둔다. 이 절은 실제
+            <code>.github/workflows/e2e.yml</code>에 반영하면서 계획과 달라진 부분만 덧붙인
+            기록이다.
+          </p>
+
+          <div class="table-wrap">
+            <table>
+              <caption>
+                계획과 구현의 차이
+              </caption>
+              <thead>
+                <tr>
+                  <th>계획(04-A)</th>
+                  <th>구현</th>
+                  <th>바꾼 이유</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    감지 실패를 <code>changes</code> job 안에서 흡수해
+                    <code>changes</code> outputs를 확정한다.
+                  </td>
+                  <td>
+                    <code>e2e</code> job의 첫 step <code>Finalize E2E scope</code>에서 흡수하고,
+                    이후 step은 <code>steps.scope.outputs.*</code>만 참조한다.
+                  </td>
+                  <td>
+                    <code>changes</code> job이 실패하면 그 job의 outputs 자체가 생성되지 않는다.
+                    같은 job 안에서는 fallback 값을 만들 수 없어 소비하는 쪽으로 옮겼다.
+                  </td>
+                </tr>
+                <tr>
+                  <td>finalizer를 <code>if: always()</code>로 실행한다.</td>
+                  <td>finalizer를 <code>if: ${{ !cancelled() }}</code>로 실행한다.</td>
+                  <td>
+                    흡수할 대상은 감지 실패이지 실행 취소가 아니다. <code>always()</code>는 취소된
+                    실행에서도 scope를 확정해 뒤 step의 조건 평가를 남긴다.
+                  </td>
+                </tr>
+                <tr>
+                  <td>무거운 step은 확정된 <code>run_e2e</code> 출력만 사용한다.</td>
+                  <td>
+                    조건을
+                    <code
+                      >!cancelled() &amp;&amp; !failure() &amp;&amp; steps.scope.outputs.run_e2e ==
+                      'true'</code
+                    >
+                    로 통일했다. <code>success()</code>를 쓰지 않았다.
+                  </td>
+                  <td>
+                    <code>e2e</code> job이 <code>if: always()</code>라 <code>success()</code>의 평가
+                    범위를 오해하기 쉽다. <code>!failure()</code>는 이 job의 이전 step 실패만 본다는
+                    점을 식에서 드러낸다.
+                  </td>
+                </tr>
+                <tr>
+                  <td>감지 실패를 fallback 조건으로 삼는다.</td>
+                  <td>
+                    감지 job이 <code>success</code>인데 <code>run_e2e</code> 출력이 비어 있는 경우도
+                    같은 fallback으로 처리하고, 사유 문구를 두 경우로 나눠 출력한다.
+                  </td>
+                  <td>
+                    step 조건 때문에 <code>Select test scope</code>가 건너뛰어도 job은
+                    <code>success</code>가 된다. 이때 출력이 비면 조용히 전체 스킵이 되므로 막았다.
+                  </td>
+                </tr>
+                <tr>
+                  <td>최종 scope를 일반 로그에 출력한다.</td>
+                  <td>
+                    <code>run_e2e=false</code>일 때 <code>tests=(skipped)</code>로 표기한다.
+                    실행하지 않는 <code>test_files</code> 초기값을 그대로 찍지 않는다.
+                  </td>
+                  <td>
+                    스킵된 실행에서 <code>tests=e2e/order.spec.ts</code>가 보이면 실행 목록으로
+                    오해할 수 있다. 이번 문제 자체가 로그 오독에서 시작했다.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>구현된 흐름</h3>
+          <pre class="mermaid" aria-label="구현된 E2E 조건부 실행과 fallback, 실패 전파 흐름">
+flowchart TD
+  pr["PR 변경 경로"]
+
+  subgraph detectJob["Detect E2E scope job"]
+    filters["Detect changed paths<br/>Detect unknown paths"]
+    select["Select test scope<br/>scope inputs · scope result 로그"]
+    classify{"변경 범위 분류"}
+    unknownAll["all=true · run_e2e=true<br/>tests=all"]
+    sharedAll["all=true · run_e2e=true<br/>tests=all"]
+    selectedRun["all=false · run_e2e=true<br/>order + 영향받은 spec"]
+    skipScope["run_e2e=false<br/>tests=skipped"]
+    jobFail["Detect job = failure<br/>outputs 생성 안 됨"]
+
+    filters --> select
+    select --> classify
+    classify -->|"unknown"| unknownAll
+    classify -->|"shared · fixtures · config"| sharedAll
+    classify -->|"JS/TS 로직"| selectedRun
+    classify -->|"docs · style only"| skipScope
+    filters -. "감지 step 실패" .-> jobFail
+  end
+
+  subgraph e2eJob["E2E chromium · E2E webkit — matrix job은 서로 독립"]
+    finalize["Finalize E2E scope<br/>if: not cancelled"]
+    trust{"result=success 이고<br/>run_e2e 출력이 있나?"}
+    fallback["fallback 승격<br/>all=true · run_e2e=true · tests=all<br/>사유를 로그에 출력"]
+    passthrough["감지 결과를 그대로 사용"]
+    gate{"run_e2e = true?"}
+    skipped["이후 step 전부 Skipped<br/>job은 Success"]
+    checkout["Checkout"]
+    setup["pnpm · Node 설정"]
+    install["의존성 · 브라우저 설치"]
+    build["Production build"]
+    test["선택된 Playwright 실행"]
+    halt["not failure 가 거짓이 됨<br/>후속 step Skipped · 해당 job Failure"]
+
+    finalize --> trust
+    trust -->|"아니요"| fallback
+    trust -->|"예"| passthrough
+    fallback --> gate
+    passthrough --> gate
+    gate -->|"아니요"| skipped
+    gate -->|"예"| checkout
+    checkout --> setup
+    setup --> install
+    install --> build
+    build --> test
+    checkout -. "실패" .-> halt
+    setup -. "실패" .-> halt
+    install -. "실패" .-> halt
+    build -. "실패" .-> halt
+    test -. "실패" .-> halt
+  end
+
+  pr --> filters
+  unknownAll --> finalize
+  sharedAll --> finalize
+  selectedRun --> finalize
+  skipScope --> finalize
+  jobFail --> finalize
+
+  classDef decision fill:#eee7fa,stroke:#7255a5,color:#3e2d5e
+  classDef safe fill:#d7eee8,stroke:#056354,color:#17483f
+  classDef pending fill:#e3eff8,stroke:#2f6f9e,color:#1f4a6b
+  classDef failure fill:#fff0ee,stroke:#b5473c,color:#762820
+  class classify,trust,gate decision
+  class unknownAll,sharedAll,selectedRun,fallback,passthrough,checkout,setup,install,build,test safe
+  class skipScope,skipped pending
+  class jobFail,halt failure
+</pre>
+
+          <h3>로컬에서 재현한 판정</h3>
+          <p>
+            workflow YAML에서 두 step의 <code>run:</code> 본문을 그대로 추출해 같은 환경 변수로
+            실행한 결과다. 스크립트를 옮겨 적지 않고 파일에서 뽑아 돌렸다.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                2026-09-11 로컬 재현 · 모두 기대값과 일치
+              </caption>
+              <thead>
+                <tr>
+                  <th>대상 step</th>
+                  <th>입력</th>
+                  <th>기대 결과</th>
+                  <th>실제 출력</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Select test scope</td>
+                  <td><code>UNKNOWN=true</code></td>
+                  <td>all=true · run_e2e=true · tests=all</td>
+                  <td><code>scope result: all=true, run_e2e=true, tests=all</code></td>
+                </tr>
+                <tr>
+                  <td>Select test scope</td>
+                  <td><code>UNKNOWN=false LOGIC=false</code> (docs만)</td>
+                  <td>run_e2e=false</td>
+                  <td><code>scope result: all=false, run_e2e=false, tests=(skipped)</code></td>
+                </tr>
+                <tr>
+                  <td>Select test scope</td>
+                  <td><code>LOGIC=true AUTH=true</code></td>
+                  <td>run_e2e=true · order + auth 계열</td>
+                  <td>
+                    <code>tests=e2e/order.spec.ts e2e/auth.spec.ts e2e/logout.spec.ts</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Finalize E2E scope</td>
+                  <td><code>CHANGES_RESULT=failure</code></td>
+                  <td>fallback 사유 + all=true · run_e2e=true · tests=all</td>
+                  <td>
+                    <code
+                      >E2E fallback: Detect E2E scope job 결과가 'failure'. … / scope result:
+                      all=true, run_e2e=true, tests=all</code
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>Finalize E2E scope</td>
+                  <td><code>CHANGES_RESULT=success RUN_E2E=</code></td>
+                  <td>출력 누락 사유로 fallback</td>
+                  <td>
+                    <code
+                      >E2E fallback: Detect E2E scope job은 성공했지만 run_e2e 출력이 비어 있음.
+                      …</code
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>Finalize E2E scope</td>
+                  <td><code>CHANGES_RESULT=success RUN_E2E=false</code></td>
+                  <td>스킵 유지</td>
+                  <td><code>scope result: all=false, run_e2e=false, tests=(skipped)</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout pending">
+            <strong>아직 Actions에서 확인하지 않은 것</strong>
+            <p>
+              아래는 로컬 재현으로 대신할 수 없는 항목이다. 실제 PR 실행 로그를 보기 전까지 완료로
+              표시하지 않는다.
+            </p>
+            <ul>
+              <li>
+                <code>!failure()</code>가 <code>if: always()</code> job 안에서 이 job의 이전 step
+                실패만 보는지. 판정 기준은 <strong>Checkout을 의도적으로 실패시켰을 때</strong>
+                <code>Set up pnpm</code> 이후가 모두 Skipped이고 해당 browser job이 Failure인지다.
+              </li>
+              <li>
+                감지 실패 fallback에서 <code>Finalize E2E scope</code>가 실행되고 이후 step이 모두
+                도는지. 판정 기준은 <code>E2E fallback:</code> 줄과
+                <code>scope result: all=true, run_e2e=true, tests=all</code>이 함께 남는지다.
+              </li>
+              <li>
+                두 matrix job이 독립적으로 결과를 내는지. 판정 기준은 한쪽 browser만 실패했을 때
+                다른 쪽이 Success로 끝나는지다.
+              </li>
+              <li>
+                <code>Detect E2E scope</code>, <code>E2E (chromium)</code>,
+                <code>E2E (webkit)</code> 세 check가 스킵 PR에서도 모두 결과를 내 머지 가능 상태가
+                되는지.
+              </li>
+            </ul>
+          </div>
         </section>
 
         <section id="required" class="step">
@@ -706,6 +1089,11 @@ flowchart LR
                   <td>완료</td>
                   <td>all=false와 order.spec.ts 선택, Chromium·WebKit 실행·통과를 확인함</td>
                 </tr>
+                <tr>
+                  <td>08 · auth 선택 실행</td>
+                  <td>완료</td>
+                  <td>all=false와 order·auth·logout spec 선택, 두 브라우저 통과를 확인함</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -883,6 +1271,32 @@ flowchart LR
               기능 범위 선택이 실제 Actions 로그와 일치한다.
             </p>
           </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 08 auth 선택 실행 완료</strong>
+            <p>
+              2026-09-11 ·
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/15">auth PR #15</a>
+              · 커밋 <code>53934a73</code> ·
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34498101409?pr=15"
+                >E2E workflow 34498101409</a
+              >
+            </p>
+            <ul>
+              <li><code>Detect E2E scope</code>: <code>all=false</code> · 약 6초</li>
+              <li>
+                Chromium·WebKit의 <code>Report selected scope</code>:
+                <code>all=false, tests=e2e/order.spec.ts e2e/auth.spec.ts e2e/logout.spec.ts</code>
+              </li>
+              <li>Chromium: 5 passed · job 1분 20초</li>
+              <li>WebKit: 5 passed · job 1분 48초</li>
+            </ul>
+            <p>
+              판정: 인증 관련 변경에서 <code>run_e2e=true</code>로 전환되고 주문·인증·로그아웃
+              spec만 선택되어 두 브라우저에서 모두 통과했다. 기능별 선택 규칙이 실제 Actions 로그와
+              일치한다.
+            </p>
+          </div>
           <h3>직접 따라 하는 실행 순서</h3>
           <ol>
             <li>
@@ -979,11 +1393,12 @@ git push</code></pre>
             <li>required check가 성공·실패·대기로 표시됐는지</li>
           </ul>
           <div class="callout">
-            <strong>문서-only 생략 검증 완료 · 선택 실행과 fallback 검증 대기</strong>
+            <strong>문서-only·기능별 선택 실행 검증 완료 · fallback 검증 대기</strong>
             <p>
               로컬 Playwright 통과, PR #12의 전체 실행·required 표시, PR #13의 문서-only E2E 생략을
-              확인했다. 기능 로직 변경의 선택 spec과 알 수 없는 경로의 전체 실행 fallback을 실제
-              PR에서 확인하기 전까지 전체 구현 상태는 <code>추가 조합 검증 대기</code>로 유지한다.
+              확인했고, PR #14·#15에서 order·auth 기능별 선택 spec 실행도 확인했다. 알 수 없는
+              경로의 전체 실행 fallback을 실제 PR에서 확인하기 전까지 전체 구현 상태는
+              <code>fallback 검증 대기</code>로 유지한다.
             </p>
           </div>
           <div class="done">
