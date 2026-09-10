@@ -684,8 +684,10 @@ flowchart LR
                 </tr>
                 <tr>
                   <td>06 · 문서-only E2E 생략</td>
-                  <td>대기</td>
-                  <td>별도 문서-only PR에서 무거운 step 생략과 required 통과를 확인함</td>
+                  <td>1차 실패 · 수정 중</td>
+                  <td>
+                    <code>docs=true</code>, <code>unknown=false</code>와 무거운 step 생략을 확인함
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -766,6 +768,37 @@ flowchart LR
             </ul>
             <p>
               Merge box에는 `All checks have passed`와 `No conflicts with base branch`가 표시됐다.
+            </p>
+          </div>
+          <div class="callout warning">
+            <strong>검증 로그 · 06 문서-only 1차 판별 실패</strong>
+            <p>
+              2026-09-11 · PR #13은 <code>feat/week-10</code>을 base로 두고
+              <code>docs/week-10/e2e-conditional-execution.html</code> 한 파일만 변경했다.
+            </p>
+            <ul>
+              <li>
+                Quality:
+                <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34492824338"
+                  >34492824338</a
+                >
+                · 전체 Quality 실행
+              </li>
+              <li>
+                E2E:
+                <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34492824616"
+                  >34492824616</a
+                >
+                · Chromium·WebKit 전체 E2E 실행
+              </li>
+              <li>변경 감지: <code>docs=true</code>와 <code>unknown=true</code>가 동시에 출력됨</li>
+            </ul>
+            <p>
+              원인은 <code>unknown</code> 필터의 <code>**</code>와 제외 패턴을 기본
+              <code>some</code> 판정에서 함께 사용한 것이다. 문서 파일도 <code>**</code>에 먼저
+              매칭되어 전체 실행 fallback으로 들어갔다. 기존 기능 필터는 유지하고
+              <code>unknown</code>만 별도 <code>predicate-quantifier: every</code> 판정으로 분리한
+              뒤 PR #13에서 다시 확인한다.
             </p>
           </div>
           <h3>직접 따라 하는 실행 순서</h3>

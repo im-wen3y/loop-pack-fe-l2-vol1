@@ -81,6 +81,12 @@ jobs:
               - 'src/**/*.js'
               - 'src/**/*.jsx'
               - 'e2e/*.spec.ts'
+      - name: Detect unknown paths
+        id: unknown
+        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        with:
+          predicate-quantifier: every
+          filters: |
             unknown:
               - '**'
               - '!docs/**'
@@ -119,7 +125,7 @@ jobs:
           FIXTURES: ${{ steps.filter.outputs.fixtures }}
           CONFIG: ${{ steps.filter.outputs.config }}
           LOGIC: ${{ steps.filter.outputs.logic }}
-          UNKNOWN: ${{ steps.filter.outputs.unknown }}
+          UNKNOWN: ${{ steps.unknown.outputs.unknown }}
         shell: bash
         run: |
           all=false
