@@ -20,6 +20,9 @@
         --pending-fill: #eee7fa;
         --pending-line: #7255a5;
         --pending-text: #3e2d5e;
+        --warning-fill: #fbeeda;
+        --warning-line: #b56a20;
+        --warning-text: #6b3f0d;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -36,6 +39,9 @@
           --pending-fill: #2b2238;
           --pending-line: #b9a0e4;
           --pending-text: #decff7;
+          --warning-fill: #33261a;
+          --warning-line: #e0a05c;
+          --warning-text: #f2c894;
         }
       }
       * {
@@ -167,6 +173,11 @@
         border-left-color: var(--cold-line);
         background: var(--cold-fill);
         color: var(--cold-text);
+      }
+      .warning {
+        border-left-color: var(--warning-line);
+        background: var(--warning-fill);
+        color: var(--warning-text);
       }
       .status-grid {
         display: grid;
