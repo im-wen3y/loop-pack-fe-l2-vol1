@@ -8,7 +8,12 @@ permissions:
 
 jobs:
   e2e:
+    name: E2E (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -27,8 +32,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium webkit
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run production build
         run: pnpm build
-      - name: Run E2E tests
-        run: pnpm exec playwright test
+      - name: Run E2E ${{ matrix.browser }} tests
+        run: pnpm exec playwright test --project=${{ matrix.browser }}
