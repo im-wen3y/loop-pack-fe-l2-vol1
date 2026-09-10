@@ -5,10 +5,164 @@ name: E2E
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  changes:
+    name: Detect E2E scope
+    runs-on: ubuntu-latest
+    outputs:
+      run_e2e: ${{ steps.scope.outputs.run_e2e }}
+      all: ${{ steps.scope.outputs.all }}
+      test_files: ${{ steps.scope.outputs.test_files }}
+    steps:
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - '**/*.md'
+            styles:
+              - '**/*.css'
+              - '**/*.scss'
+              - '**/*.sass'
+              - '**/*.less'
+            auth:
+              - 'src/features/login/**'
+              - 'src/features/logout/**'
+              - 'src/entities/session/**'
+              - 'src/_pages/login/**'
+              - 'e2e/auth.spec.ts'
+              - 'e2e/logout.spec.ts'
+            cart:
+              - 'src/features/add-to-cart/**'
+              - 'src/entities/cart/**'
+              - 'src/_pages/cart/**'
+              - 'e2e/add-to-cart.spec.ts'
+            wishlist:
+              - 'src/features/add-to-wishlist/**'
+              - 'src/entities/wishlist/**'
+              - 'src/_pages/wishlist/**'
+              - 'e2e/add-to-wishlist.spec.ts'
+            product:
+              - 'src/entities/product/**'
+              - 'src/_pages/product-list/**'
+              - 'src/widgets/product-card/**'
+              - 'e2e/state-restoration.spec.ts'
+            order:
+              - 'src/features/place-order/**'
+              - 'src/entities/order/**'
+              - 'src/_pages/checkout/**'
+              - 'src/_pages/orders/**'
+              - 'e2e/order.spec.ts'
+            shared:
+              - 'src/shared/**'
+              - 'src/_app/**'
+              - 'src/widgets/header/**'
+              - 'src/components/**'
+            fixtures:
+              - 'e2e/fixtures/**'
+            config:
+              - '.github/workflows/**'
+              - '.nvmrc'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'playwright.config.ts'
+              - 'next.config.*'
+              - 'tsconfig*.json'
+              - 'vitest.config.*'
+              - 'eslint.config.*'
+              - '.prettier*'
+            logic:
+              - 'src/**/*.ts'
+              - 'src/**/*.tsx'
+              - 'src/**/*.js'
+              - 'src/**/*.jsx'
+              - 'e2e/*.spec.ts'
+            unknown:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+              - '!**/*.css'
+              - '!**/*.scss'
+              - '!**/*.sass'
+              - '!**/*.less'
+              - '!src/**'
+              - '!e2e/auth.spec.ts'
+              - '!e2e/logout.spec.ts'
+              - '!e2e/add-to-cart.spec.ts'
+              - '!e2e/add-to-wishlist.spec.ts'
+              - '!e2e/state-restoration.spec.ts'
+              - '!e2e/order.spec.ts'
+              - '!e2e/fixtures/**'
+              - '!.github/workflows/**'
+              - '!.nvmrc'
+              - '!package.json'
+              - '!pnpm-lock.yaml'
+              - '!playwright.config.ts'
+              - '!next.config.*'
+              - '!tsconfig*.json'
+              - '!vitest.config.*'
+              - '!eslint.config.*'
+              - '!.prettier*'
+      - name: Select test scope
+        id: scope
+        env:
+          AUTH: ${{ steps.filter.outputs.auth }}
+          CART: ${{ steps.filter.outputs.cart }}
+          WISHLIST: ${{ steps.filter.outputs.wishlist }}
+          PRODUCT: ${{ steps.filter.outputs.product }}
+          ORDER: ${{ steps.filter.outputs.order }}
+          SHARED: ${{ steps.filter.outputs.shared }}
+          FIXTURES: ${{ steps.filter.outputs.fixtures }}
+          CONFIG: ${{ steps.filter.outputs.config }}
+          LOGIC: ${{ steps.filter.outputs.logic }}
+          UNKNOWN: ${{ steps.filter.outputs.unknown }}
+        shell: bash
+        run: |
+          all=false
+          run_e2e=false
+          test_files="e2e/order.spec.ts"
+
+          if [[ "$SHARED" == "true" || "$FIXTURES" == "true" || "$CONFIG" == "true" || "$UNKNOWN" == "true" ]]; then
+            all=true
+          fi
+
+          if [[ "$all" == "true" || "$LOGIC" == "true" ]]; then
+            run_e2e=true
+          fi
+
+          if [[ "$all" == "true" ]]; then
+            test_files=""
+          elif [[ "$run_e2e" == "true" ]]; then
+            test_files="e2e/order.spec.ts"
+
+            if [[ "$AUTH" == "true" ]]; then
+              test_files+=" e2e/auth.spec.ts e2e/logout.spec.ts"
+            fi
+            if [[ "$CART" == "true" ]]; then
+              test_files+=" e2e/add-to-cart.spec.ts"
+            fi
+            if [[ "$WISHLIST" == "true" ]]; then
+              test_files+=" e2e/add-to-wishlist.spec.ts"
+            fi
+            if [[ "$PRODUCT" == "true" ]]; then
+              test_files+=" e2e/state-restoration.spec.ts"
+            fi
+          fi
+
+          {
+            echo "run_e2e=$run_e2e"
+            echo "all=$all"
+            echo "test_files=$test_files"
+          } >> "$GITHUB_OUTPUT"
+
   e2e:
     name: E2E (${{ matrix.browser }})
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -16,24 +170,47 @@ jobs:
         browser: [chromium, webkit]
     timeout-minutes: 10
     steps:
+      - name: Report selected scope
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          RUN_E2E: ${{ needs.changes.outputs.run_e2e }}
+          ALL: ${{ needs.changes.outputs.all }}
+          TEST_FILES: ${{ needs.changes.outputs.test_files }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "E2E fallback: changes detection failed; running all tests"
+          elif [[ "$RUN_E2E" == "true" ]]; then
+            echo "E2E scope: all=$ALL, tests=${TEST_FILES:-all}"
+          else
+            echo "E2E skipped: docs/style-only or no executable change"
+          fi
       - name: Checkout
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Set up pnpm
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 10.15.1
       - name: Set up Node.js
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - name: Install dependencies
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run production build
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
         run: pnpm build
-      - name: Run E2E ${{ matrix.browser }} tests
-        run: pnpm exec playwright test --project=${{ matrix.browser }}
+      - name: Run selected E2E tests
+        if: ${{ !cancelled() && (needs.changes.result != 'success' || success()) && (needs.changes.result != 'success' || needs.changes.outputs.run_e2e == 'true') }}
+        env:
+          TEST_FILES: ${{ needs.changes.outputs.test_files }}
+        run: pnpm exec playwright test $TEST_FILES --project=${{ matrix.browser }}
