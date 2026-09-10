@@ -706,6 +706,11 @@ flowchart LR
                   <td>완료</td>
                   <td>all=false와 order.spec.ts 선택, Chromium·WebKit 실행·통과를 확인함</td>
                 </tr>
+                <tr>
+                  <td>08 · auth 선택 실행</td>
+                  <td>완료</td>
+                  <td>all=false와 order·auth·logout spec 선택, 두 브라우저 통과를 확인함</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -883,6 +888,32 @@ flowchart LR
               기능 범위 선택이 실제 Actions 로그와 일치한다.
             </p>
           </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 08 auth 선택 실행 완료</strong>
+            <p>
+              2026-09-11 ·
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/15">auth PR #15</a>
+              · 커밋 <code>53934a73</code> ·
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34498101409?pr=15"
+                >E2E workflow 34498101409</a
+              >
+            </p>
+            <ul>
+              <li><code>Detect E2E scope</code>: <code>all=false</code> · 약 6초</li>
+              <li>
+                Chromium·WebKit의 <code>Report selected scope</code>:
+                <code>all=false, tests=e2e/order.spec.ts e2e/auth.spec.ts e2e/logout.spec.ts</code>
+              </li>
+              <li>Chromium: 5 passed · job 1분 20초</li>
+              <li>WebKit: 5 passed · job 1분 48초</li>
+            </ul>
+            <p>
+              판정: 인증 관련 변경에서 <code>run_e2e=true</code>로 전환되고 주문·인증·로그아웃
+              spec만 선택되어 두 브라우저에서 모두 통과했다. 기능별 선택 규칙이 실제 Actions 로그와
+              일치한다.
+            </p>
+          </div>
           <h3>직접 따라 하는 실행 순서</h3>
           <ol>
             <li>
@@ -979,11 +1010,12 @@ git push</code></pre>
             <li>required check가 성공·실패·대기로 표시됐는지</li>
           </ul>
           <div class="callout">
-            <strong>문서-only 생략 검증 완료 · 선택 실행과 fallback 검증 대기</strong>
+            <strong>문서-only·기능별 선택 실행 검증 완료 · fallback 검증 대기</strong>
             <p>
               로컬 Playwright 통과, PR #12의 전체 실행·required 표시, PR #13의 문서-only E2E 생략을
-              확인했다. 기능 로직 변경의 선택 spec과 알 수 없는 경로의 전체 실행 fallback을 실제
-              PR에서 확인하기 전까지 전체 구현 상태는 <code>추가 조합 검증 대기</code>로 유지한다.
+              확인했고, PR #14·#15에서 order·auth 기능별 선택 spec 실행도 확인했다. 알 수 없는
+              경로의 전체 실행 fallback을 실제 PR에서 확인하기 전까지 전체 구현 상태는
+              <code>fallback 검증 대기</code>로 유지한다.
             </p>
           </div>
           <div class="done">
