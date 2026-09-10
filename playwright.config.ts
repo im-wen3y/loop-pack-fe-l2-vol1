@@ -3,9 +3,11 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  // 계정이 8개뿐이라 병렬 슬롯도 8을 넘을 수 없다(넘으면 accountForSlot이 던진다).
-  // 다만 실제 실행은 4로 둔다 — 8코어에서 워커 8개와 Next 서버가 함께 돌면 서로를 굶겨
-  // 로직과 무관한 타임아웃이 난다(docs/rfc/week09-e2e-scope.md의 「4단계 경계」).
+  // 계정 8개를 프로젝트별 offset으로 나눠 쓰므로 병렬 슬롯은 프로젝트당 4를 넘을 수 없다
+  // (넘으면 accountForProjectSlot이 던진다). 워커 수를 올리려면 WORKER_ACCOUNTS와
+  // PROJECT_ACCOUNT_OFFSETS를 함께 늘린다.
+  // 4로 두는 또 다른 이유는 8코어에서 워커 8개와 Next 서버가 함께 돌면 서로를 굶겨
+  // 로직과 무관한 타임아웃이 나기 때문이다(docs/rfc/week09-e2e-scope.md의 「4단계 경계」).
   workers: 4,
   reporter: 'list',
   // 기본 5초는 이 앱에 빠듯하다. 인증 API가 호출마다 500ms를 쉬고(스타터의 waitForAuthApi),
