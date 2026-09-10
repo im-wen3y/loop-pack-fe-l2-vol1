@@ -701,6 +701,11 @@ flowchart LR
                   <td>완료</td>
                   <td>PR #13 2차 실행에서 두 browser job의 무거운 step이 모두 Skipped됨</td>
                 </tr>
+                <tr>
+                  <td>07 · order 선택 실행</td>
+                  <td>완료</td>
+                  <td>all=false와 order.spec.ts 선택, Chromium·WebKit 실행·통과를 확인함</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -849,6 +854,29 @@ flowchart LR
               Actions에서 충족된 것을 확인했다. <code>unknown</code> 판정을 별도
               <code>predicate-quantifier: every</code> step으로 분리한 수정으로 문서 경로의 오탐이
               해소됐다. Quality는 이번 E2E 생략 정책의 대상이 아니므로 그대로 실행됐다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 07 order 선택 실행 완료</strong>
+            <p>
+              2026-09-11 · 커밋 <code>4adb2c65</code> ·
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34496737026"
+                >E2E workflow 34496737026</a
+              >
+            </p>
+            <ul>
+              <li><code>Detect E2E scope</code>: <code>all=false</code> · 약 6초</li>
+              <li>
+                Chromium·WebKit의 <code>Report selected scope</code>:
+                <code>all=false, tests=e2e/order.spec.ts</code>
+              </li>
+              <li>Chromium job 성공 · 1분 17초</li>
+              <li>WebKit job 성공 · 1분 50초</li>
+            </ul>
+            <p>
+              판정: 주문 관련 변경에서 <code>run_e2e=true</code>로 전환되고
+              <code>e2e/order.spec.ts</code>만 선택되어 두 브라우저에서 실행됐다. 전체 E2E가 아닌
+              기능 범위 선택이 실제 Actions 로그와 일치한다.
             </p>
           </div>
           <h3>직접 따라 하는 실행 순서</h3>
