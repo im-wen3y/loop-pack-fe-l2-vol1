@@ -21,16 +21,16 @@
 - [ ] `.nvmrc`, `package.json#packageManager`, 실제 `scripts`와 workflow의 명령이 일치하는가
 - [ ] 프로젝트에 존재하는 lint, typecheck, test, build를 CI에서 모두 실행하는가
 - [ ] `pnpm install --frozen-lockfile`을 사용하고 job에 `timeout-minutes`를 두었는가
-- [ ] Before의 cold 3회와 warm 3회를 구분해 raw 값, 중앙값과 범위를 남겼는가
-- [ ] 같은 실행에서 workflow 전체, job과 주요 step 시간을 기록했는가
-- [ ] 가장 긴 구간을 로그의 시간으로 지목했는가
-- [ ] Before에서 확인한 병목에 맞는 전략만 적용했는가
-- [ ] After도 같은 조건으로 cold 3회와 warm 3회를 측정했는가
-- [ ] Before/After의 검증 항목과 러너·Node 조건이 같은가
-- [ ] 감소 폭이 측정 범위보다 큰지, 지목한 병목의 감소와 연결되는지 설명했는가
-- [ ] warm 로그에서 캐시 복원 메시지를 확인하고 캡처했는가
-- [ ] 유효한 lockfile 변경으로 캐시 miss를 재현하고 hit/miss의 install 시간을 비교했는가
-- [ ] 캐시 miss 실험이 끝난 뒤 lockfile 변경을 복구했는가
+- [x] Before의 cold 3회와 warm 3회를 구분해 raw 값, 중앙값과 범위를 남겼는가
+- [x] 같은 실행에서 workflow 전체, job과 주요 step 시간을 기록했는가
+- [x] 가장 긴 구간을 로그의 시간으로 지목했는가
+- [x] Before에서 확인한 병목에 맞는 전략만 적용했는가
+- [x] After도 같은 조건으로 cold 3회와 warm 3회를 측정했는가
+- [x] Before/After의 검증 항목과 러너·Node 조건이 같은가
+- [x] 감소 폭이 측정 범위보다 큰지, 지목한 병목의 감소와 연결되는지 설명했는가
+- [x] warm 로그에서 캐시 복원 메시지를 확인하고 캡처했는가
+- [x] 유효한 lockfile 변경으로 캐시 miss를 재현하고 hit/miss의 install 시간을 비교했는가
+- [x] 캐시 miss 실험이 끝난 뒤 lockfile 변경을 복구했는가
 
 ### 하지 말아야 하는 것
 
@@ -246,14 +246,17 @@
 
 아래 증거를 모두 제출물에서 확인할 수 있어야 완료다.
 
-- [ ] Before cold 3회와 warm 3회의 raw 값, 중앙값과 범위
-- [ ] After cold 3회와 warm 3회의 raw 값, 중앙값과 범위
-- [ ] Actions 로그 시간으로 지목한 병목 1문단
-- [ ] 캐시 hit 로그와 의도적으로 재현한 miss 로그
-- [ ] hit/miss의 install 시간 비교
-- [ ] 선택한 최적화가 병목에 맞는 이유와 다른 전략을 적용하지 않은 이유
-- [ ] Before/After에서 같은 검증 항목을 유지했다는 대조
-- [ ] 감소 폭이 측정 흔들림보다 큰지와 병목 감소에 연결되는지에 대한 설명
+> After cold 반복값은 3회를 확보했지만, 별도 cache 실험에서는 matrix job 간 key 공유로 일부 job만
+> miss가 됐다. 이 한계는 RFC와 개인 조사 기록에 명시한다.
+
+- [x] Before cold 3회와 warm 3회의 raw 값, 중앙값과 범위
+- [x] After cold 3회와 warm 3회의 raw 값, 중앙값과 범위
+- [x] Actions 로그 시간으로 지목한 병목 1문단
+- [x] 캐시 hit 로그와 의도적으로 재현한 miss 로그
+- [x] hit/miss의 install 시간 비교
+- [x] 선택한 최적화가 병목에 맞는 이유와 다른 전략을 적용하지 않은 이유
+- [x] Before/After에서 같은 검증 항목을 유지했다는 대조
+- [x] 감소 폭이 측정 흔들림보다 큰지와 병목 감소에 연결되는지에 대한 설명
 
 ### 2단계 완료조건 — 조건부 실행
 
