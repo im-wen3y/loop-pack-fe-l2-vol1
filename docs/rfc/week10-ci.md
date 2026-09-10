@@ -6,21 +6,14 @@
 
 #### Quality
 
-`.github/workflows/quality.yml`은 마지막 step에서 `pnpm check`를 실행한다. `package.json`의 script를
-따라가면 실제 실행 순서는 다음과 같다.
+`.github/workflows/quality.yml`은 검증을 네 step으로 나눠 실행한다. 실제 실행 순서는 다음과 같다.
 
 ```text
-pnpm check
-└─ pnpm verify && pnpm build
-   ├─ pnpm test
-   ├─ pnpm lint
-   ├─ pnpm typecheck
-   └─ pnpm build
+pnpm test → pnpm lint → pnpm typecheck → pnpm build
 ```
 
-현재 GitHub Actions에서는 네 검증이 `Run quality checks`라는 하나의 step으로 실행되기 때문에
-각각의 시간을 구분할 수 없다. Before를 측정하기 전에 다음처럼 step을 나누면 test, lint,
-typecheck와 build 중 어느 구간이 오래 걸리는지 로그에서 따로 확인할 수 있다.
+각 검증을 별도 step으로 두어 test, lint, typecheck와 build 시간을 따로 기록한다. Quality에는
+Playwright 브라우저 설치를 두지 않는다.
 
 ```yaml
 - name: Run unit tests
@@ -36,20 +29,19 @@ typecheck와 build 중 어느 구간이 오래 걸리는지 로그에서 따로 
   run: pnpm build
 ```
 
-이때 기존 `pnpm check`를 함께 실행하면 같은 검증이 중복되므로, 네 step으로 나눈 뒤에는 기존
-`Run quality checks` step을 남기지 않는다. 검증 항목을 줄이기 위한 변경이 아니라 각 구간의 시간을
-확인하기 위한 분리다. step 분리 자체가 실행 시간에 작은 영향을 줄 수 있으므로, 분리한 workflow를
-Before 기준으로 먼저 고정하고 After도 같은 구조에서 측정한다.
+검증 항목을 줄인 것이 아니라 각 구간의 시간을 확인하기 위한 분리다. 이 구조를 Before 기준으로
+고정하고 After도 같은 구조에서 측정한다.
 
 #### E2E
 
-`.github/workflows/e2e.yml`은 `pnpm test:e2e`를 실행하고, 이 script는 `pnpm build` 후 Playwright
-테스트를 실행한다.
+`.github/workflows/e2e.yml`은 Chromium과 WebKit을 matrix job으로 나눠 각 브라우저에서 설치,
+production build와 Playwright 테스트를 독립적으로 실행한다.
 
 ```text
-pnpm test:e2e
-├─ pnpm build
-└─ playwright test
+matrix.browser = chromium | webkit
+pnpm exec playwright install --with-deps ${{ matrix.browser }}
+pnpm build
+pnpm exec playwright test --project=${{ matrix.browser }}
 ```
 
 E2E는 실제 Chromium과 WebKit을 사용하므로 브라우저 설치가 필요하다. Quality와 달리 E2E의
@@ -275,14 +267,19 @@ Warm과 cold 모두 3회 측정을 완료했다. cold 2회차의 첫 시도는 �
 
 ### Before와 비교
 
-- 중앙값 변화: 미측정
-- 범위 변화: 미측정
-- 측정 흔들림보다 큰 변화인지: 미판단
-- 지목한 병목의 감소와 연결되는지: 미판단
+- Quality workflow 중앙값은 55초에서 1분 9초로 14초 늘었지만, Quality workflow는 후보 A 변경
+  대상이 아니므로 후보 A의 영향으로 해석하지 않는다.
+- E2E workflow 중앙값은 2분 33초에서 2분 20초로 13초 줄었다. 사전에 정한 30초 단축 기준에는
+  미달해 PR 전체 wall-clock 성능 개선은 유의미하다고 확정하지 않는다.
+- 느린 브라우저 job 중앙값은 2분 24초에서 1분 42초로 42초 줄었다. 이는 브라우저별 실행을
+  분리한 구조적 효과지만, workflow 전체 시간 단축과 동일한 의미로 보지 않는다.
+- 최종 결정: 후보 A는 Chromium·WebKit 실패를 독립적으로 확인하고 각각 required check로 보호할
+  수 있어 유지한다. 후보 B concurrency도 반복 push의 오래된 실행을 줄이는 운영 안전장치로 유지한다.
+- 후보 C pnpm store 캐시는 현재 install 시간이 짧고 추가 효과 근거가 부족해 보류한다.
 
 ## 캐시
 
-- warm 실행의 캐시 복원 로그: 기존 After 실행에서 확인한 증거를 회차별로 정리할 것
+- warm 실행의 캐시 복원 로그: 기존 After 3회에서 `Cache restored from key` 확인
 - 의도적인 캐시 miss 로그: Quality와 WebKit에서 `pnpm cache is not found` 확인
 - hit install 시간: Chromium 2초
 - miss install 시간: Quality 7초, WebKit 6초
@@ -295,6 +292,9 @@ Warm과 cold 모두 3회 측정을 완료했다. cold 2회차의 첫 시도는 �
 이번 실험은 matrix job이 동일한 새 cache key를 공유했다. 먼저 끝난 job이 캐시를 저장한 뒤
 Chromium job이 시작되어 Chromium에서는 `Cache restored successfully`가 나타났다. 따라서 세 job
 모두를 cold로 보지 않고, Quality·WebKit miss와 Chromium hit가 섞인 부분 cold 실험으로 분류한다.
+matrix 전략 자체에는 cold를 강제하는 옵션이 없다. 브라우저별 key를 따로 만들거나 run ID를 key에
+넣으면 miss를 만들 수 있지만, 이는 평소 캐시 공유·복원 동작과 다른 실험 조건이 된다. job을
+순차화하고 매번 캐시를 삭제하는 방법도 있지만 병렬화의 전제가 사라지고 삭제 시점 경합이 생긴다.
 
 캐시 hit/miss의 원본 로그와 install 시간을 함께 기록한다. miss는 frozen install이 실패하는 손상이
 아니라 유효한 lockfile 변경으로 재현하고, 실험 변경은 측정 후 복구한다.
