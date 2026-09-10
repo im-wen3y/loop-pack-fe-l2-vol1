@@ -244,29 +244,30 @@ pnpm 캐시 유무에 따른 install 시간 차이는 작았으며, Next build c
 ## After
 
 개선 적용 후 Before와 같은 검증 항목, 러너, Node 버전과 cold/warm 조건에서 각각 3회 측정한다.
-실제 값은 아직 측정하지 않았다.
+Warm은 3회 중 3회 완료했고, cold는 아직 측정하지 않았다.
 
 ### Cold
 
-| 회차 | 커밋 / run URL | workflow 전체 | job | 주요 step | 캐시 증거 |
-| ---- | -------------- | ------------: | --: | --------- | --------- |
-| 1    | 미측정         |             - |   - | -         | -         |
-| 2    | 미측정         |             - |   - | -         | -         |
-| 3    | 미측정         |             - |   - | -         | -         |
+| 회차 | 커밋 / run URL                                                                                                                                                                                                                      |                   workflow 전체 |                             job | 주요 step                                                                                                                           | 캐시 증거                                        |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------: | ------------------------------: | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468386)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468432)<br>커밋 `b9e92f8ff29996cdb075c2afd36f66263512b1ba` |     Quality 50초<br>E2E 2분 6초 |     Quality 47초<br>E2E 2분 3초 | Quality: install 5초, test 9초, lint 7초, typecheck 3초, build 7초<br>E2E: install 5초, browser 설치 44초, build 8초, E2E 48초      | `pnpm cache is not found`                        |
+| 2    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757239)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757278)<br>커밋 `de540b8d435b3c452f38a096d1396fd76662105e` | Quality 1분 6초<br>E2E 2분 49초 | Quality 1분 3초<br>E2E 2분 46초 | Quality: install 6초, test 12초, lint 9초, typecheck 4초, build 10초<br>E2E: install 6초, browser 설치 1분 7초, build 8초, E2E 57초 | `pnpm cache is not found`, Next build cache miss |
+| 3    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582676)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582659)<br>커밋 `6511cdc91550e1a9045b1879ee8e9174d62f55de` |    Quality 57초<br>E2E 2분 38초 |    Quality 53초<br>E2E 2분 27초 | Quality: install 5초, test 8초, lint 8초, typecheck 2초, build 8초<br>E2E: install 5초, browser 설치 52초, build 8초, E2E 1분 10초  | `pnpm cache is not found`, Next build cache miss |
 
-- 중앙값: 미측정
-- 범위: 미측정
+- Quality workflow 중앙값: 57초, 범위 50초~1분 6초
+- E2E workflow 중앙값: 2분 38초, 범위 2분 6초~2분 49초
 
 ### Warm
 
-| 회차 | 커밋 / run URL | workflow 전체 | job | 주요 step | 캐시 증거 |
-| ---- | -------------- | ------------: | --: | --------- | --------- |
-| 1    | 미측정         |             - |   - | -         | -         |
-| 2    | 미측정         |             - |   - | -         | -         |
-| 3    | 미측정         |             - |   - | -         | -         |
+| 회차 | 커밋 / run URL                                                                                                                                                                                                                      |                   workflow 전체 |                                                     job | 주요 step                                                                                                                                                                                                      | 캐시 증거                                              |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------: | ------------------------------------------------------: | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 1    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34456469894)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34456469924)<br>커밋 `a9129272f963b1af19978e6ba2cf9d0f39375e4c` | Quality 1분 6초<br>E2E 1분 46초 | Quality 1분 3초<br>Chromium 1분 37초<br>WebKit 1분 44초 | Quality: install 2초, test 12초, lint 10초, typecheck 3초, build 10초<br>E2E Chromium: install 2초, browser 설치 38초, build 9초, E2E 24초<br>E2E WebKit: install 2초, browser 설치 35초, build 10초, E2E 39초 | warm 실행 성공. setup-node cache 로그는 별도 확인 필요 |
+| 2    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34456907155)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34456907202)<br>커밋 `594a9e7c494faea86ad8a99f8d5c7a1f68030fbe` |    Quality 55초<br>E2E 1분 33초 |    Quality 52초<br>Chromium 1분 27초<br>WebKit 1분 24초 | Quality: install 2초, test 10초, lint 9초, typecheck 4초, build 10초<br>E2E Chromium: install 3초, browser 설치 38초, build 7초, E2E 21초<br>E2E WebKit: install 2초, browser 설치 34초, build 6초, E2E 27초   | warm 실행 성공. setup-node cache 로그는 별도 확인 필요 |
+| 3    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34458232736)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34458232732)<br>커밋 `dac4d0e8aa87a3778a9bd23d0e60a2d9985241ed` |    Quality 57초<br>E2E 1분 54초 |    Quality 54초<br>Chromium 1분 21초<br>WebKit 1분 48초 | Quality: install 2초, test 11초, lint 9초, typecheck 4초, build 9초<br>E2E Chromium: install 2초, browser 설치 24초, build 10초, E2E 24초<br>E2E WebKit: install 2초, browser 설치 39초, build 10초, E2E 38초  | warm 실행 성공. setup-node cache 로그는 별도 확인 필요 |
 
-- 중앙값: 미측정
-- 범위: 미측정
+- Quality workflow 중앙값: 57초, 범위 55~1분 6초
+- E2E workflow 중앙값: 1분 46초, 범위 1분 33초~1분 54초
+- E2E job 중앙값(느린 브라우저): 1분 37초, 범위 1분 37초~1분 44초
 
 ### Before와 비교
 

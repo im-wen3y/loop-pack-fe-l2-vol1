@@ -98,7 +98,8 @@ node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827
 ## 남은 측정과 판단
 
 - Before cold 1~3회: 아직 미측정
-- After cold/warm 각 3회: 아직 미측정
+- After warm 1~3회: 완료
+- After cold 1~3회: 미측정
 - 현재 Warm 결과만으로 최종 병목 개선량을 확정하지 않는다. Cold와 After를 같은 runner·Node·pnpm·검증
   구조에서 측정한 뒤 중앙값과 범위를 비교한다.
 - 브라우저 설치 실패 재현 여부와 E2E 테스트 실패 여부를 분리해 기록한다. 설치 step에서 끝난

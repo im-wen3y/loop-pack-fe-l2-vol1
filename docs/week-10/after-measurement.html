@@ -674,6 +674,14 @@ pnpm verify</code></pre>
             workflow 변경 커밋을 After 기준으로 고정합니다. 이후 빈 커밋만 사용하고, 측정 도중에는
             workflow나 lockfile을 바꾸지 않습니다.
           </p>
+          <div class="callout">
+            <strong>현재 진행 상태</strong>
+            <p>
+              후보 A의 After warm 3회 측정을 완료했습니다. Quality workflow 중앙값은 57초, E2E
+              workflow 중앙값은 1분 46초이며, 느린 브라우저 job의 중앙값은 1분 37초입니다. 원본
+              URL·step 시간은 RFC에 기록했고, cold 3회와 캐시 로그 확인이 남아 있습니다.
+            </p>
+          </div>
           <h3>Warm 3회</h3>
           <pre><code>git commit --allow-empty -m "chore(ci): After warm 1회차"
 git push</code></pre>
