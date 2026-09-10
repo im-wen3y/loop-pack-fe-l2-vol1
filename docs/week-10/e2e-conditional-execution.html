@@ -958,7 +958,8 @@ flowchart TD
               <code>develop</code> 머지가 어려운 경우, 현재 workflow가 반영된
               <code>feat/week-10</code>에서 <code>feat/week-10-docs-only</code>를 새로 만든다. 새
               브랜치에서는 <code>docs/week-10/</code> 아래 문서만 작게 수정하고, PR의 base를
-              <code>feat/week-10</code>으로 지정해 diff를 문서-only로 만든다.
+              <code>feat/week-10</code>으로 지정해 diff를 문서-only로 만든다. 검증 후에는 이 테스트
+              브랜치를 머지하지 않는다.
             </p>
             <ul>
               <li><code>Detect E2E scope</code>: <code>run_e2e=false</code></li>
