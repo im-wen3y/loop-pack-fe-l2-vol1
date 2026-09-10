@@ -630,42 +630,23 @@
             <code>$GITHUB_OUTPUT</code>에만 값을 넣어 로그에서 판정값을 볼 수 없었고, 그 때문에 실행
             스크립트 원문을 결과로 오해했다.
           </p>
-          <pre class="mermaid" aria-label="예산·환경 변수 게이트의 실행과 보고 흐름">
+          <pre class="mermaid" aria-label="게이트 결과가 PR 화면까지 이어지는 흐름">
 flowchart TD
-  pr["PR 변경"]
-
-  subgraph gate["Quality 또는 별도 게이트 job"]
-    envCheck["환경 변수 검증<br/>build 전에 실행"]
-    envFail{"누락 · 형식 오류<br/>비공개 값 노출?"}
-    build["Production build"]
-    measure["번들 크기 측정"]
-    overBudget{"임계값 초과?"}
-    summary["job summary에 기록<br/>측정값 · 한도 · 초과량"]
-    red["게이트 실패"]
-    green["게이트 통과"]
-
-    envCheck --> envFail
-    envFail -->|"예"| red
-    envFail -->|"아니오"| build
-    build --> measure
-    measure --> overBudget
-    overBudget -->|"예"| red
-    overBudget -->|"아니오"| green
-    red --> summary
-    green --> summary
-  end
-
-  pr --> envCheck
+  gate["환경 변수 검증 → build → 번들 크기 측정"] --> judge{"게이트 통과?"}
+  judge -->|"예"| pass["Success"]
+  judge -->|"아니오"| fail["Failure"]
+  pass --> summary["job summary 기록<br/>측정값 · 한도 · 초과량"]
+  fail --> summary
   summary --> view["PR 화면에서 확인<br/>로그를 열지 않아도 됨"]
 
   classDef decision fill:#eee7fa,stroke:#7255a5,color:#3e2d5e
   classDef safe fill:#d7eee8,stroke:#056354,color:#17483f
-  classDef pending fill:#e3eff8,stroke:#2f6f9e,color:#1f4a6b
+  classDef report fill:#e3eff8,stroke:#2f6f9e,color:#1f4a6b
   classDef failure fill:#fff0ee,stroke:#b5473c,color:#762820
-  class envFail,overBudget decision
-  class build,measure,green,view safe
-  class envCheck,summary pending
-  class red failure
+  class judge decision
+  class gate,pass,view safe
+  class summary report
+  class fail failure
 </pre>
           <div class="callout">
             <strong>실패했을 때도 리포트가 남아야 한다</strong>
