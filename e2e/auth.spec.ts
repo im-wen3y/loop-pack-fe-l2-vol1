@@ -69,7 +69,7 @@ test.describe('인증 플로우', () => {
       { name: 'scenario', value: 'expired', url: new URL(page.url()).origin },
     ])
 
-    await page.goto('/orders')
+    await page.goto('/orders', { waitUntil: 'commit' })
 
     await page.waitForURL('**/login?**')
     expect(new URL(page.url()).searchParams.get('returnUrl')).toBe('/orders')
