@@ -11,7 +11,7 @@ const isCreatedOrder = (value: unknown): value is CreatedOrder =>
 
 // 주문은 서버 메모리에 계정별로 누적되고 최신이 목록 마지막에 온다. 개수나 순서를 가정하면
 // 3회 연속 실행에서 깨지므로, 방금 만든 주문 id로 좁혀 단언한다.
-test('장바구니에서 주문하면 그 주문이 주문 내역에 나타난다', async ({ page }) => {
+test('장바구니에서 주문하면 방금 만든 주문이 주문 내역에 나타난다', async ({ page }) => {
   await page.goto(productListPath(CART_TEST_PRODUCT))
   await page.getByRole('button', { name: `${CART_TEST_PRODUCT.name} 장바구니` }).click()
   await page.getByRole('button', { name: '장바구니 이동' }).click()
