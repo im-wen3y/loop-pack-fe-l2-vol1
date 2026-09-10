@@ -298,8 +298,8 @@
             실패·성공 증거를 모으면 됩니다.
           </p>
           <p>
-            Warm 측정 3회는 완료했고 Cold 측정과 이후 개선·검증은 남아 있습니다. 각 상태는 실행
-            로그와 기록 문서로 확인합니다.
+            Before·After warm/cold 측정과 병목 비교는 완료했습니다. 캐시 실험의 부분 cold 한계와
+            최종 전략 판단은 실행 로그와 기록 문서에서 확인합니다.
           </p>
         </header>
 
@@ -367,10 +367,9 @@
               >
                 <strong>완료 이력 · 2026-09-10</strong>
                 <p>
-                  Quality는 <code>pnpm check</code>로 test → lint → typecheck → build를 실행하고,
-                  E2E는 <code>pnpm test:e2e</code>로 build → Playwright test를 실행하는 것을
-                  확인했습니다. Quality의 Chromium 설치는 Quality 검증에서 사용되지 않는 제거
-                  후보입니다. 세부 근거는
+                  기준 workflow에서 Quality는 test → lint → typecheck → build를 별도 step으로
+                  실행하고, E2E는 브라우저별 matrix job에서 install → build → Playwright test를
+                  실행하는 것을 확인했습니다. 세부 근거는
                   <a href="../rfc/week10-ci.md#현재-workflow와-명령-대조">CI 측정 기록</a>에
                   남겼습니다.
                 </p>
@@ -387,8 +386,8 @@
                 <strong>완료 이력 · 2026-09-10</strong>
                 <p>
                   <a href="../rfc/week10-ci.md">docs/rfc/week10-ci.md</a>에 아홉 개 기록 항목과
-                  Before 표를 준비하고, Warm 3회 측정값·중앙값·범위·캐시 로그를 기록했습니다. Cold
-                  3회와 이후 After 측정은 아직 남아 있습니다.
+                  Before 표를 준비하고, Warm·Cold와 After 측정값·중앙값·범위를 기록했습니다. 최종
+                  비교 결과와 캐시 실험의 한계도 RFC에 남겼습니다.
                 </p>
               </div>
             </li>
@@ -401,11 +400,10 @@
               >
                 <strong>진행 이력 · 2026-09-10</strong>
                 <p>
-                  Quality의 test·lint·typecheck·build와 E2E의 build·Playwright test를 각각 별도
-                  step으로 나누고, 두 job에 <code>timeout-minutes: 10</code>을 추가했습니다.
-                  Quality에서 사용하지 않는 Chromium 설치는 제거했습니다. <code>pnpm verify</code>는
-                  통과했으며, 기준 커밋과 warm 3회 Actions run 기록을 남겼습니다. Cold 3회 측정과
-                  변경 후 실행 기록은 아직 남아 있습니다.
+                  Quality의 test·lint·typecheck·build와 E2E의 브라우저별 install·build·Playwright
+                  test를 각각 별도 step으로 나누고, 두 job에 <code>timeout-minutes: 10</code>을
+                  추가했습니다. <code>pnpm verify</code>는 통과했으며, 기준 커밋과 Before/After
+                  Actions run 기록을 남겼습니다.
                 </p>
               </div>
             </li>
@@ -429,25 +427,25 @@
               <li>
                 4번 — step 분리, Quality의 불필요한 Chromium 설치 제거,
                 <code>timeout-minutes: 10</code> 추가와 <code>pnpm verify</code>까지 완료했습니다.
-                기준 커밋과 Before warm 3회 Actions run URL을 기록했습니다. Cold 측정은 아직 남아
-                있습니다.
+                기준 커밋과 Before·After warm·cold Actions run URL을 기록했습니다. 최종 비교와
+                후보별 판단도 RFC에 반영했습니다.
               </li>
             </ul>
           </div>
           <div class="callout">
             <strong>현재 기준 workflow</strong>
             <p>
-              Quality는 사용하지 않는 Chromium 설치를 제거하고 <code>pnpm check</code>의 test · lint
-              · typecheck · build만 실행합니다. E2E는 별도 job에서 Playwright 브라우저를 설치하고
-              production build와 30개 테스트를 실행합니다.
+              Quality는 test · lint · typecheck · build를 별도 step으로 실행합니다. E2E는 Chromium과
+              WebKit matrix job에서 브라우저 설치, production build와 30개 테스트를 각각 실행합니다.
             </p>
           </div>
           <div class="callout warning">
-            <strong>현재 측정에서 아직 확정하지 않은 것</strong>
+            <strong>측정 판정 결과</strong>
             <p>
-              Before warm·cold 측정에서는 E2E의 <code>Run E2E tests</code>가 가장 길었습니다. 실제
-              개선량은 After를 측정하기 전에는 확정하지 않습니다. 모든 판단은
-              <a href="../rfc/week10-ci.md#측정-기록">회차별 step·캐시 로그</a>와 함께 비교합니다.
+              E2E workflow 중앙값은 13초 줄어 사전 기준 30초에는 미달했습니다. 다만 느린 브라우저
+              job은 42초 줄었고 브라우저별 required check를 확보했습니다. 모든 판단은
+              <a href="../rfc/week10-ci.md#after">Before/After 회차별 기록</a>과 캐시 실험 한계를
+              함께 봅니다.
             </p>
           </div>
           <p>
@@ -586,8 +584,9 @@
               기본 브랜치 <code>main</code> 세 곳입니다.
             </p>
             <p>
-              Warm 3회는 기록을 마쳤고, Cold 3회는 아직 실행하지 않았습니다. Cold는 회차마다 캐시를
-              삭제한 뒤 로그의 미복원 여부를 확인해 기록합니다.
+              Warm·Cold 각 3회 기록을 마쳤습니다. 별도 cache 실험에서는 matrix job 간 key 공유로
+              Quality·WebKit miss와 Chromium hit가 섞였으므로 전체 cold로 단정하지 않고 한계로
+              기록합니다.
             </p>
           </div>
           <p>
@@ -781,9 +780,8 @@
             감소와 연결되는가? 범위가 겹치면 개선을 확정하지 않고 한계를 적습니다.
           </p>
           <div class="done">
-            <strong>현재 진행</strong> — 후보 A After warm 3회와 cold 3회 측정을 완료했습니다. cold
-            2회차의 첫 시도는 캐시 hit로 제외하고 재측정했습니다. 캐시 hit/miss 로그 확인과
-            Before/After 중앙값 비교가 남아 있습니다.
+            <strong>현재 진행</strong> — 후보 A After warm·cold 각 3회 측정과 Before/After 중앙값
+            비교를 완료했습니다. cold 2회차의 첫 시도는 캐시 hit로 제외하고 재측정했습니다.
           </div>
           <div class="callout" style="border-color: #a3457a; background: #fbeaf3; color: #6b2049">
             <strong>업데이트 이력 · 2026-09-10 · After 측정 완료</strong>
@@ -796,12 +794,25 @@
               After warm·cold 각 3회를 완료했습니다. warm E2E workflow 중앙값은 1분 46초, cold는 2분
               20초였습니다. cold 2회차의 첫 시도는 캐시 hit가 확인되어 집계에서 제외하고
               재측정했습니다. 원본 값과 step 시간은
-              <a href="../rfc/week10-ci.md#after">RFC After 기록</a>에 남겼습니다. 다만 cold 3회의
-              캐시 miss 로그 원문은 아직 확인하지 않아, 이 3회를 cold로 확정하지는 않았습니다.
+              <a href="../rfc/week10-ci.md#after">RFC After 기록</a>에 남겼습니다. 캐시 실험은
+              matrix job 간 공유로 부분 cold가 된 한계를 별도로 기록했습니다.
             </p>
             <p>
-              다음은 캐시 hit/miss 로그 증거를 보완한 뒤 Before와 After의 중앙값·범위 및 PR 전체
-              wall-clock을 비교해 후보 A의 개선 여부를 판정하는 단계입니다.
+              Before와 After의 중앙값·범위 및 PR 전체 wall-clock 비교 결과는 아래 판정 이력에
+              정리했습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #a3457a; background: #fbeaf3; color: #6b2049">
+            <strong>판정 이력 · 2026-09-10</strong>
+            <p>
+              E2E workflow 중앙값은 13초 줄어 사전에 정한 30초 성능 기준에는 미달했습니다. 다만 느린
+              브라우저 job은 42초 줄었고 브라우저별 실패를 독립 required check로 확인할 수 있어 후보
+              A는 유지합니다.
+            </p>
+            <p>
+              Quality 중앙값 증가는 후보 A 대상이 아닌 workflow의 측정 변동으로 분리합니다. 후보 B
+              concurrency는 반복 push를 줄이는 운영 안전장치로 유지하고, 후보 C pnpm store 캐시는
+              현재 병목 근거가 부족해 보류합니다.
             </p>
           </div>
           <div class="done">

@@ -681,13 +681,14 @@ pnpm verify</code></pre>
               E2E workflow 중앙값은 1분 46초이며, 느린 브라우저 job의 중앙값은 1분 37초입니다. Cold
               Quality 중앙값은 1분 9초, E2E workflow 중앙값은 2분 20초이며, 느린 브라우저 job의
               중앙값은 1분 42초입니다. 원본 URL·step 시간은 RFC에 기록했고, 첫 cold 2회차 시도는
-              캐시 hit로 제외했습니다. 캐시 로그 증거 확인과 Before/After 비교가 남아 있습니다.
+              캐시 hit로 제외했습니다. 별도 캐시 실험에서 Quality·WebKit miss와 Chromium hit를
+              확인했고, Before/After 비교까지 완료했습니다.
             </p>
           </div>
           <div class="done">
-            <strong>03 단계 남은 것</strong> — 동일한 검증 범위에서 After warm·cold 각 3회의 원본
-            값과 중앙값·범위를 확보했습니다. cold 3회의 캐시 miss 로그 원문은 아직 확인하지 않아 이
-            단계를 완료로 표시하지 않습니다. 로그를 확인한 뒤 Before와 비교해 판정합니다.
+            <strong>03 단계 완료</strong> — 동일한 검증 범위에서 After warm·cold 각 3회의 원본 값과
+            중앙값·범위를 확보했습니다. COLD 2회차 첫 시도는 cache hit로 제외했고, 별도 실험에서
+            matrix job 간 캐시 공유로 부분 cold가 발생한 한계를 확인했습니다.
           </div>
           <h3>Warm 3회</h3>
           <pre><code>git commit --allow-empty -m "chore(ci): After warm 1회차"
@@ -802,6 +803,19 @@ git push</code></pre>
               가장 늦게 끝난 브라우저 job을 기준으로 PR wall-clock 중앙값이 Before E2E 중앙값 2분
               33초보다 30초 이상 줄어 약 2분 이하가 되고, After 범위가 Before 범위 2분 10초~3분
               4초와 거의 겹치지 않아야 의미 있는 개선으로 판단합니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #a3457a; background: #fbeaf3; color: #6b2049">
+            <strong>판정 결과 · 2026-09-10</strong>
+            <p>
+              E2E workflow 중앙값은 Before 2분 33초에서 After 2분 20초로 13초 줄어, 목표로 정한 30초
+              단축에는 미달했습니다. 따라서 PR 전체 wall-clock의 성능 개선은 유의미하다고 확정하지
+              않습니다.
+            </p>
+            <p>
+              대신 느린 브라우저 job 중앙값은 2분 24초에서 1분 42초로 42초 줄었고, Chromium과
+              WebKit을 독립 required check로 확인할 수 있게 됐습니다. 후보 A는 이 구조적·안전성 개선
+              때문에 유지하며, 후보 C pnpm store 캐시는 보류합니다.
             </p>
           </div>
           <div class="done">
