@@ -419,8 +419,8 @@
             때문에, 두 상황을 나눠서 각각 3회씩 측정합니다.
           </p>
           <p>
-            이 문서는 실행 순서 안내입니다. Warm 3회는 측정을 마쳤고 Cold 3회는 아직 수행하지
-            않았습니다. 측정 방식의 결정 근거와 기록은
+            이 문서는 실행 순서 안내입니다. Warm 3회와 Cold 3회 측정을 모두 마쳤습니다. 측정 방식의
+            결정 근거와 기록은
             <a href="action-plan.html#before">진행표 01 Before 측정</a>과
             <a href="../rfc/week10-ci.md">CI 측정과 개선 기록</a>에 있습니다.
           </p>
@@ -502,11 +502,11 @@
           <div class="callout" style="border-color: #2e7d5b; background: #e2f3eb; color: #214f3d">
             <strong>현재 상태 · 2026-09-10</strong>
             <p>
-              Before warm 3회를 완료했습니다. Quality workflow는 57초·55초·53초로 중앙값
-              55초, E2E workflow는 3분 4초·2분 33초·2분 10초로 중앙값 2분 33초였습니다.
-              세 회차 모두 pnpm dependency cache hit/restored 로그를 확인했습니다.
+              Before warm 3회를 완료했습니다. Quality workflow는 57초·55초·53초로 중앙값 55초, E2E
+              workflow는 3분 4초·2분 33초·2분 10초로 중앙값 2분 33초였습니다. 세 회차 모두 pnpm
+              dependency cache hit/restored 로그를 확인했습니다.
             </p>
-            <p>Cold 3회는 캐시를 회차마다 비운 뒤 실행 로그를 확인해 이어서 기록합니다.</p>
+            <p>Cold 3회도 각 실행 전에 캐시를 비우고 cache miss 로그를 확인해 완료했습니다.</p>
           </div>
         </section>
 
@@ -580,7 +580,9 @@ git push</code></pre>
           </div>
           <div class="table-wrap">
             <table>
-              <caption>완료된 Before warm 측정</caption>
+              <caption>
+                완료된 Before warm 측정
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">회차</th>
@@ -595,9 +597,15 @@ git push</code></pre>
                   <td>1</td>
                   <td>
                     <code>1c4d8e2a</code><br />
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626221">Quality</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626221"
+                      >Quality</a
+                    >
                     ·
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626456">E2E</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626456"
+                      >E2E</a
+                    >
                   </td>
                   <td>57초 / 54초</td>
                   <td>3분 4초 / 2분 24초</td>
@@ -610,9 +618,15 @@ git push</code></pre>
                   <td>2</td>
                   <td>
                     <code>c4192a45</code><br />
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832684">Quality</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832684"
+                      >Quality</a
+                    >
                     ·
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832675">E2E</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832675"
+                      >E2E</a
+                    >
                   </td>
                   <td>55초 / 53초</td>
                   <td>2분 33초 / 2분 30초</td>
@@ -625,23 +639,29 @@ git push</code></pre>
                   <td>3</td>
                   <td>
                     <code>8a6c4a66</code><br />
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806195">Quality</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806195"
+                      >Quality</a
+                    >
                     ·
-                    <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806199">E2E</a>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806199"
+                      >E2E</a
+                    >
                   </td>
                   <td>53초 / 50초</td>
                   <td>2분 10초 / 2분 7초</td>
                   <td>
-                    Q: test 9초 · lint 8초 · type 3초 · build 9초<br />E2E: browser 46초 · build 8초 ·
-                    실행 53초<br />pnpm cache hit/restored · 약 197MB
+                    Q: test 9초 · lint 8초 · type 3초 · build 9초<br />E2E: browser 46초 · build 8초
+                    · 실행 53초<br />pnpm cache hit/restored · 약 197MB
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p>
-            중앙값·범위: Quality workflow 55초(53–57초), job 53초(50–54초); E2E workflow
-            2분 33초(2분 10초–3분 4초), job 2분 24초(2분 7초–2분 30초)입니다.
+            중앙값·범위: Quality workflow 55초(53–57초), job 53초(50–54초); E2E workflow 2분
+            33초(2분 10초–3분 4초), job 2분 24초(2분 7초–2분 30초)입니다.
           </p>
         </section>
 
@@ -649,23 +669,126 @@ git push</code></pre>
           <p class="time">cold · 3회</p>
           <h2>02. 매번 캐시를 비우고 3회</h2>
           <p>아래 한 묶음을 3회 반복합니다. 회차마다 삭제가 필요합니다.</p>
-          <pre><code><span class="cm"># 1) 남아 있는 캐시를 ref까지 확인하고</span>
-gh cache list -R im-wen3y/loop-pack-fe-l2-vol1 --limit 100 \
-  --json id,key,ref,sizeInBytes,lastAccessedAt
+          <pre><code><span class="cm"># 1) 측정 문서 등 현재 변경을 임시 보관합니다</span>
+git stash push -m "cold 측정 문서 임시 보관"
+git status --short
 
-<span class="cm"># 2) ref 구분 없이 전부 지웁니다</span>
-gh cache delete --all -R im-wen3y/loop-pack-fe-l2-vol1
+<span class="cm"># 2) 저장소를 명시해 Actions 캐시를 전부 지웁니다</span>
+gh cache delete --all --repo im-wen3y/loop-pack-fe-l2-vol1
 
-<span class="cm"># 3) 빈 커밋으로 실행을 트리거합니다</span>
-git commit --allow-empty -m "chore(ci): Before cold 1회차"
-git push</code></pre>
+<span class="cm"># 3) 캐시 목록이 비었는지 확인합니다</span>
+gh cache list --repo im-wen3y/loop-pack-fe-l2-vol1
+
+<span class="cm"># 4) 빈 커밋을 만들고 push하여 실행합니다</span>
+git commit --allow-empty -m "chore(ci): Before cold 3회차"
+git push
+
+<span class="cm"># 5) 실행이 끝난 뒤 문서 변경을 복원합니다</span>
+git stash pop</code></pre>
+          <div class="callout">
+            <strong>기본 원격 저장소 오류가 나면</strong>
+            <p>
+              <code>No default remote repository has been set</code> 오류는
+              <code>--repo im-wen3y/loop-pack-fe-l2-vol1</code>로 저장소를 명시하면 해결됩니다.
+              기본값을 등록하려면 <code>gh repo set-default im-wen3y/loop-pack-fe-l2-vol1</code>을
+              한 번 실행합니다.
+            </p>
+          </div>
           <p>
             기록 항목은 warm과 같습니다. 다만 캐시 증거 칸에는 복원 문구 대신 캐시 미복원 문구를
             확인해 남깁니다.
           </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                완료된 Before cold 측정
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">회차</th>
+                  <th scope="col">커밋 / 실행</th>
+                  <th scope="col">Quality workflow / job</th>
+                  <th scope="col">E2E workflow / job</th>
+                  <th scope="col">캐시·최장 step</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>
+                    <code>b9e92f8f</code><br />
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468386"
+                      >Quality</a
+                    >
+                    ·
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468432"
+                      >E2E</a
+                    >
+                  </td>
+                  <td>50초 / 47초</td>
+                  <td>2분 6초 / 2분 3초</td>
+                  <td>
+                    Q: install 5초 · test 9초 · lint 7초 · type 3초 · build 7초<br />E2E: install
+                    5초 · browser 44초 · build 8초 · 실행 48초<br />pnpm cache miss
+                  </td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>
+                    <code>de540b8d</code><br />
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757239"
+                      >Quality</a
+                    >
+                    ·
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757278"
+                      >E2E</a
+                    >
+                  </td>
+                  <td>1분 6초 / 1분 3초</td>
+                  <td>2분 49초 / 2분 46초</td>
+                  <td>
+                    Q: install 6초 · test 12초 · lint 9초 · type 4초 · build 10초<br />E2E: install
+                    6초 · browser 1분 7초 · build 8초 · 실행 57초<br />pnpm·Next build cache miss
+                  </td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td>
+                    <code>6511cdc9</code><br />
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582676"
+                      >Quality</a
+                    >
+                    ·
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582659"
+                      >E2E</a
+                    >
+                  </td>
+                  <td>57초 / 53초</td>
+                  <td>2분 38초 / 2분 27초</td>
+                  <td>
+                    Q: install 6초 · test 8초 · lint 8초 · type 2초 · build 8초<br />E2E: install
+                    5초 · browser 52초 · build 8초 · 실행 1분 10초<br />pnpm·Next build cache miss
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            중앙값·범위: Quality workflow 57초(50초–1분 6초), job 53초(47초–1분 3초); E2E workflow
+            2분 38초(2분 6초–2분 49초), job 2분 27초(2분 3초–2분 46초)입니다.
+          </p>
           <div class="callout warning">
             <strong>현재 상태</strong>
-            <p>Cold 1·2·3회는 아직 실행하지 않았습니다. 각 회차의 run URL과 캐시 미복원 로그를 확인한 뒤 표에 추가합니다.</p>
+            <p>
+              Cold 3회를 완료했습니다. 반복 실행 명령은 After cold 측정에서도 같은 조건을 만들 때
+              사용합니다.
+            </p>
           </div>
         </section>
 
@@ -739,10 +862,14 @@ git push</code></pre>
               </tbody>
             </table>
           </div>
-          <p>6회를 마치면 다음을 정리합니다.</p>
+          <p>6회 측정 결과를 다음과 같이 정리했습니다.</p>
           <ul>
-            <li>warm 3개와 cold 3개 각각의 원본 값, 중앙값, 최소~최대 범위</li>
-            <li>step 시간을 근거로 지목한 가장 긴 구간</li>
+            <li>Quality workflow 중앙값: warm 55초, cold 57초. 두 조건의 범위가 겹칩니다.</li>
+            <li>E2E workflow 중앙값: warm 2분 33초, cold 2분 38초. 두 조건의 범위가 겹칩니다.</li>
+            <li>
+              가장 긴 구간은 <code>Run E2E tests</code>로 warm·cold 중앙값이 모두 57초입니다. 다음은
+              <code>Install Playwright browsers</code>로 warm 51초, cold 52초입니다.
+            </li>
             <li>
               Quality와 E2E가 병렬로 실행되므로 “전체 완료 시간”의 정의를 먼저 적습니다. 두 시간의
               합이 아니라 늦게 끝나는 쪽입니다.
@@ -756,15 +883,14 @@ git push</code></pre>
             </p>
           </div>
           <div class="done">
-            <strong>다음으로 넘어갈 기준</strong> — warm 3회와 cold 3회의 원본 값, 중앙값, 범위,
-            캐시 로그가 모두 기록됐고 가장 긴 구간을 로그 근거로 지목했다.
+            <strong>완료</strong> — warm 3회와 cold 3회의 원본 값, 중앙값, 범위, 캐시 로그를 모두
+            기록했고 가장 긴 구간을 로그 근거로 지목했습니다. 다음은 개선 전략을 정하고 같은
+            조건으로 After를 측정하는 단계입니다.
           </div>
         </section>
 
         <footer>
-          <p>
-            작성일 2026-09-10 · Before 측정 실행 순서 안내 · warm 3회 완료, cold 3회 대기
-          </p>
+          <p>작성일 2026-09-10 · Before 측정 실행 순서 안내 · warm 3회와 cold 3회 완료</p>
           <p>
             <a href="action-plan.html">10주차 진행표</a> ·
             <a href="checklist.md">10주차 체크리스트</a> ·

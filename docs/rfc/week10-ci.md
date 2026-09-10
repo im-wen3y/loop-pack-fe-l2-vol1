@@ -201,21 +201,23 @@ build 로그에서는 다음 시간을 확인했다.
 - Quality와 E2E job에 `timeout-minutes: 10`을 추가했다.
 - `pnpm verify` 결과 29개 파일의 164개 테스트, lint와 typecheck가 통과했다.
 - production build와 Playwright는 저장소의 런타임 검증 규칙에 따라 로컬에서 실행하지 않았다.
-- warm 1·2·3회차의 Quality/E2E Actions run URL과 커밋 SHA, workflow/job/주요 step 시간과
-  캐시 로그를 모두 기록했다. cold 3회는 아직 측정하지 않았다.
+- warm과 cold 각 3회차의 Quality/E2E Actions run URL과 커밋 SHA,
+  workflow/job/주요 step 시간과 캐시 로그를 모두 기록했다.
 
 ### 측정 기록
 
 #### Cold
 
-| 회차 | 커밋 / run URL | workflow 전체 | job | 주요 step | 캐시 증거 |
-| ---- | -------------- | ------------: | --: | --------- | --------- |
-| 1    | 미측정         |             - |   - | -         | -         |
-| 2    | 미측정         |             - |   - | -         | -         |
-| 3    | 미측정         |             - |   - | -         | -         |
+| 회차 | 커밋 / run URL                                                                                                                                                                                                                                                        |                   workflow 전체 |                             job | 주요 step                                                                                                                           | 캐시 증거                                                                                                                                    |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------: | ------------------------------: | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468386)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34442468432)<br>커밋 `b9e92f8ff29996cdb075c2afd36f66263512b1ba`                                   |     Quality 50초<br>E2E 2분 6초 |     Quality 47초<br>E2E 2분 3초 | Quality: install 5초, test 9초, lint 7초, typecheck 3초, build 7초<br>E2E: install 5초, browser 설치 44초, build 8초, E2E 48초      | Quality/E2E: `pnpm cache is not found`<br>E2E 후처리의 동일 키 저장은 Quality와의 동시 생성으로 충돌했으나 job은 성공                        |
+| 2    | [Quality job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757239/job/102763993670)<br>[E2E job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34443757278/job/102763993821)<br>커밋 `de540b8d435b3c452f38a096d1396fd76662105e` | Quality 1분 6초<br>E2E 2분 49초 | Quality 1분 3초<br>E2E 2분 46초 | Quality: install 6초, test 12초, lint 9초, typecheck 4초, build 10초<br>E2E: install 6초, browser 설치 1분 7초, build 8초, E2E 57초 | Quality/E2E: `pnpm cache is not found`, Next build cache miss<br>Quality가 동일 pnpm 키 저장, E2E 저장은 동시 생성으로 충돌했으나 job은 성공 |
+| 3    | [Quality job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582676/job/102766498626)<br>[E2E job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34444582659/job/102766498665)<br>커밋 `6511cdc91550e1a9045b1879ee8e9174d62f55de` |    Quality 57초<br>E2E 2분 38초 |    Quality 53초<br>E2E 2분 27초 | Quality: install 6초, test 8초, lint 8초, typecheck 2초, build 8초<br>E2E: install 5초, browser 설치 52초, build 8초, E2E 1분 10초  | Quality/E2E: `pnpm cache is not found`, Next build cache miss<br>Quality가 동일 pnpm 키 저장, E2E 저장은 동시 생성으로 충돌했으나 job은 성공 |
 
-- 중앙값: 미측정
-- 범위: 미측정
+- Quality workflow 중앙값: 57초, 범위 50초~1분 6초
+- Quality job 중앙값: 53초, 범위 47초~1분 3초
+- E2E workflow 중앙값: 2분 38초, 범위 2분 6초~2분 49초
+- E2E job 중앙값: 2분 27초, 범위 2분 3초~2분 46초
 
 #### Warm
 
@@ -234,8 +236,10 @@ build 로그에서는 다음 시간을 확인했다.
 
 ### 병목 판단
 
-Before cold·warm 측정을 마친 뒤 로그의 step 시간을 근거로 작성한다. 현재는 Quality의 불필요한
-Chromium 설치를 제거 후보로 확인했지만, 반복 측정 전이므로 최종 병목과 단축량을 확정하지 않는다.
+Before 반복 측정에서 가장 긴 구간은 E2E의 `Run E2E tests`였다. 중앙값은 warm 57초,
+cold 57초이며, 다음으로 긴 `Install Playwright browsers`는 warm 51초, cold 52초였다.
+pnpm 캐시 유무에 따른 install 시간 차이는 작았으며, Next build cache는 cold 3회 모두 miss였다.
+개선 전 측정이므로 실제 단축량은 After 측정 전까지 확정하지 않는다.
 
 ## After
 
