@@ -761,6 +761,29 @@ git push</code></pre>
               사용합니다.
             </p>
           </div>
+          <div class="callout" style="border-color: #a3457a; background: #fbeaf3; color: #6b2049">
+            <strong>검증 실험 결과 · 2026-09-10</strong>
+            <p>
+              lockfile 변경으로 캐시 키를 바꾼 별도 실험을 실행했습니다. 커밋
+              <code>91cabde2</code>에서 Quality와 E2E workflow를 확인했고, 실험 변경은 커밋
+              <code>8fe73a0b</code>에서 복구해 실험 전 상태와 동일합니다.
+            </p>
+            <p>
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947559"
+                >Quality run</a
+              >
+              ·
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947550"
+                >E2E run</a
+              >
+              · 상세 기록은 <a href="../rfc/week10-ci.md#캐시">RFC 캐시 검증</a>에 남깁니다.
+            </p>
+            <p>
+              Quality와 WebKit은 <code>pnpm cache is not found</code>(install 7초·6초)를 확인했지만,
+              Chromium은 다른 job이 저장한 동일 key를 복원해 hit(install 2초)가 됐습니다. 따라서 이
+              실험은 모든 job이 cold인 결과가 아니라 부분 cold로 분류합니다.
+            </p>
+          </div>
         </section>
 
         <section id="compare">

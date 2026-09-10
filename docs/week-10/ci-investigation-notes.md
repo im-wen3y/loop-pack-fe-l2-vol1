@@ -109,5 +109,9 @@ node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827
 cold 조건이 실제로 성립했는지 근거를 남기고, 그 뒤에 Before와 After의 중앙값·범위를 비교한다.
 로그를 확인하기 전까지 개선 여부를 확정하지 않는다.
 
+별도 lockfile 실험에서는 Quality와 WebKit이 `pnpm cache is not found`(install 7초·6초)를 보였고,
+Chromium은 다른 matrix job이 저장한 동일 key를 복원했다(install 2초). 따라서 실험 전체는 부분 cold로
+분류하며, matrix job 간 캐시 공유가 결과에 영향을 줄 수 있음을 기록한다.
+
 브라우저 설치 실패 재현 여부와 E2E 테스트 실패 여부는 계속 분리해 기록한다. 설치 step에서 끝난
 실행은 테스트 결과가 없는 환경 실패로 분류한다.

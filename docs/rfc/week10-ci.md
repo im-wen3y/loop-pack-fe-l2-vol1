@@ -282,12 +282,19 @@ Warm과 cold 모두 3회 측정을 완료했다. cold 2회차의 첫 시도는 �
 
 ## 캐시
 
-- warm 실행의 캐시 복원 로그: 미확인
-- 의도적인 캐시 miss 로그: 미확인
-- hit install 시간: 미측정
-- miss install 시간: 미측정
-- 캐시 키를 바꾸기 위해 사용한 lockfile 변경: 미실행
-- 실험 후 lockfile 복구: 미실행
+- warm 실행의 캐시 복원 로그: 기존 After 실행에서 확인한 증거를 회차별로 정리할 것
+- 의도적인 캐시 miss 로그: Quality와 WebKit에서 `pnpm cache is not found` 확인
+- hit install 시간: Chromium 2초
+- miss install 시간: Quality 7초, WebKit 6초
+- 캐시 키를 바꾸기 위해 사용한 lockfile 변경: 실행 완료(커밋 `91cabde25d6fc3144146541b354639b9a1c217e6`)
+- 실험 Quality run: https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947559
+- 실험 E2E run: https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947550
+- 실험 후 lockfile 복구: 완료(커밋 `8fe73a0b182bfa45c387f2982c4a4394da3cc60e`).
+  `git diff 91cabde2~1 HEAD -- pnpm-lock.yaml package.json`이 비어 있어 실험 전 상태와 동일하다.
+
+이번 실험은 matrix job이 동일한 새 cache key를 공유했다. 먼저 끝난 job이 캐시를 저장한 뒤
+Chromium job이 시작되어 Chromium에서는 `Cache restored successfully`가 나타났다. 따라서 세 job
+모두를 cold로 보지 않고, Quality·WebKit miss와 Chromium hit가 섞인 부분 cold 실험으로 분류한다.
 
 캐시 hit/miss의 원본 로그와 install 시간을 함께 기록한다. miss는 frozen install이 실패하는 손상이
 아니라 유효한 lockfile 변경으로 재현하고, 실험 변경은 측정 후 복구한다.
