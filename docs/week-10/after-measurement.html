@@ -677,10 +677,17 @@ pnpm verify</code></pre>
           <div class="callout">
             <strong>현재 진행 상태</strong>
             <p>
-              후보 A의 After warm 3회 측정을 완료했습니다. Quality workflow 중앙값은 57초, E2E
-              workflow 중앙값은 1분 46초이며, 느린 브라우저 job의 중앙값은 1분 37초입니다. 원본
-              URL·step 시간은 RFC에 기록했고, cold 3회와 캐시 로그 확인이 남아 있습니다.
+              후보 A의 After warm 3회와 cold 3회 측정을 완료했습니다. Warm Quality 중앙값은 57초,
+              E2E workflow 중앙값은 1분 46초이며, 느린 브라우저 job의 중앙값은 1분 37초입니다. Cold
+              Quality 중앙값은 1분 9초, E2E workflow 중앙값은 2분 20초이며, 느린 브라우저 job의
+              중앙값은 1분 42초입니다. 원본 URL·step 시간은 RFC에 기록했고, 첫 cold 2회차 시도는
+              캐시 hit로 제외했습니다. 캐시 로그 증거 확인과 Before/After 비교가 남아 있습니다.
             </p>
+          </div>
+          <div class="done">
+            <strong>03 단계 남은 것</strong> — 동일한 검증 범위에서 After warm·cold 각 3회의 원본
+            값과 중앙값·범위를 확보했습니다. cold 3회의 캐시 miss 로그 원문은 아직 확인하지 않아 이
+            단계를 완료로 표시하지 않습니다. 로그를 확인한 뒤 Before와 비교해 판정합니다.
           </div>
           <h3>Warm 3회</h3>
           <pre><code>git commit --allow-empty -m "chore(ci): After warm 1회차"
@@ -703,25 +710,34 @@ git push</code></pre>
           <div class="table-wrap">
             <table>
               <caption>
-                After 기록 칸 · 실제 값은 RFC에 입력
+                After 측정 결과 · 원본 URL과 step 시간은
+                <a href="../rfc/week10-ci.md#after">RFC After 기록</a
+                >에 보관
               </caption>
               <thead>
                 <tr>
                   <th scope="col">조건</th>
                   <th scope="col">회차</th>
-                  <th scope="col">기록할 것</th>
+                  <th scope="col">확인된 결과</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>warm</td>
-                  <td>1·2·3</td>
-                  <td>SHA, Quality/E2E URL, workflow/job/step 시간, cache hit</td>
+                  <td>1·2·3 완료</td>
+                  <td>
+                    Quality 중앙값 57초 · E2E workflow 중앙값 1분 46초 · 느린 job 중앙값 1분 37초<br />
+                    setup-node cache hit/restored 로그는 회차별 확인 필요
+                  </td>
                 </tr>
                 <tr>
                   <td>cold</td>
-                  <td>1·2·3</td>
-                  <td>SHA, Quality/E2E URL, workflow/job/step 시간, cache miss</td>
+                  <td>1·2·3 완료</td>
+                  <td>
+                    Quality 중앙값 1분 9초 · E2E workflow 중앙값 2분 20초 · 느린 job 중앙값 1분
+                    42초<br />
+                    첫 2회차 시도는 cache hit로 제외 · miss 로그 증거는 별도 확인 필요
+                  </td>
                 </tr>
               </tbody>
             </table>
