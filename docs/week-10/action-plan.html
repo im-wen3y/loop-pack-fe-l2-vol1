@@ -436,7 +436,8 @@
             <strong>현재 기준 workflow</strong>
             <p>
               Quality는 test · lint · typecheck · build를 별도 step으로 실행합니다. E2E는 Chromium과
-              WebKit matrix job에서 브라우저 설치, production build와 30개 테스트를 각각 실행합니다.
+              WebKit matrix job에서 브라우저 설치와 production build를 각각 수행하고, 변경 경로에
+              따라 선택된 Playwright spec을 실행합니다. 판별할 수 없는 변경은 전체 E2E로 보냅니다.
             </p>
           </div>
           <div class="callout warning">
@@ -449,9 +450,14 @@
             </p>
           </div>
           <p>
-            동시에 확인: branch protection 설정 권한, Actions 실행 가능 여부, 기존
-            Preview/Production URL, <a href="../week-07/measurement.md">7주차 측정 기록</a>의 JS
-            전송량 근거. 배포 자체는 채점 대상이 아니므로 새 배포 구성에 시간을 먼저 쓰지 않습니다.
+            branch protection 설정 권한과 Actions 실행 가능 여부를 확인했고,
+            <code>develop</code> 대상 <code>merge-required-ci</code> ruleset에 <code>quality</code>,
+            <code>Detect E2E scope</code>, <code>E2E (chromium)</code>, <code>E2E (webkit)</code>을
+            required로 등록했습니다. PR #12 Merge box에서 네 check의 Required 표시와 전체 통과도
+            확인했습니다. 기존 Preview/Production URL과
+            <a href="../week-07/measurement.md">7주차 측정 기록</a>의 JS 전송량 근거는 별도 확인
+            항목으로 남깁니다. 배포 자체는 채점 대상이 아니므로 새 배포 구성에 시간을 먼저 쓰지
+            않습니다.
           </p>
           <div class="done">
             <strong>다음으로 넘어갈 기준</strong> — 기준 커밋, 측정 대상 workflow, 시간을 재는
@@ -494,17 +500,17 @@
                 <tr>
                   <td>3</td>
                   <td>측정한 병목 개선</td>
-                  <td>대기</td>
+                  <td>완료</td>
                 </tr>
                 <tr>
                   <td>4</td>
                   <td>After 각각 3회 + 캐시 hit/miss</td>
-                  <td>대기</td>
+                  <td>완료</td>
                 </tr>
                 <tr>
                   <td>5</td>
                   <td>조건부 실행 + PR 두 개 검증</td>
-                  <td>대기</td>
+                  <td>진행 중</td>
                 </tr>
                 <tr>
                   <td>6</td>
@@ -860,11 +866,13 @@
             정리했습니다.
           </p>
           <div class="callout">
-            <strong>설정 권한부터 확인</strong>
+            <strong>설정 권한과 required ruleset 확인 완료</strong>
             <p>
-              branch protection과 merge queue 사용 가능 여부는 아직 확인되지 않았습니다. 실제 사용할
-              수 없는 merge queue를 안전 근거로 적지 마세요. 권한이 없으면 적용할 check 이름과
-              설정안을 준비하고 관리자 적용·확인이 남았다고 기록합니다.
+              PR 대상이 <code>develop</code>이므로 <code>merge-required-ci</code> ruleset을
+              <code>develop</code>에 적용했습니다. <code>quality</code>,
+              <code>Detect E2E scope</code>, <code>E2E (chromium)</code>,
+              <code>E2E (webkit)</code>을 required로 등록했고, PR #12 Merge box에서 네 check가 모두
+              Required·Success로 표시되는 것을 확인했습니다. merge queue는 사용하지 않습니다.
             </p>
           </div>
           <div class="callout" style="border-color: #a3457a; background: #fbeaf3; color: #6b2049">
@@ -882,8 +890,9 @@
             </p>
           </div>
           <div class="done">
-            <strong>완료 기준</strong> — PR 두 개의 증거, 스킵 안전 논리, required 충돌 확인, flaky
-            정책이 있다.
+            <strong>현재 상태</strong> — PR #12에서 실행 대상 변경의 전체 E2E와 4개 required check
+            표시를 확인했습니다. 문서-only PR의 무거운 step 생략·required 통과 로그와 flaky 정책은
+            아직 남아 있어 이 단계는 최종 완료로 표시하지 않습니다.
           </div>
         </section>
 

@@ -300,13 +300,32 @@ matrix 전략 자체에는 cold를 강제하는 옵션이 없다. 브라우저�
 
 ## 실행 조건
 
+### 브랜치 흐름과 PR 대상
+
+현재 fork의 `feat/week-10`에서 fork의 `develop`으로 PR을 올리고, `develop`을 통합 대상
+브랜치로 사용한다. fork의 `main`은 원본 저장소와 동기화할 때만 업데이트한다. 이렇게 하면
+작업 PR을 `main`에 직접 올릴 때 생길 수 있는 fork 브랜치 충돌을 피하면서, 실제 과제 변경은
+`develop`에서 검증하고 머지할 수 있다.
+
+```mermaid
+flowchart LR
+  upstream["원본 저장소 main"] -->|"fork 동기화"| forkMain["내 fork main<br/>동기화 업데이트만"]
+  forkMain -->|"작업 기준"| develop["내 fork develop<br/>PR 머지 대상"]
+  feature["feat/week-10"] -->|"Pull Request"| develop
+```
+
+- PR base: `develop`
+- `main`: fork 동기화용 업데이트만 수행
+- 기능·문서 변경: `feat/week-10` 등 작업 브랜치에서 `develop`으로 PR
+
 - 저비용 결정적 검증을 모든 PR에서 실행할지: 현재 Quality workflow를 그대로 유지
 - E2E 실행 조건: 경로 기반 분류를 사용하며, 로직 변경 시 결제·주문 E2E를 항상 실행
 - 스킵할 변경 범위: 문서와 CSS만 변경된 PR
 - 스킵이 안전한 이유: 문서·CSS-only는 브라우저 동작 로직을 변경하지 않는다는 경로 규칙
-- 조건에 걸려 E2E가 실행된 PR과 로그: workflow 구현 완료, 실제 PR 미검증
+- 조건에 걸려 E2E가 실행된 PR과 로그: PR #12에서 `all=true`, Chromium/WebKit 각 15개 통과
 - 조건에 걸리지 않아 E2E가 스킵된 PR과 로그: 미검증
-- required check와 조건부 실행의 충돌: workflow 구현 완료, 실제 PR 미확인
+- required check와 조건부 실행의 충돌: `develop` 대상 `merge-required-ci` ruleset 설정 완료,
+  PR #12 Merge box에서 네 check가 Required로 표시됨
 - flaky 대응 정책과 근거: 미결정
 
 ### Quality 조건 분리 보류 근거
@@ -325,7 +344,8 @@ E2E는 `paths-filter`로 변경 경로를 분류하는 방향을 선택했고 `.
 로직 변경 시 Chromium과 WebKit에서
 결제·주문 E2E를 공통 필수 검사로 실행하고, 인증·장바구니·위시리스트·상품 영역의 변경에는 해당
 기능 E2E를 추가한다. 공통 로직이나 설정 변경은 전체 E2E를 실행한다. 이 정책의 실제 workflow
-구현은 완료했지만, required 배치와 flaky 정책 및 문서-only·로직 변경 PR의 실제 로그 확인은 아직 남아 있다.
+구현과 required 배치, 로직·설정 변경이 포함된 PR의 전체 실행 로그는 확인했다. 문서-only PR의
+생략 로그와 flaky 정책은 아직 남아 있다.
 
 ## 예산
 

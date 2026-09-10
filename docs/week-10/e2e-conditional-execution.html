@@ -226,6 +226,14 @@
         border: 0;
         background: none;
       }
+      .mermaid {
+        overflow-x: auto;
+        margin: 1.2rem 0;
+        padding: 1.2rem;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
       footer {
         color: var(--muted);
       }
@@ -279,6 +287,7 @@
           <li><a href="#signals">판별 신호</a></li>
           <li><a href="#mapping">변경 범위 매핑</a></li>
           <li><a href="#flow">실행 흐름</a></li>
+          <li><a href="#branches">브랜치 흐름</a></li>
           <li><a href="#required">required와 생략</a></li>
           <li><a href="#steps">구현 순서</a></li>
           <li><a href="#verify">검증 계획</a></li>
@@ -293,11 +302,12 @@
             판단할 수 없는 변경이나 판별 실패는 생략하지 않고 전체 E2E로 보낸다.
           </p>
           <div class="callout" style="border-color: #7255a5; background: #eee7fa; color: #3e2d5e">
-            <strong>현재 상태 · workflow 구현 완료, 로컬 조합 검증 완료</strong>
+            <strong>현재 상태 · PR 실행·required 확인 완료, 문서-only 생략 검증 대기</strong>
             <p>
               변경 감지 job과 조건부 테스트 선택을 workflow에 반영했고, 필수 결제·주문 조합과 인증
               조합을 로컬 Chromium·WebKit에서 통과시켰다. 실제 PR의 경로 분류·step 생략·required
-              check 상태를 확인해야 최종 완료로 판정한다.
+              check 상태 중 현재 PR 실행과 required 표시는 확인했으며, 문서-only PR의 step 생략만
+              남아 있다.
             </p>
           </div>
         </header>
@@ -440,6 +450,22 @@
         <section id="flow" class="step">
           <p class="time">04 · 실행 흐름</p>
           <h2>matrix는 유지하고 테스트 선택만 바꾼다</h2>
+          <h3 id="branches">브랜치와 PR 대상</h3>
+          <p>
+            현재 작업은 fork의 <code>feat/week-10</code>에서 fork의 <code>develop</code>으로 PR을
+            올린다. fork의 <code>main</code>은 원본과 동기화할 때만 업데이트해 브랜치 충돌을 피하고,
+            과제 변경을 직접 머지하는 대상 브랜치로 사용하지 않는다.
+          </p>
+          <pre class="mermaid" aria-label="fork main 동기화와 develop PR 흐름">
+flowchart LR
+  upstream["원본 저장소 main"] -->|"fork 동기화"| forkMain["내 fork main<br/>동기화 업데이트만"]
+  forkMain -->|"작업 기준"| develop["내 fork develop<br/>PR 머지 대상"]
+  feature["feat/week-10"] -->|"Pull Request"| develop
+  classDef sync fill:#e3eff8,stroke:#2f6f9e,color:#1f4a6b
+  classDef target fill:#d7eee8,stroke:#056354,color:#17483f
+  class forkMain sync
+  class develop target
+</pre>
           <pre><code>PR
   └─ changes
        ├─ 변경 경로 분류
@@ -499,7 +525,8 @@
             </table>
           </div>
           <p>
-            실제 branch protection 설정이 이 결론과 맞는지는 구현 후 PR에서 확인한다. 판별 실패를
+            `develop`의 `merge-required-ci` ruleset과 네 required check는 PR #12에서 확인했다.
+            문서-only PR에서도 job 자체는 생성되고 무거운 step만 생략되는지 확인한다. 판별 실패를
             성공으로 처리하는 우회 경로는 만들지 않는다.
           </p>
         </section>
@@ -522,8 +549,28 @@
             <strong>남은 검증 항목</strong>
             <p>
               <a href="../../.github/workflows/e2e.yml">e2e.yml</a>에 <code>changes</code> job과
-              조건부 테스트 선택을 추가했다. 문서-only PR, 로직 변경 PR, fixture·설정 변경 PR을 각각
-              실행해 실제 job·step 상태와 required check 동작을 확인해야 한다.
+              조건부 테스트 선택을 추가했다. 로직·fixture·설정 변경이 포함된 PR의 전체 실행과
+              `develop` required ruleset은 확인했다. 이제 문서-only PR을 실행해 실제 job·step 생략과
+              required 통과를 확인한다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #7255a5; background: #eee7fa; color: #3e2d5e">
+            <strong>업데이트 계획 · 문서-only 검증 브랜치</strong>
+            <p>
+              <code>develop</code> 머지가 어려운 경우, 현재 workflow가 반영된
+              <code>feat/week-10</code>에서 <code>feat/week-10-docs-only</code>를 새로 만든다. 새
+              브랜치에서는 <code>docs/week-10/</code> 아래 문서만 작게 수정하고, PR의 base를
+              <code>feat/week-10</code>으로 지정해 diff를 문서-only로 만든다.
+            </p>
+            <ul>
+              <li><code>Detect E2E scope</code>: <code>run_e2e=false</code></li>
+              <li>Chromium·WebKit job은 생성되고 install·browser install·build·test는 Skipped</li>
+              <li>Quality는 기존대로 실행</li>
+            </ul>
+            <p>
+              이 PR의 base가 <code>develop</code>이 아니므로 네 check가 Required로 표시되지 않을 수
+              있다. 생략 동작은 이 PR에서 검증하고, required 표시는 <code>develop</code> 대상 PR #12
+              증거를 사용한다.
             </p>
           </div>
         </section>
@@ -621,13 +668,23 @@
                 </tr>
                 <tr>
                   <td>03 · 커밋·push</td>
-                  <td>대기</td>
-                  <td>staged 파일 확인 후 커밋하고 원격 브랜치에 push함</td>
+                  <td>완료</td>
+                  <td>커밋·push 완료. SHA와 PR workflow URL을 기록함</td>
                 </tr>
                 <tr>
-                  <td>04 · PR workflow 검증</td>
+                  <td>04 · PR workflow 기본 실행</td>
+                  <td>완료</td>
+                  <td>changes 성공과 두 browser의 전체 실행·통과를 확인함</td>
+                </tr>
+                <tr>
+                  <td>05 · required ruleset·PR 표시</td>
+                  <td>완료</td>
+                  <td>develop ruleset과 PR Merge box에서 4개 required check를 확인함</td>
+                </tr>
+                <tr>
+                  <td>06 · 문서-only E2E 생략</td>
                   <td>대기</td>
-                  <td>changes 출력, browser별 실행·생략, required 상태를 기록함</td>
+                  <td>별도 문서-only PR에서 무거운 step 생략과 required 통과를 확인함</td>
                 </tr>
               </tbody>
             </table>
@@ -641,7 +698,74 @@
               <li><code>docs/week-10/action-plan.html</code> · 변경</li>
               <li><code>docs/week-10/e2e-conditional-execution.html</code> · 새 파일</li>
             </ul>
-            <p>판정: 위 4개 파일 외의 변경은 확인되지 않았으며, 아직 stage·커밋·push하지 않았다.</p>
+            <p>판정: 위 4개 파일 외의 변경은 확인되지 않았다.</p>
+          </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 03 커밋·push 완료</strong>
+            <p>2026-09-10 · 사용자가 커밋과 원격 브랜치 push를 완료했다.</p>
+            <p>커밋 SHA와 PR workflow URL을 문서에 기록했고 04단계에서 Actions 결과를 확인했다.</p>
+          </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 04 PR workflow 기본 실행 완료</strong>
+            <p>PR #12 · 커밋 <code>2be0c27b5a96bc70bb5a6c931088ab6a64a16f27</code> · 2026-09-10</p>
+            <ul>
+              <li>
+                E2E workflow:
+                <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34485921731"
+                  >34485921731</a
+                >
+                · 전체 2분 25초
+              </li>
+              <li>
+                Quality workflow:
+                <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34485921733"
+                  >34485921733</a
+                >
+                · 전체 1분 8초 · quality job 1분 4초
+              </li>
+              <li>scope: <code>run_e2e=true</code> · <code>all=true</code> · tests=all</li>
+              <li>Chromium: 15 passed · 24.0초 · job 1분 26초</li>
+              <li>WebKit: 15 passed · 39.0초 · job 2분 12초</li>
+              <li>
+                changes 결과: docs/auth/fixtures/config/logic/unknown이 감지됐고, 현재 PR에는
+                설정·fixture 변경이 포함되어 전체 실행으로 판정됨
+              </li>
+            </ul>
+            <p>
+              판정: 이 PR에서 전체 실행과 두 browser의 성공을 확인했다. 문서-only 변경에서 무거운
+              step을 생략하는 동작만 별도 PR에서 확인한다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 05 develop required ruleset 설정 완료</strong>
+            <p>2026-09-10 · ruleset <code>merge-required-ci</code>를 저장했다.</p>
+            <ul>
+              <li>대상 브랜치: <code>develop</code></li>
+              <li>Require a pull request before merging: 활성화</li>
+              <li>Require status checks to pass: 활성화</li>
+              <li>
+                Required checks: <code>quality</code>, <code>Detect E2E scope</code>,
+                <code>E2E (chromium)</code>, <code>E2E (webkit)</code>
+              </li>
+              <li>Require branches to be up to date: 해제</li>
+            </ul>
+            <p>
+              판정: develop에 required ruleset이 적용됐고, PR #12 Merge box에서 네 check가 실제로
+              required로 표시되는 것을 확인했다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #056354; background: #d7eee8; color: #17483f">
+            <strong>검증 로그 · 05 PR required 표시 확인 완료</strong>
+            <p>2026-09-10 · PR #12 Merge box에서 4개 check가 모두 Required로 표시됐다.</p>
+            <ul>
+              <li>E2E / Detect E2E scope · Required · 5초</li>
+              <li>E2E / E2E (chromium) · Required · 1분</li>
+              <li>E2E / E2E (webkit) · Required · 2분</li>
+              <li>Quality / quality · Required · 1분</li>
+            </ul>
+            <p>
+              Merge box에는 `All checks have passed`와 `No conflicts with base branch`가 표시됐다.
+            </p>
           </div>
           <h3>직접 따라 하는 실행 순서</h3>
           <ol>
@@ -739,11 +863,11 @@ git push</code></pre>
             <li>required check가 성공·실패·대기로 표시됐는지</li>
           </ul>
           <div class="callout">
-            <strong>검증 전에는 구현 완료로 표시하지 않는다</strong>
+            <strong>문서-only 생략 검증 전에는 최종 완료로 표시하지 않는다</strong>
             <p>
-              로컬 Playwright 통과는 선택된 테스트 명령과 앱 동작을 확인한 것이다. PR의 경로 분류,
-              matrix step 생략, required check 상태가 확인되기 전까지는 문서 상태를
-              <code>PR 검증 전</code>으로 유지한다.
+              로컬 Playwright 통과와 PR #12의 전체 실행·required 표시는 확인했다. 문서-only PR의
+              경로 분류와 matrix step 생략이 확인되기 전까지는 문서 상태를
+              <code>문서-only PR 검증 대기</code>로 유지한다.
             </p>
           </div>
           <div class="done">
@@ -760,5 +884,10 @@ git push</code></pre>
         </footer>
       </main>
     </div>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+
+      mermaid.initialize({ startOnLoad: true, securityLevel: 'strict' })
+    </script>
   </body>
 </html>
