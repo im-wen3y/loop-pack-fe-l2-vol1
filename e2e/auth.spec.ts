@@ -9,7 +9,7 @@ import { accountForProjectSlot, TEST_PASSWORD } from './fixtures/test-accounts'
  * 범위와 단언은 docs/rfc/week09-e2e-scope.md의 「4단계 경계」에서 정했다.
  */
 test.describe('인증 플로우', () => {
-  test('미로그인으로 보호 경로에 들어가면 로그인 후 원래 경로로 돌아온다', async ({
+  test('미로그인 보호 경로는 로그인 후 원래 경로로 돌아온다', async ({
     page,
     browser,
   }, testInfo) => {
