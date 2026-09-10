@@ -189,8 +189,8 @@ build 로그에서는 다음 시간을 확인했다.
 - [x] Quality의 test, lint, typecheck와 build를 각각 별도 step으로 나눈다
 - [x] Quality와 E2E job에 `timeout-minutes: 10`을 추가한다
 - [x] 네 검증이 기존 `pnpm check`와 동일하게 유지되는지 대조한다
-- [ ] 기준 커밋과 Actions run URL을 기록한다
-- [ ] cold와 warm을 만드는 방법과 캐시 복원 로그의 확인 위치를 정한다
+- [x] 기준 커밋과 Actions run URL을 기록한다
+- [x] cold와 warm을 만드는 방법과 캐시 복원 로그의 확인 위치를 정한다
 - [x] workflow 전체, job, 주요 step 시간을 기록할 표를 준비한다
 
 ### 기준 workflow 변경 이력
@@ -201,7 +201,8 @@ build 로그에서는 다음 시간을 확인했다.
 - Quality와 E2E job에 `timeout-minutes: 10`을 추가했다.
 - `pnpm verify` 결과 29개 파일의 164개 테스트, lint와 typecheck가 통과했다.
 - production build와 Playwright는 저장소의 런타임 검증 규칙에 따라 로컬에서 실행하지 않았다.
-- 기준 커밋과 Actions run은 작성자가 직접 기록할 예정이므로 아직 완료하지 않았다.
+- warm 1·2·3회차의 Quality/E2E Actions run URL과 커밋 SHA, workflow/job/주요 step 시간과
+  캐시 로그를 모두 기록했다. cold 3회는 아직 측정하지 않았다.
 
 ### 측정 기록
 
@@ -218,14 +219,18 @@ build 로그에서는 다음 시간을 확인했다.
 
 #### Warm
 
-| 회차 | 커밋 / run URL | workflow 전체 | job | 주요 step | 캐시 증거 |
-| ---- | -------------- | ------------: | --: | --------- | --------- |
-| 1    | 미측정         |             - |   - | -         | -         |
-| 2    | 미측정         |             - |   - | -         | -         |
-| 3    | 미측정         |             - |   - | -         | -         |
+| 회차 | 커밋 / run URL                                                                                                                                                                                                                                                        |                workflow 전체 |                          job | 주요 step                                                                                                   | 캐시 증거                                                                                                                                |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------: | ---------------------------: | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [Quality job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626221/job/102591140674)<br>[E2E job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34388626456/job/102591141913)<br>커밋 `1c4d8e2ac4169022285e56f944ce492b42bc7625` |  Quality 57초<br>E2E 3분 4초 | Quality 54초<br>E2E 2분 24초 | Quality: test 11초, lint 10초, typecheck 3초, build 11초<br>E2E: browser 설치 51초, build 12초, E2E 57초    | pnpm cache hit/restored<br>key: `node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827e2819d41f9`<br>약 197MB |
+| 2    | [Quality job](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832684/job/102595119971)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34389832675)<br>커밋 `c4192a458aa3e9dfa187eec53bbca1763211645f`                  | Quality 55초<br>E2E 2분 33초 | Quality 53초<br>E2E 2분 30초 | Quality: test 11초, lint 10초, typecheck 3초, build 11초<br>E2E: browser 설치 57초, build 10초, E2E 1분 5초 | pnpm cache hit/restored<br>key: `node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827e2819d41f9`<br>약 197MB |
+| 3    | [Quality run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806195)<br>[E2E run](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34390806199)<br>커밋 `8a6c4a6658176e4487cbe4eb1a4dc0cbd638d7db`                                   | Quality 53초<br>E2E 2분 10초 |  Quality 50초<br>E2E 2분 7초 | Quality: test 9초, lint 8초, typecheck 3초, build 9초<br>E2E: browser 설치 46초, build 8초, E2E 53초        | Quality/E2E: pnpm cache hit/restored, key 동일, 약 197MB                                                                                 |
 
-- 중앙값: 미측정
-- 범위: 미측정
+- 원본 값: Quality/E2E warm 3회 모두 기록 완료
+- Quality workflow 중앙값: 55초, 범위 53~57초
+- Quality job 중앙값: 53초, 범위 50~54초
+- E2E workflow 중앙값: 2분 33초, 범위 2분 10초~3분 4초
+- E2E job 중앙값: 2분 24초, 범위 2분 7초~2분 30초
+- 러너: Quality `eastus`, E2E `westcentralus`; 둘 다 Ubuntu 24.04.4 / `ubuntu-24.04` / image `20260831.293.1`
 
 ### 병목 판단
 
