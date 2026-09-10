@@ -329,7 +329,10 @@ flowchart LR
   두 browser job은 Success로 종료
 - required check와 조건부 실행의 충돌: `develop` 대상 `merge-required-ci` ruleset 설정 완료,
   PR #12 Merge box에서 네 check가 Required로 표시됨
-- flaky 대응 정책과 근거: 미결정. 판단에 쓸 실제 사례는 아래 「관찰된 flaky 사례」에 기록했다
+- flaky 대응 정책과 근거: CI에서만 재시도 2회를 켜고, 실패·flaky 실행의 Playwright trace를
+  아티팩트로 올린다. 재시도는 실패를 감추려는 것이 아니라 흔들림과 진짜 실패를 구분하려는
+  것이며, 최초 실패 로그와 trace가 남아야 그 구분이 가능하기 때문이다. 아래
+  「flaky 대응 정책」 참고
 
 ### Quality 조건 분리 보류 근거
 
@@ -348,7 +351,7 @@ E2E는 `paths-filter`로 변경 경로를 분류하는 방향을 선택했고 `.
 결제·주문 E2E를 공통 필수 검사로 실행하고, 인증·장바구니·위시리스트·상품 영역의 변경에는 해당
 기능 E2E를 추가한다. 공통 로직이나 설정 변경은 전체 E2E를 실행한다. 이 정책의 실제 workflow
 구현과 required 배치, 로직·설정 변경이 포함된 PR의 전체 실행 로그는 확인했다. 문서-only PR의
-생략 로그도 2026-09-11 PR #13에서 확보했다. flaky 정책은 아직 결정하지 않았다.
+생략 로그도 2026-09-11 PR #13에서 확보했다. flaky 정책은 아래에 정리했다.
 
 ### 감지 실패와 step 실패의 분리 검증
 
@@ -377,8 +380,48 @@ PR #17의 fallback 실행에서 Chromium만 15개 중 14개 통과로 끝났다.
 
 같은 실행의 WebKit은 15개 모두 통과했고, 같은 spec이 PR #16에서는 두 브라우저 모두 통과했다.
 같은 코드가 실행마다 다른 결과를 냈으므로 flaky 신호로 분류한다. workflow 수정과는 무관하며
-fallback은 의도대로 전체 실행을 트리거했다. retry 채택 여부와 최초 실패 보존 조건은 작성자가
-결정한다.
+fallback은 의도대로 전체 실행을 트리거했다.
+
+이 실패를 조사하면서 원인을 사후에 확인할 수 없다는 문제가 함께 드러났다. `trace`는
+`retain-on-failure`로 만들어지지만 job이 끝나면 사라졌고, `retries`도 설정되어 있지 않았다.
+흔들림과 진짜 실패를 구분할 재료가 하나도 남지 않는 상태였다.
+
+### flaky 대응 정책
+
+먼저 재료를 남기고, 실패 메시지가 원인을 말하게 한 뒤, 마지막에 재시도를 켰다. 재료가 없는
+상태에서 재시도부터 켜면 실패를 구분하는 것이 아니라 감추는 쪽이 되기 때문이다.
+
+1. **증거 보존** — 테스트가 실행된 job은 `test-results/`를 아티팩트로 올린다(보관 7일).
+   조건은 `steps.e2e.conclusion != 'skipped'`다. 전부 통과하면 `retain-on-failure`가 trace를
+   지워 디렉터리가 비므로 `if-no-files-found: ignore`로 아티팩트를 만들지 않는다.
+2. **실패 메시지** — 상품 목록은 갱신 실패 시 이전 결과를 유지하고 배너만 띄우므로, 개수 단언이
+   "로딩 중"과 "갱신 실패"를 구분하지 못했다. `e2e/fixtures/product-list-assertions.ts`의
+   `expectProductCount`가 배너 상태를 실패 메시지에 담는다.
+3. **재시도** — `retries: process.env.CI ? 2 : 0`. 로컬은 0으로 두어 흔들림을 즉시 보고,
+   CI에서만 2회 재시도한다. 재시도로 통과하면 Playwright가 `flaky`로 보고하고 최초 실패
+   메시지도 리포트에 남는다.
+
+반복 실패는 재시도로 덮지 않는다. 같은 spec이 계속 flaky로 남으면 trace를 근거로 원인을
+고치거나 격리 여부를 판단한다.
+
+#### 정책 자가 검증 — PR #19
+
+`testInfo.retry === 0`일 때만 실패하는 테스트로 flaky를 결정적으로 재현했다. 두 브라우저 모두
+같은 결과였다.
+
+| 확인 항목          | 결과                                                                             |
+| ------------------ | -------------------------------------------------------------------------------- |
+| 재시도 동작        | 첫 시도 실패 → `retry #1` 통과 → `1 flaky` 표기, job은 성공                      |
+| 아티팩트 업로드    | `playwright-chromium-attempt1`(2.42MB), `playwright-webkit-attempt1`(2.25MB)     |
+| 첫 실패 trace 보존 | 아티팩트에 `trace.zip`(64 files)과 `error-context.md`가 있고 최초 실패 사유 포함 |
+
+첫 시도에서는 업로드 조건을 `steps.e2e.conclusion == 'failure'`로 두어 아티팩트가 0개였다.
+재시도로 통과한 flaky는 step이 `success`라 조건에 걸리지 않았고, 정작 필요한 첫 실패 trace가
+버려졌다. 조건을 `!= 'skipped'`로 고친 뒤 위 결과를 얻었다. 정상 실패는 잡고 flaky만 놓치는
+형태였으므로 실제 flaky가 날 때까지 드러나지 않았을 결함이다.
+
+`retain-on-failure`는 재시도로 통과해도 첫 실패 시도의 trace를 지우지 않는다는 것도 함께
+확인했다. `trace: 'on-first-retry'`로 바꿀 필요는 없다.
 
 ## 예산
 
