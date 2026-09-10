@@ -1,22 +1,24 @@
 # Week 10 CI 조사 기록
 
-이 문서는 최종 RFC에 모두 담기 어려운 브라우저 설치 실패 이력과 대응 결과를 보관한다.
+이 문서는 멘토 제출용이 아닌 내부 조사 기록이다. 최종 RFC에 모두 담기 어려운 브라우저 설치 실패
+이력과 대응 결과를 보관한다.
 측정 조건과 Before 수치의 기준 문서는 [week10-ci.md](../rfc/week10-ci.md)다.
 
 ## 현재 최종 상태
 
 2026-09-10 기준 workflow는 다음 상태로 고정되어 있다.
 
-| workflow      | 검증 순서                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------- |
-| `quality.yml` | `pnpm test` → `pnpm lint` → `pnpm typecheck` → `pnpm build`                                             |
-| `e2e.yml`     | `pnpm exec playwright install --with-deps chromium webkit` → `pnpm build` → `pnpm exec playwright test` |
+| workflow      | 검증 순서                                                                                                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality.yml` | `pnpm test` → `pnpm lint` → `pnpm typecheck` → `pnpm build`                                                                                                                  |
+| `e2e.yml`     | matrix(`chromium`, `webkit`)별 `pnpm exec playwright install --with-deps ${{ matrix.browser }}` → `pnpm build` → `pnpm exec playwright test --project=${{ matrix.browser }}` |
 
 - 두 job 모두 `ubuntu-latest`, `timeout-minutes: 10`, Node `24.17.0`, pnpm `10.15.1`을 사용한다.
 - Quality에는 Playwright 브라우저 설치를 두지 않는다. `pnpm check`는 E2E를 실행하지 않기 때문이다.
 - E2E에는 Chromium과 WebKit 실행에 필요한 OS 의존성을 포함해 설치한다.
 - Google Chrome apt source를 삭제하거나 수정하는 별도 step은 최종 workflow에 포함하지 않는다.
-- 기준 workflow 커밋은 `9859a7c6`이며, 측정 회차는 같은 파일 내용에서 빈 커밋으로 실행했다.
+- Before 기준 workflow 커밋은 `9859a7c6`이며, After에서는 후보 A의 matrix 변경이 포함된 최종
+  workflow를 고정한 뒤 빈 커밋으로 반복 측정했다.
 
 ## 브라우저 설치 실패 이력
 
@@ -105,9 +107,9 @@ node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827
 - After cold 2회 재측정: 완료(커밋 `e3cd5e23a1f7846bab48643490f98a6fc1bce44e`)
 - After cold 3회: 완료(커밋 `33737f611b6e53b7ad15b4b49460450896ca6c23`)
 
-12회 실행은 모두 마쳤다. 남은 것은 판단이다. After cold 3회의 캐시 miss 로그 원문을 확인해
-cold 조건이 실제로 성립했는지 근거를 남기고, 그 뒤에 Before와 After의 중앙값·범위를 비교한다.
-로그를 확인하기 전까지 개선 여부를 확정하지 않는다.
+12회 실행과 별도 cache 실험을 마쳤다. After cold 반복값은 확보했지만 matrix job 간 key 공유로
+실험 일부가 hit가 된 한계를 남겼다. Before와 After의 중앙값·범위 비교 및 후보별 최종 판단은 RFC에
+기록했다.
 
 별도 lockfile 실험에서는 Quality와 WebKit이 `pnpm cache is not found`(install 7초·6초)를 보였고,
 Chromium은 다른 matrix job이 저장한 동일 key를 복원했다(install 2초). 따라서 실험 전체는 부분 cold로
