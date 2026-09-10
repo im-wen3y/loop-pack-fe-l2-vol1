@@ -322,11 +322,14 @@ flowchart LR
 - E2E 실행 조건: 경로 기반 분류를 사용하며, 로직 변경 시 결제·주문 E2E를 항상 실행
 - 스킵할 변경 범위: 문서와 CSS만 변경된 PR
 - 스킵이 안전한 이유: 문서·CSS-only는 브라우저 동작 로직을 변경하지 않는다는 경로 규칙
-- 조건에 걸려 E2E가 실행된 PR과 로그: PR #12에서 `all=true`, Chromium/WebKit 각 15개 통과
-- 조건에 걸리지 않아 E2E가 스킵된 PR과 로그: 미검증
+- 조건에 걸려 E2E가 실행된 PR과 로그: PR #12에서 `all=true`, Chromium/WebKit 각 15개 통과.
+  2026-09-11 PR #14(order 1개), #15(auth 계열 5개), #16(unknown 15개)에서 범위별 실행 확인
+- 조건에 걸리지 않아 E2E가 스킵된 PR과 로그: 2026-09-11 PR #13(문서-only)에서
+  `scope result: all=false, run_e2e=false, tests=(skipped)`와 Checkout 이후 7개 step Skipped 확인.
+  두 browser job은 Success로 종료
 - required check와 조건부 실행의 충돌: `develop` 대상 `merge-required-ci` ruleset 설정 완료,
   PR #12 Merge box에서 네 check가 Required로 표시됨
-- flaky 대응 정책과 근거: 미결정
+- flaky 대응 정책과 근거: 미결정. 판단에 쓸 실제 사례는 아래 「관찰된 flaky 사례」에 기록했다
 
 ### Quality 조건 분리 보류 근거
 
@@ -345,7 +348,37 @@ E2E는 `paths-filter`로 변경 경로를 분류하는 방향을 선택했고 `.
 결제·주문 E2E를 공통 필수 검사로 실행하고, 인증·장바구니·위시리스트·상품 영역의 변경에는 해당
 기능 E2E를 추가한다. 공통 로직이나 설정 변경은 전체 E2E를 실행한다. 이 정책의 실제 workflow
 구현과 required 배치, 로직·설정 변경이 포함된 PR의 전체 실행 로그는 확인했다. 문서-only PR의
-생략 로그와 flaky 정책은 아직 남아 있다.
+생략 로그도 2026-09-11 PR #13에서 확보했다. flaky 정책은 아직 결정하지 않았다.
+
+### 감지 실패와 step 실패의 분리 검증
+
+2026-09-11에 버리는 브랜치 두 개로 실패 경로를 확인했다. 두 PR은 머지하지 않는다.
+
+| PR  | 깨뜨린 지점                             | 결과                                                                                                    |
+| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| #17 | `Detect changed paths`의 `filters` YAML | `Detect E2E scope` failure → `E2E fallback:` 로그와 `all=true, run_e2e=true, tests=all`, 15개 전체 실행 |
+| #18 | `Checkout`의 존재하지 않는 `ref`        | `Checkout` failure → 이후 6개 step Skipped, 두 browser job이 각각 독립 Failure                          |
+
+감지 실패는 전체 실행으로 복구되고, 실행 중간 실패는 후속 step을 중단시킨다. 두 동작이 서로를
+덮어쓰지 않는다는 것을 실행 로그로 확인했다. 상세 로그와 판정 근거는
+[E2E 조건부 실행 문서](../week-10/e2e-conditional-execution.html)의 04-C 절에 있다.
+
+### 관찰된 flaky 사례
+
+PR #17의 fallback 실행에서 Chromium만 15개 중 14개 통과로 끝났다.
+
+```text
+✘ [chromium] e2e/state-restoration.spec.ts:110
+  debounce가 끝난 검색어는 뒤로·앞으로 이동에서 검색 결과와 함께 복원된다 (12.5s)
+  Error: expect(locator).toBeVisible() failed
+  > 118 | await expect(page.getByText('총 4개', { exact: true })).toBeVisible()
+  Timeout: 10000ms · element(s) not found
+```
+
+같은 실행의 WebKit은 15개 모두 통과했고, 같은 spec이 PR #16에서는 두 브라우저 모두 통과했다.
+같은 코드가 실행마다 다른 결과를 냈으므로 flaky 신호로 분류한다. workflow 수정과는 무관하며
+fallback은 의도대로 전체 실행을 트리거했다. retry 채택 여부와 최초 실패 보존 조건은 작성자가
+결정한다.
 
 ## 예산
 

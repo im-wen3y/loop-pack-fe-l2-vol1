@@ -292,6 +292,7 @@
           <li><a href="#flow">실행 흐름</a></li>
           <li><a href="#fallback-fix">fallback 수정 계획</a></li>
           <li><a href="#fallback-impl">fallback 구현 결과</a></li>
+          <li><a href="#actions-verify">Actions 검증 결과</a></li>
           <li><a href="#branches">브랜치 흐름</a></li>
           <li><a href="#required">required와 생략</a></li>
           <li><a href="#steps">구현 순서</a></li>
@@ -876,6 +877,159 @@ flowchart TD
                 되는지.
               </li>
             </ul>
+          </div>
+          <div class="callout cold">
+            <strong>이후 상태</strong>
+            <p>
+              위 네 항목은 2026-09-11 Actions 실행으로 모두 확인했다. 결과는 아래
+              <a href="#actions-verify">04-C Actions 검증 결과</a>에 있다. 위 목록은 당시 판단
+              기록으로 그대로 둔다.
+            </p>
+          </div>
+        </section>
+
+        <section id="actions-verify" class="step">
+          <p class="time">04-C · Actions 검증 결과 · 2026-09-11</p>
+          <h2>PR 6개로 정상 분류 네 가지와 실패 경로 두 가지를 확인했다</h2>
+          <p>
+            base 브랜치 <code>feat/week-10</code>에 수정을 반영한 뒤 각 PR 브랜치에 병합해
+            재실행했다. <code>pull_request</code>는 PR 브랜치 쪽 workflow 파일로 실행되므로, base만
+            갱신해서는 옛 workflow가 그대로 돈다.
+          </p>
+
+          <h3>정상 분류 네 가지</h3>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                PR #13–#16 · 로컬 예측값과 실제 로그가 모두 일치
+              </caption>
+              <thead>
+                <tr>
+                  <th>PR</th>
+                  <th>변경 파일</th>
+                  <th>scope result</th>
+                  <th>실행 테스트</th>
+                  <th>E2E job</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#13 docs-only</td>
+                  <td><code>docs/week-10/e2e-conditional-execution.html</code></td>
+                  <td><code>all=false, run_e2e=false, tests=(skipped)</code></td>
+                  <td>0개</td>
+                  <td>Checkout 이후 7개 step Skipped · Success</td>
+                </tr>
+                <tr>
+                  <td>#14 order</td>
+                  <td><code>e2e/order.spec.ts</code></td>
+                  <td><code>all=false, run_e2e=true, tests=e2e/order.spec.ts</code></td>
+                  <td>1개</td>
+                  <td>전 step 실행 · Success</td>
+                </tr>
+                <tr>
+                  <td>#15 auth</td>
+                  <td><code>e2e/auth.spec.ts</code></td>
+                  <td><code>tests=order + auth + logout</code></td>
+                  <td>5개</td>
+                  <td>전 step 실행 · Success</td>
+                </tr>
+                <tr>
+                  <td>#16 unknown</td>
+                  <td><code>public/toggle.svg</code></td>
+                  <td><code>all=true, run_e2e=true, tests=all</code></td>
+                  <td>15개</td>
+                  <td>전 step 실행 · Success</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            브라우저당 실행 테스트가 0 → 1 → 5 → 15로 벌어졌다. 조건부 실행이 실제로 범위를 줄이고
+            있다는 증거다. #13에서도 <code>Detect E2E scope</code>, <code>E2E (chromium)</code>,
+            <code>E2E (webkit)</code> 세 check가 모두 결과를 내 머지 가능 상태가 됐다.
+          </p>
+
+          <h3>실패 경로 두 가지</h3>
+          <p>
+            정상 경로만으로는 이번 수정이 효과가 있는지 증명되지 않아, 버리는 브랜치에서 각 지점을
+            의도적으로 깨뜨렸다. 두 PR은 머지하지 않는다.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                PR #17–#18 · 실험 브랜치
+              </caption>
+              <thead>
+                <tr>
+                  <th>PR</th>
+                  <th>깨뜨린 지점</th>
+                  <th>관찰된 결과</th>
+                  <th>판정</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#17 감지 실패</td>
+                  <td>
+                    <code>Detect changed paths</code>의 <code>filters</code> YAML을 닫히지 않은 flow
+                    sequence로 변경
+                  </td>
+                  <td>
+                    <code>Detect E2E scope</code> = failure, 이후 두 step Skipped.<br />
+                    <code
+                      >E2E fallback: … 결과가 'failure'. 분류를 신뢰할 수 없어 전체 E2E로
+                      승격한다</code
+                    ><br />
+                    <code>scope result: all=true, run_e2e=true, tests=all</code> · 15개 실행
+                  </td>
+                  <td>기대값과 일치</td>
+                </tr>
+                <tr>
+                  <td>#18 step 실패</td>
+                  <td><code>Checkout</code>에 존재하지 않는 <code>ref</code> 지정</td>
+                  <td>
+                    <code>Checkout</code> = failure, <code>Set up pnpm</code>부터
+                    <code>Run selected E2E tests</code>까지 6개 step Skipped.<br />
+                    <code>E2E (chromium)</code>과 <code>E2E (webkit)</code>이 각각 독립적으로
+                    Failure
+                  </td>
+                  <td>기대값과 일치</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>#18이 이번 수정의 직접 증거다</strong>
+            <p>
+              수정 전 조건에서는 감지 실패 경로에서 식이 <code>!cancelled()</code>로 축소돼
+              <code>success()</code>가 평가되지 않았다. 같은 자리에서 이제 <code>!failure()</code>가
+              후속 step을 막는다는 것이 실행 로그로 확인됐다.
+            </p>
+            <p>
+              <code>uses:</code>의 action SHA를 깨는 방법은 쓰지 않았다. GitHub이
+              <code>Set up job</code> 단계에서 action을 미리 내려받다 실패해 job 전체가 step 실행
+              전에 끝나므로, step 단위 가드가 동작했는지 판별할 수 없다.
+            </p>
+          </div>
+
+          <div class="callout pending">
+            <strong>같이 드러난 flaky 사례 · 정책 미결정</strong>
+            <p>
+              #17의 fallback 실행에서 Chromium job이 Failure로 끝났다. fallback 결함이 아니라 테스트
+              하나가 실패한 것이다.
+            </p>
+            <pre><code>✘ [chromium] e2e/state-restoration.spec.ts:110
+  debounce가 끝난 검색어는 뒤로·앞으로 이동에서 검색 결과와 함께 복원된다 (12.5s)
+  Error: expect(locator).toBeVisible() failed
+  &gt; 118 | await expect(page.getByText('총 4개', { exact: true })).toBeVisible()
+  Timeout: 10000ms · element(s) not found</code></pre>
+            <p>
+              같은 실행의 WebKit은 15개 모두 통과했고, 같은 spec이 #16에서는 두 브라우저 모두
+              통과했다. 같은 코드가 실행마다 다른 결과를 냈으므로 flaky 신호로 분류한다. retry를
+              켤지, 어떤 조건에서 최초 실패를 남길지는 작성자가 정한다. 이 문서에서는 판정하지
+              않는다.
+            </p>
           </div>
         </section>
 
