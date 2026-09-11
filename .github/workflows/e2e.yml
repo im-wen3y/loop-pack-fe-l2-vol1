@@ -222,9 +222,10 @@ jobs:
     timeout-minutes: 10
     # build와 playwright의 webServer(pnpm start)가 모두 이 값을 쓴다.
     # playwright.config.ts의 baseURL과 일치해야 한다.
-    # 평문 대신 secrets를 쓰는 이유는 quality.yml 주석 참고.
+    # secrets를 우선 읽는 이유와, fork PR에서 localhost로 떨어뜨리는 이유는
+    # quality.yml 주석 참고.
     env:
-      APP_ORIGIN: ${{ secrets.APP_ORIGIN }}
+      APP_ORIGIN: ${{ secrets.APP_ORIGIN || 'http://localhost:3000' }}
     steps:
       # 감지 실패를 이 step에서 한 번만 전체 실행으로 승격한다. 이후 step은
       # needs.changes를 다시 보지 않고 이 step의 출력만 사용하므로, fallback이
