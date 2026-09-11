@@ -36,5 +36,8 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // APP_ORIGIN 폴백을 걷어냈으므로 pnpm start에 값을 명시적으로 넘긴다.
+    // 위 baseURL과 같은 값이어야 SSR이 자기 자신을 호출한다.
+    env: { APP_ORIGIN: process.env.APP_ORIGIN ?? 'http://localhost:3000' },
   },
 })
