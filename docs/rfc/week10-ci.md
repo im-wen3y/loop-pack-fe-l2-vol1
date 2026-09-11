@@ -551,6 +551,33 @@ fallback은 의도대로 전체 실행을 트리거했다.
 비밀이 아닌 값이지만 **평문 `env:`는 자리 자체가 새는 자리**라, 나중에 진짜 비밀을 같은 칸에 넣으면
 그대로 샌다. fork PR에는 secrets가 전달되지 않아 외부 기여 PR에서는 게이트가 실패한다는 한계가 있다.
 
+#### 그 한계를 실제로 밟았다 — 제출 PR #210
+
+위 한계는 예측으로 적어둔 것이었는데 제출 PR에서 그대로 관측했다. fork에서 upstream으로 올린
+[PR #210](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/pull/210)에서 `quality`,
+`E2E (chromium)`, `E2E (webkit)` 세 job이 모두 실패했다.
+
+| 확인 항목      | 결과                                                                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 실패한 job     | `quality`, `E2E (chromium)`, `E2E (webkit)`. `Detect E2E scope`만 통과                                                                                                                           |
+| 실패 위치      | `Validate environment`(quality)와 `Run production build`(E2E), 둘 다 종료 코드 1                                                                                                                 |
+| 로그의 값      | `APP_ORIGIN:` — 빈 값. `APP_ORIGIN이(가) 없습니다` 메시지 출력                                                                                                                                   |
+| run URL        | [quality](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34574917691/job/103185072726) · [E2E](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34574917682) |
+| 원인           | fork PR에 base 저장소의 secrets가 전달되지 않는다. 게이트의 오작동이 아니라 값 공급이 끊긴 것이다                                                                                                |
+| 조치           | 두 workflow의 값을 `${{ secrets.APP_ORIGIN \|\| 'http://localhost:3000' }}`로 바꿨다                                                                                                             |
+| 조치 후 재검증 | **아직 하지 않았다.** 로컬 YAML 파싱과 Prettier만 통과했고, #210의 세 job이 초록불이 되는지는 push 후 Actions로 확인해야 한다                                                                    |
+
+걷어낸 폴백을 되살린 것으로 보일 수 있으나 자리가 다르다. `getApiBaseUrl()`의 폴백은 **애플리케이션
+런타임이 설정 누락을 조용히 넘기는 자리**였고, 로컬에서는 통과하고 배포 환경에서만 어긋나는 형태를
+만들었다. 이번 기본값은 **CI가 쓸 값이 `playwright.config.ts`의 `baseURL` 하나로 고정된 자리**다. CI에
+다른 정답이 존재하지 않으므로 가릴 설정 실수 자체가 없다. 배포 환경의 누락·오지정 차단은 Vercel이
+부르는 `pnpm build`에서 그대로 동작한다.
+
+대신 잃은 것도 적어둔다. secret이 없는 fork PR에서는 이 값이 평문으로 step 헤더에 다시 나타난다.
+비밀이 아닌 값이라 유출 문제는 아니지만, "평문 `env:`는 새는 자리"라는 원칙을 fork PR에서는 지키지
+못한다는 뜻이다. 진짜 비밀이 필요한 검증을 나중에 추가한다면 fork PR에서는 그 job을 건너뛰게 하거나
+`pull_request_target`의 위험을 따로 검토해야 한다.
+
 #### 배포 환경이 생긴 뒤의 갱신
 
 Vercel을 연결하면서 위 목록 중 한 줄이 바뀐다. **Vercel에서는 `APP_ORIGIN`이 필수가 아니다.**
