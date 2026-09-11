@@ -40,8 +40,16 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # json 리포터를 함께 켜 PR 코멘트용 요약을 만든다. default와 github-actions
+      # 리포터는 그대로 두어 로그 출력과 job summary가 바뀌지 않게 한다.
       - name: Run unit tests
-        run: pnpm test
+        run: >-
+          pnpm exec vitest run
+          --reporter=default --reporter=github-actions --reporter=json
+          --outputFile.json=ci-report/vitest.json
+      - name: Report test results
+        if: ${{ !cancelled() }}
+        run: node scripts/report-test-results.mjs ci-report/vitest.json
       - name: Run lint
         run: pnpm lint
       - name: Run typecheck
@@ -65,6 +73,10 @@ jobs:
       # "측정이 실행됐을 때"로 두는 이유다(2단계 아티팩트 업로드에서 겪은 것과 같은 구조).
       - name: Report bundle budget
         if: ${{ !cancelled() && steps.budget.conclusion != 'skipped' }}
+        run: node scripts/report-bundle-budget.mjs size-limit-result.json
+      # 앞 step이 실패해 섹션이 일부만 모여도 그때까지의 결과는 올린다.
+      - name: Post CI summary comment
+        if: ${{ !cancelled() }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/report-bundle-budget.mjs size-limit-result.json
+        run: node scripts/post-ci-comment.mjs

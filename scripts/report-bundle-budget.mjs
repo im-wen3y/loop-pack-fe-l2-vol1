@@ -1,4 +1,4 @@
-import { readFile, appendFile } from 'node:fs/promises'
+import { readFile, appendFile, mkdir, writeFile } from 'node:fs/promises'
 
 /*
  * size-limit --json 결과를 job summary로 옮긴다.
@@ -33,64 +33,6 @@ const buildSummary = (entries) => {
   ].join('\n')
 }
 
-// 같은 PR에 코멘트가 쌓이지 않도록 이 표식으로 기존 코멘트를 찾아 갱신한다.
-const COMMENT_MARKER = '<!-- bundle-budget-report -->'
-
-const readEventPayload = async () => {
-  if (!process.env.GITHUB_EVENT_PATH) return null
-  try {
-    return JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
-  } catch {
-    return null
-  }
-}
-
-/*
- * job summary는 Checks 탭을 눌러 들어가야 보인다. 초과를 PR 대화 화면에서 바로 보려면
- * 코멘트가 필요하다. 실패해도 리포트 자체를 망치지 않도록 조용히 넘긴다 —
- * fork PR에서는 GITHUB_TOKEN이 읽기 전용이라 코멘트를 쓸 수 없다.
- */
-const upsertPullRequestComment = async (body) => {
-  const token = process.env.GITHUB_TOKEN
-  const repo = process.env.GITHUB_REPOSITORY
-  if (!token || !repo) return 'skipped: 토큰 또는 저장소 정보 없음'
-
-  const event = await readEventPayload()
-  const prNumber = event?.pull_request?.number
-  if (prNumber === undefined) return 'skipped: pull_request 이벤트가 아님'
-
-  const api = `https://api.github.com/repos/${repo}`
-  const headers = {
-    'authorization': `Bearer ${token}`,
-    'accept': 'application/vnd.github+json',
-    'content-type': 'application/json',
-  }
-  const payload = JSON.stringify({ body: `${COMMENT_MARKER}\n${body}` })
-
-  try {
-    const listed = await fetch(`${api}/issues/${prNumber}/comments?per_page=100`, { headers })
-    if (!listed.ok) return `skipped: 코멘트 조회 실패 (${listed.status})`
-
-    const existing = (await listed.json()).find((comment) =>
-      comment.body?.startsWith(COMMENT_MARKER),
-    )
-    const target = existing
-      ? `${api}/issues/comments/${existing.id}`
-      : `${api}/issues/${prNumber}/comments`
-
-    const written = await fetch(target, {
-      method: existing ? 'PATCH' : 'POST',
-      headers,
-      body: payload,
-    })
-    if (!written.ok) return `skipped: 코멘트 쓰기 실패 (${written.status})`
-
-    return existing ? '기존 코멘트 갱신' : '새 코멘트 작성'
-  } catch (error) {
-    return `skipped: ${error instanceof Error ? error.message : String(error)}`
-  }
-}
-
 const main = async () => {
   let entries
   try {
@@ -122,8 +64,9 @@ const main = async () => {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, summary)
   }
 
-  const commentResult = await upsertPullRequestComment(summary)
-  process.stdout.write(`PR 코멘트: ${commentResult}\n`)
+  // PR 코멘트는 post-ci-comment.mjs가 모아서 한 번에 올린다.
+  await mkdir('ci-report', { recursive: true })
+  await writeFile('ci-report/30-budget.md', summary)
 }
 
 await main()

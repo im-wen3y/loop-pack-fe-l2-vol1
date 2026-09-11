@@ -1,4 +1,4 @@
-import { appendFile } from 'node:fs/promises'
+import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 
 /*
  * build 전에 환경 변수 계약을 검사한다. 이 파일의 목록이 이 프로젝트의 설정 계약이다.
@@ -6,6 +6,8 @@ import { appendFile } from 'node:fs/promises'
  * 값은 어디에도 출력하지 않는다. 변수 이름과 사유만 쓴다. 실패 리포트가 secret 유출
  * 경로가 되면 게이트를 만든 의미가 없다.
  */
+
+const REPORT_DIR = 'ci-report'
 
 // 서버 렌더링이 API를 호출할 절대 origin. 없으면 app/layout.tsx의 metadataBase가 빌드 중에 죽는다.
 const REQUIRED_URL_VARS = ['APP_ORIGIN']
@@ -81,6 +83,11 @@ const main = async () => {
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, summary)
   }
+
+  // PR 코멘트를 합치는 스크립트가 읽어간다. step마다 GITHUB_STEP_SUMMARY 파일이
+  // 따로라 다른 step의 요약을 읽을 수 없으므로, 공유 디렉터리에 각자 남긴다.
+  await mkdir(REPORT_DIR, { recursive: true })
+  await writeFile(`${REPORT_DIR}/20-env.md`, summary)
 
   if (failures.length > 0) {
     process.exitCode = 1
