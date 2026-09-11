@@ -1,5 +1,67 @@
 # Week 10 CI 측정과 개선 기록
 
+## 요약
+
+| 항목             | 결과                                                                                    | 배치/판단          | 근거                                  |
+| ---------------- | --------------------------------------------------------------------------------------- | ------------------ | ------------------------------------- |
+| CI 시간          | 느린 브라우저 job 2분 24초 → 1분 42초(−42초). workflow 전체는 사전 기준(30초 단축) 미달 | 구조 개선, 미확정  | [Before](#before) · [After](#after)   |
+| 캐시             | hit 2초 vs miss 6~7초 — install이 병목 아님                                             | 추가 분리 보류     | [캐시](#캐시)                         |
+| 번들 예산        | 현재 273.79 kB, 임계값 287.4 kB(여유폭 5%). PR #21에서 초과 확인                        | **경고**(advisory) | [번들 예산](#번들-예산)               |
+| 환경 변수 게이트 | 누락·형식 오류·`NEXT_PUBLIC_` 노출을 build 전 차단. PR #20에서 실제 차단 확인           | **차단**(required) | [환경 변수 게이트](#환경-변수-게이트) |
+| AI 리뷰          | PR #12 diff 리뷰 — P2 4건·P4 1건, 1건 채택·1건 기각(오탐 아님)·오탐 0건                 | 채택·기각은 작성자 | [AI 리뷰](#ai-리뷰)                   |
+| 규칙 승격        | 6주차부터 반복된 Public API 미소비 export 지적을 기계 검사로 승격                       | `pnpm lint`에 연결 | [규칙 승격](#규칙-승격)               |
+| required 배치    | 환경 변수는 차단, 번들은 경고 — 되돌리기 비용 차이가 근거                               | 작성자 판단        | [required 배치](#required-배치)       |
+
+## 관련 문서
+
+| 문서                                                              | 내용                                                 |
+| ----------------------------------------------------------------- | ---------------------------------------------------- |
+| [과제 명세](../assignments/week-10.md)                            | 10주차 과제 원문                                     |
+| [진행 체크리스트](../week-10/checklist.md)                        | 필수·선택·과제 밖 범위 체크리스트                    |
+| [10주 기술 회고](./week10-retrospective.md)                       | 제출 질문 답변을 포함한 최종 회고                    |
+| [판단 이력(action plan)](../week-10/action-plan.html)             | 질의응답에서 바뀐 판단과 근거를 단계별로 기록한 이력 |
+| [Self Review 결과](../week-10/self-review-result.md)              | 제출 전 자가 점검 결과                               |
+| [Before 측정 가이드](../week-10/before-measurement.html)          | cold/warm 3회 측정 절차와 확인 항목                  |
+| [After 측정 가이드](../week-10/after-measurement.html)            | 개선 후보 A/B/C 정의와 After 측정 절차               |
+| [번들 예산 게이트 근거](../week-10/budget-gate.html)              | 임계값 산출 과정 상세                                |
+| [E2E 조건부 실행 판정](../week-10/e2e-conditional-execution.html) | 감지 실패·step 실패 분리 검증 상세 로그              |
+
+## 목차
+
+- [측정 조건](#측정-조건)
+  - [현재 workflow와 명령 대조](#현재-workflow와-명령-대조)
+  - [Week 09 참고 실행](#week-09-참고-실행)
+- [Before](#before)
+  - [측정 전 준비](#측정-전-준비)
+  - [기준 workflow 변경 이력](#기준-workflow-변경-이력)
+  - [측정 기록](#측정-기록)
+  - [병목 판단](#병목-판단)
+- [After](#after)
+  - [Cold](#cold-1)
+  - [Warm](#warm-1)
+  - [Before와 비교](#before와-비교)
+- [캐시](#캐시)
+- [실행 조건](#실행-조건)
+  - [브랜치 흐름과 PR 대상](#브랜치-흐름과-pr-대상)
+  - [Quality 조건 분리 보류 근거](#quality-조건-분리-보류-근거)
+  - [감지 실패와 step 실패의 분리 검증](#감지-실패와-step-실패의-분리-검증)
+  - [관찰된 flaky 사례](#관찰된-flaky-사례)
+  - [flaky 대응 정책](#flaky-대응-정책)
+- [예산](#예산)
+  - [번들 예산](#번들-예산)
+  - [환경 변수 게이트](#환경-변수-게이트)
+  - [required 배치](#required-배치)
+  - [결과 가시성](#결과-가시성)
+- [AI 리뷰](#ai-리뷰)
+  - [리뷰 기준과 프롬프트](#리뷰-기준과-프롬프트)
+  - [판별 기록](#판별-기록)
+  - [실제 리뷰 프롬프트와 실행 증거](#실제-리뷰-프롬프트와-실행-증거)
+  - [작성자의 판별 기록](#작성자의-판별-기록)
+- [규칙 승격](#규칙-승격)
+  - [승격 결과](#승격-결과)
+- [질문 답변](#질문-답변)
+  - [AI와 작성자의 역할](#ai와-작성자의-역할)
+
 ## 측정 조건
 
 ### 현재 workflow와 명령 대조
@@ -51,23 +113,25 @@ E2E는 실제 Chromium과 WebKit을 사용하므로 브라우저 설치가 필�
 
 #### 참고 실행의 조건
 
-- 대상: Week 09 PR #181
-- 실행 결과: 성공
-- 러너: `ubuntu-latest`
-- GitHub Actions runner: `2.337.0`
-- 운영체제: Ubuntu 24.04.4 LTS
-- Runner Image: `ubuntu-24.04`
-- Runner Image 버전: `20260831.293.1`
-- Hosted Compute Agent 버전: `20260828.587`
-- Quality Azure Region: `northcentralus`
-- E2E Azure Region: `centralus`
-- `GITHUB_TOKEN` 권한: `contents: read`, `metadata: read`
-- Secret source: `None`
-- Quality pnpm dependency cache: warm, 복원 성공
-- Quality Next.js build cache: 없음
-- E2E pnpm dependency cache: warm, 복원 성공
-- E2E Next.js build cache: 없음
-- 분류: Before 반복 측정에 포함하지 않는 참고 실행
+| 항목                          | 값                                         |
+| ----------------------------- | ------------------------------------------ |
+| 대상                          | Week 09 PR #181                            |
+| 실행 결과                     | 성공                                       |
+| 러너                          | `ubuntu-latest`                            |
+| GitHub Actions runner         | `2.337.0`                                  |
+| 운영체제                      | Ubuntu 24.04.4 LTS                         |
+| Runner Image                  | `ubuntu-24.04`                             |
+| Runner Image 버전             | `20260831.293.1`                           |
+| Hosted Compute Agent 버전     | `20260828.587`                             |
+| Quality Azure Region          | `northcentralus`                           |
+| E2E Azure Region              | `centralus`                                |
+| `GITHUB_TOKEN` 권한           | `contents: read`, `metadata: read`         |
+| Secret source                 | `None`                                     |
+| Quality pnpm dependency cache | warm, 복원 성공                            |
+| Quality Next.js build cache   | 없음                                       |
+| E2E pnpm dependency cache     | warm, 복원 성공                            |
+| E2E Next.js build cache       | 없음                                       |
+| 분류                          | Before 반복 측정에 포함하지 않는 참고 실행 |
 
 Quality와 E2E는 runner, OS, Runner Image와 이미지 버전이 같았다. 서로 다른 VM에서 실행되므로
 Worker ID는 달랐고 Azure Region도 달랐다. 따라서 같은 `ubuntu-latest` 조건이어도 물리적 실행
@@ -156,19 +220,23 @@ E2E의 step별 시간은 확인했다. `Run E2E tests` 로그에서 production b
 
 build 로그에서는 다음 시간을 확인했다.
 
-- optimized production build compile: 3.5초
-- TypeScript: 3.4초
-- 17개 static page 생성: 179ms
+| 구간                               |  시간 |
+| ---------------------------------- | ----: |
+| optimized production build compile | 3.5초 |
+| TypeScript                         | 3.4초 |
+| 17개 static page 생성              | 179ms |
 
 다만 이 값만 더해 build 전체 wall-clock을 확정할 수는 없다. `Run E2E tests` 1분 19초는 shell에서
 측정한 전체 step 시간이고, Playwright의 1.2분은 소수점 한 자리로 반올림된 테스트 시간이다.
 
 `Set up Node.js` 로그에서는 다음 pnpm dependency cache 증거를 확인했다.
 
-- Node: `.nvmrc`에서 해석한 `24.17.0`, Linux x64
-- cache key: `node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827e2819d41f9`
-- cache size: 약 197MB
-- `Cache hit for`, `Cache restored successfully`, `Cache restored from key` 출력
+| 항목       | 값                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| Node       | `.nvmrc`에서 해석한 `24.17.0`, Linux x64                                                     |
+| cache key  | `node-cache-Linux-x64-pnpm-4a4700f92bc4c477613076faf7033fe016210cf5d6a9cb6fb03827e2819d41f9` |
+| cache size | 약 197MB                                                                                     |
+| 로그 출력  | `Cache hit for`, `Cache restored successfully`, `Cache restored from key`                    |
 
 따라서 이 E2E 실행은 pnpm dependency cache 기준으로 warm이다. 반면 build 로그에는
 `No build cache found`가 출력됐으므로 Next.js build cache는 없었다. 서로 다른 캐시이므로 이
@@ -266,6 +334,14 @@ Warm과 cold 모두 3회 측정을 완료했다. cold 2회차의 첫 시도는 �
 
 ### Before와 비교
 
+개선 후보는 세 가지였다. 상세는 [After 측정 문서](../week-10/after-measurement.html)의 01절 참고.
+
+| 후보   | 내용                                                           |
+| ------ | -------------------------------------------------------------- |
+| 후보 A | 브라우저별 E2E job 병렬화(Chromium·WebKit을 독립 job으로 분리) |
+| 후보 B | `concurrency` 그룹(반복 push의 낭비 실행 취소)                 |
+| 후보 C | pnpm store 캐시 추가                                           |
+
 - Quality workflow 중앙값은 55초에서 1분 9초로 14초 늘었지만, Quality workflow는 후보 A 변경
   대상이 아니므로 후보 A의 영향으로 해석하지 않는다.
 - E2E workflow 중앙값은 2분 33초에서 2분 20초로 13초 줄었다. 사전에 정한 30초 단축 기준에는
@@ -278,15 +354,16 @@ Warm과 cold 모두 3회 측정을 완료했다. cold 2회차의 첫 시도는 �
 
 ## 캐시
 
-- warm 실행의 캐시 복원 로그: 기존 After 3회에서 `Cache restored from key` 확인
-- 의도적인 캐시 miss 로그: Quality와 WebKit에서 `pnpm cache is not found` 확인
-- hit install 시간: Chromium 2초
-- miss install 시간: Quality 7초, WebKit 6초
-- 캐시 키를 바꾸기 위해 사용한 lockfile 변경: 실행 완료(커밋 `91cabde25d6fc3144146541b354639b9a1c217e6`)
-- 실험 Quality run: https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947559
-- 실험 E2E run: https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947550
-- 실험 후 lockfile 복구: 완료(커밋 `8fe73a0b182bfa45c387f2982c4a4394da3cc60e`).
-  `git diff 91cabde2~1 HEAD -- pnpm-lock.yaml package.json`이 비어 있어 실험 전 상태와 동일하다.
+| 항목                                       | 값                                                                                                                                                    |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| warm 실행의 캐시 복원 로그                 | 기존 After 3회에서 `Cache restored from key` 확인                                                                                                     |
+| 의도적인 캐시 miss 로그                    | Quality와 WebKit에서 `pnpm cache is not found` 확인                                                                                                   |
+| hit install 시간                           | Chromium 2초                                                                                                                                          |
+| miss install 시간                          | Quality 7초, WebKit 6초                                                                                                                               |
+| 캐시 키를 바꾸기 위해 사용한 lockfile 변경 | 실행 완료(커밋 `91cabde25d6fc3144146541b354639b9a1c217e6`)                                                                                            |
+| 실험 Quality run                           | [run/34466947559](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947559)                                                          |
+| 실험 E2E run                               | [run/34466947550](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/actions/runs/34466947550)                                                          |
+| 실험 후 lockfile 복구                      | 완료(커밋 `8fe73a0b182bfa45c387f2982c4a4394da3cc60e`). `git diff 91cabde2~1 HEAD -- pnpm-lock.yaml package.json`이 비어 있어 실험 전 상태와 동일하다. |
 
 이번 실험은 matrix job이 동일한 새 cache key를 공유했다. 먼저 끝난 job이 캐시를 저장한 뒤
 Chromium job이 시작되어 Chromium에서는 `Cache restored successfully`가 나타났다. 따라서 세 job
@@ -314,31 +391,36 @@ flowchart LR
   feature["feat/week-10"] -->|"Pull Request"| develop
 ```
 
-- PR base: `develop`
-- `main`: fork 동기화용 업데이트만 수행
-- 기능·문서 변경: `feat/week-10` 등 작업 브랜치에서 `develop`으로 PR
+| 항목           | 값                                                 |
+| -------------- | -------------------------------------------------- |
+| PR base        | `develop`                                          |
+| `main`         | fork 동기화용 업데이트만 수행                      |
+| 기능·문서 변경 | `feat/week-10` 등 작업 브랜치에서 `develop`으로 PR |
 
-- 저비용 결정적 검증을 모든 PR에서 실행할지: 현재 Quality workflow를 그대로 유지
-- E2E 실행 조건: 경로 기반 분류를 사용하며, 로직 변경 시 결제·주문 E2E를 항상 실행
-- 스킵할 변경 범위: 문서와 CSS만 변경된 PR
-- 스킵이 안전한 이유: 문서·CSS-only는 브라우저 동작 로직을 변경하지 않는다는 경로 규칙
-- 조건에 걸려 E2E가 실행된 PR과 로그: PR #12에서 `all=true`, Chromium/WebKit 각 15개 통과.
-  2026-09-11 PR #14(order 1개), #15(auth 계열 5개), #16(unknown 15개)에서 범위별 실행 확인
-- 조건에 걸리지 않아 E2E가 스킵된 PR과 로그: 2026-09-11 PR #13(문서-only)에서
-  `scope result: all=false, run_e2e=false, tests=(skipped)`와 Checkout 이후 7개 step Skipped 확인.
-  두 browser job은 Success로 종료
-- required check와 조건부 실행의 충돌: `develop` 대상 `merge-required-ci` ruleset 설정 완료,
-  PR #12 Merge box에서 네 check가 Required로 표시됨
-- flaky 대응 정책과 근거: CI에서만 재시도 2회를 켜고, 실패·flaky 실행의 Playwright trace를
-  아티팩트로 올린다. 재시도는 실패를 감추려는 것이 아니라 흔들림과 진짜 실패를 구분하려는
-  것이며, 최초 실패 로그와 trace가 남아야 그 구분이 가능하기 때문이다. 아래
-  「flaky 대응 정책」 참고
+| 항목                                      | 내용                                                                                                                                                                                                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 저비용 결정적 검증을 모든 PR에서 실행할지 | 현재 Quality workflow를 그대로 유지                                                                                                                                                                                                                         |
+| E2E 실행 조건                             | 경로 기반 분류를 사용하며, 로직 변경 시 결제·주문 E2E를 항상 실행                                                                                                                                                                                           |
+| 스킵할 변경 범위                          | 문서와 CSS만 변경된 PR                                                                                                                                                                                                                                      |
+| 스킵이 안전한 이유                        | 문서·CSS-only는 브라우저 동작 로직을 변경하지 않는다는 경로 규칙                                                                                                                                                                                            |
+| 조건에 걸려 E2E가 실행된 PR과 로그        | PR #12에서 `all=true`, Chromium/WebKit 각 15개 통과. PR #14(order 1개), #15(auth 계열 5개), #16(unknown 15개)에서 범위별 실행 확인                                                                                                                          |
+| 조건에 걸리지 않아 E2E가 스킵된 PR과 로그 | [PR #13](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/13)(문서-only)에서 `scope result: all=false, run_e2e=false, tests=(skipped)`와 Checkout 이후 7개 step Skipped 확인. 두 browser job은 Success로 종료                                          |
+| required check와 조건부 실행의 충돌       | `develop` 대상 `merge-required-ci` ruleset 설정 완료, PR #12 Merge box에서 네 check가 Required로 표시됨                                                                                                                                                     |
+| flaky 대응 정책과 근거                    | CI에서만 재시도 2회를 켜고, 실패·flaky 실행의 Playwright trace를 아티팩트로 올린다. 재시도는 실패를 감추려는 것이 아니라 흔들림과 진짜 실패를 구분하려는 것이며, 최초 실패 로그와 trace가 남아야 그 구분이 가능하기 때문이다. 아래 「flaky 대응 정책」 참고 |
 
 ### Quality 조건 분리 보류 근거
 
-2026년 9월 10일 기준 최근 30개 커밋을 확인했다. `docs/**`만 변경한 커밋은 14개,
-CSS-only 커밋은 0개, CI 측정을 위한 empty commit은 10개였다. 실제 파일을 변경한 20개
-커밋 중 문서-only 커밋은 14개로 약 70%였다.
+최근 30개 커밋을 확인했다.
+
+| 분류                           | 개수 | 비고                         |
+| ------------------------------ | ---: | ---------------------------- |
+| 전체 커밋                      |   30 |                              |
+| CI 측정을 위한 empty commit    |   10 |                              |
+| 실제 파일을 변경한 커밋        |   20 | 30 − empty 10                |
+| ㄴ `docs/**`만 변경(문서-only) |   14 | 실제 파일 변경 커밋의 약 70% |
+| ㄴ CSS-only                    |    0 |                              |
+
+실제 파일을 변경한 20개 커밋 중 문서-only 커밋이 14개로 약 70%를 차지했다.
 
 문서-only 변경이 많아 Quality를 조건부로 나누면 실행 시간을 줄일 여지는 있다. 그러나 별도
 Format job을 만들면 포맷 검사보다 job 시작, checkout, Node·pnpm 준비 시간이 더 큰 비중을
@@ -351,16 +433,16 @@ E2E는 `paths-filter`로 변경 경로를 분류하는 방향을 선택했고 `.
 결제·주문 E2E를 공통 필수 검사로 실행하고, 인증·장바구니·위시리스트·상품 영역의 변경에는 해당
 기능 E2E를 추가한다. 공통 로직이나 설정 변경은 전체 E2E를 실행한다. 이 정책의 실제 workflow
 구현과 required 배치, 로직·설정 변경이 포함된 PR의 전체 실행 로그는 확인했다. 문서-only PR의
-생략 로그도 2026-09-11 PR #13에서 확보했다. flaky 정책은 아래에 정리했다.
+생략 로그도 [PR #13](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/13)에서 확보했다. flaky 정책은 아래에 정리했다.
 
 ### 감지 실패와 step 실패의 분리 검증
 
-2026-09-11에 버리는 브랜치 두 개로 실패 경로를 확인했다. 두 PR은 머지하지 않는다.
+버리는 브랜치 두 개로 실패 경로를 확인했다. 두 PR은 머지하지 않는다.
 
-| PR  | 깨뜨린 지점                             | 결과                                                                                                    |
-| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| #17 | `Detect changed paths`의 `filters` YAML | `Detect E2E scope` failure → `E2E fallback:` 로그와 `all=true, run_e2e=true, tests=all`, 15개 전체 실행 |
-| #18 | `Checkout`의 존재하지 않는 `ref`        | `Checkout` failure → 이후 6개 step Skipped, 두 browser job이 각각 독립 Failure                          |
+| PR                                                              | 깨뜨린 지점                             | 결과                                                                                                    |
+| --------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [#17](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/17) | `Detect changed paths`의 `filters` YAML | `Detect E2E scope` failure → `E2E fallback:` 로그와 `all=true, run_e2e=true, tests=all`, 15개 전체 실행 |
+| [#18](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/18) | `Checkout`의 존재하지 않는 `ref`        | `Checkout` failure → 이후 6개 step Skipped, 두 browser job이 각각 독립 Failure                          |
 
 감지 실패는 전체 실행으로 복구되고, 실행 중간 실패는 후속 step을 중단시킨다. 두 동작이 서로를
 덮어쓰지 않는다는 것을 실행 로그로 확인했다. 상세 로그와 판정 근거는
@@ -368,7 +450,7 @@ E2E는 `paths-filter`로 변경 경로를 분류하는 방향을 선택했고 `.
 
 ### 관찰된 flaky 사례
 
-PR #17의 fallback 실행에서 Chromium만 15개 중 14개 통과로 끝났다.
+[PR #17](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/17)의 fallback 실행에서 Chromium만 15개 중 14개 통과로 끝났다.
 
 ```text
 ✘ [chromium] e2e/state-restoration.spec.ts:110
@@ -404,7 +486,7 @@ fallback은 의도대로 전체 실행을 트리거했다.
 반복 실패는 재시도로 덮지 않는다. 같은 spec이 계속 flaky로 남으면 trace를 근거로 원인을
 고치거나 격리 여부를 판단한다.
 
-#### 정책 자가 검증 — PR #19
+#### 정책 자가 검증 — [PR #19](https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/19)
 
 `testInfo.retry === 0`일 때만 실패하는 테스트로 flaky를 결정적으로 재현했다. 두 브라우저 모두
 같은 결과였다.
@@ -427,28 +509,29 @@ fallback은 의도대로 전체 실행을 트리거했다.
 
 ### 번들 예산
 
-- 도구: `size-limit@13.0.3` + `@size-limit/file@13.0.3`, 설정은 `.size-limit.json`
-- 대상: 전체 클라이언트 JS 번들(`.next/static/chunks/**/*.js`), gzip 기준
-- 7주차 실제 전송 크기: 홈 JS 약 177.0KB (After 총 2,603,503 B × 6.8%)
-- 현재 값: 홈 JS 179.5KB(CDP 실측), 전체 번들 **273.79 kB**(size-limit, Node 24.17.0)
-- 측정 편차: 같은 빌드 3회 0 B, 재빌드 3회 0 B. Node 22 → 24에서만 +47 B(+0.017%)
-- 임계값과 여유폭: **287.4 kB**, 여유폭 5%
-- 임계값 근거: 7주차 홈 177.0KB → 현재 홈 179.5KB(+1.4%)로 이어지고, gzip 개별합 174.7KB가 서버
-  실전송 179.5KB와 2.7% 안에서 대응해 단위가 맞는다. 편차가 0이라 여유폭은 노이즈 흡수분이 아니라
-  온전한 증가 허용분이다. 상세는 [예산 게이트 문서](../week-10/budget-gate.html)의 09절
-- 예산 초과 PR의 빨간불: PR #21에서 확인. `continue-on-error`라 `quality`는 pass로 남고
-  `::warning::` 주석과 PR 코멘트로 초과 3.79 kB가 표시됐다
-- PR 화면의 측정값·한도·초과량 리포트: PR 코멘트로 확인 완료
-- 수정 후 초록불 복구: 실험 브랜치를 되돌리면 복구된다. 기준 브랜치는 273.79 kB로 계속 통과 중
+| 항목                                | 값                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 도구                                | `size-limit@13.0.3` + `@size-limit/file@13.0.3`, 설정은 `.size-limit.json`                                                                                                                                                                                             |
+| 대상                                | 전체 클라이언트 JS 번들(`.next/static/chunks/**/*.js`), gzip 기준                                                                                                                                                                                                      |
+| 7주차 실제 전송 크기                | 홈 JS 약 177.0KB (After 총 2,603,503 B × 6.8%)                                                                                                                                                                                                                         |
+| 현재 값                             | 홈 JS 179.5KB(CDP 실측), 전체 번들 **273.79 kB**(size-limit, Node 24.17.0)                                                                                                                                                                                             |
+| 측정 편차                           | 같은 빌드 3회 0 B, 재빌드 3회 0 B. Node 22 → 24에서만 +47 B(+0.017%)                                                                                                                                                                                                   |
+| 임계값과 여유폭                     | **287.4 kB**, 여유폭 5%                                                                                                                                                                                                                                                |
+| 임계값 근거                         | 7주차 홈 177.0KB → 현재 홈 179.5KB(+1.4%)로 이어지고, gzip 개별합 174.7KB가 서버 실전송 179.5KB와 2.7% 안에서 대응해 단위가 맞는다. 편차가 0이라 여유폭은 노이즈 흡수분이 아니라 온전한 증가 허용분이다. 상세는 [예산 게이트 문서](../week-10/budget-gate.html)의 09절 |
+| 예산 초과 PR의 빨간불               | PR #21에서 확인. `continue-on-error`라 `quality`는 pass로 남고 `::warning::` 주석과 PR 코멘트로 초과 3.79 kB가 표시됐다                                                                                                                                                |
+| PR 화면의 측정값·한도·초과량 리포트 | PR 코멘트로 확인 완료                                                                                                                                                                                                                                                  |
+| 수정 후 초록불 복구                 | 실험 브랜치를 되돌리면 복구된다. 기준 브랜치는 273.79 kB로 계속 통과 중                                                                                                                                                                                                |
 
 ### 환경 변수 게이트
 
-- 검증 스크립트: `scripts/validate-env.mjs`. 이 파일의 목록이 설정 계약이다
-- 필수 환경 변수 목록: `APP_ORIGIN`(필수·URL), `AUTH_SESSION_SECRET`(노출 검사만). `PORT`는 제외
-- 누락 값 실패: 확인. `APP_ORIGIN` 폴백을 제거해 build 전에 막는다
-- 잘못된 URL 실패: PR #20에서 확인. `Run production build`부터 3개 step이 skipped
-- 비공개 값의 `NEXT_PUBLIC_` 노출 실패: 로컬 6경로 확인
-- 실제 secret의 로그 비노출: 아래 「secrets 취급」 참고
+| 항목                                 | 값                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------- |
+| 검증 스크립트                        | `scripts/validate-env.mjs`. 이 파일의 목록이 설정 계약이다                |
+| 필수 환경 변수 목록                  | `APP_ORIGIN`(필수·URL), `AUTH_SESSION_SECRET`(노출 검사만). `PORT`는 제외 |
+| 누락 값 실패                         | 확인. `APP_ORIGIN` 폴백을 제거해 build 전에 막는다                        |
+| 잘못된 URL 실패                      | PR #20에서 확인. `Run production build`부터 3개 step이 skipped            |
+| 비공개 값의 `NEXT_PUBLIC_` 노출 실패 | 로컬 6경로 확인                                                           |
+| 실제 secret의 로그 비노출            | 아래 「secrets 취급」 참고                                                |
 
 #### `APP_ORIGIN` 폴백 제거
 
@@ -468,7 +551,7 @@ fallback은 의도대로 전체 실행을 트리거했다.
 비밀이 아닌 값이지만 **평문 `env:`는 자리 자체가 새는 자리**라, 나중에 진짜 비밀을 같은 칸에 넣으면
 그대로 샌다. fork PR에는 secrets가 전달되지 않아 외부 기여 PR에서는 게이트가 실패한다는 한계가 있다.
 
-#### 배포 환경이 생긴 뒤의 갱신 — 2026-09-11
+#### 배포 환경이 생긴 뒤의 갱신
 
 Vercel을 연결하면서 위 목록 중 한 줄이 바뀐다. **Vercel에서는 `APP_ORIGIN`이 필수가 아니다.**
 배포마다 URL이 달라 고정값을 미리 넣을 수 없고, 대신 `VERCEL_URL`이 그 배포의 도메인을 담아 준다.
@@ -539,14 +622,14 @@ Lighthouse CI는 선택이며 도입하지 않았다.
 
 ### 리뷰 기준과 프롬프트
 
-- 10주간 합의한 프로젝트 규칙을 담은 프롬프트: 미작성
-- 현재 PR diff 리뷰: 미실행
+- 10주간 합의한 프로젝트 규칙을 담은 프롬프트: 작성 완료. 아래 「실제 리뷰 프롬프트와 실행 증거」 참고
+- 현재 PR diff 리뷰: 실행 완료. PR #12(`develop...feat/week-10`), 아래 참고
 
 ### 판별 기록
 
-- 잘 잡아낸 리뷰 1개와 채택 근거: 미확인
-- 헛소리한 리뷰 1개와 기각 근거: 미확인
-- 프롬프트 수정 전후와 변경 이유: 미작성
+- 잘 잡아낸 리뷰 1개와 채택 근거: 확인. 아래 「작성자의 판별 기록」 참고
+- 헛소리한 리뷰 1개와 기각 근거: 실제 오탐 미발견. 아래 「오탐 기록」 참고
+- 프롬프트 수정 전후와 변경 이유: 오탐이 확인되지 않아 미완료로 남김. 아래 「오탐 기록」 참고
 
 AI 리뷰의 CI 통합은 선택이며 로컬 도구로 진행해도 된다. AI는 리뷰 후보를 제시하지만, 채택과
 기각은 작성자가 실제 diff와 팀 규칙을 대조해 판단한다. CI에 통합한다면 timeout, max turns,
@@ -554,7 +637,7 @@ concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추�
 
 ### 실제 리뷰 프롬프트와 실행 증거
 
-2026-09-11에 Claude Code의 세션 맥락이 없는 리뷰 에이전트로 PR #12(`develop...feat/week-10`)를
+Claude Code의 세션 맥락이 없는 리뷰 에이전트로 PR #12(`develop...feat/week-10`)를
 검토했다. 실제 실행 프롬프트는 다음 순서와 출력 제약을 포함했다.
 
 1. `.agents/skills/ai-review/SKILL.md`, `CLAUDE.md`, `.claude/rules/*` 4개를 먼저 읽는다.
@@ -569,7 +652,7 @@ concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추�
 
 ### 작성자의 판별 기록
 
-- **잘 잡아낸 지적 — `scripts/validate-env.mjs:39`**: URL 문법만 검사해 pathname·query·인증 정보가
+- **잘 잡아낸 지적 — `scripts/validate-env.mjs:37`**: URL 문법만 검사해 pathname·query·인증 정보가
   붙은 `APP_ORIGIN`을 통과시키는 문제를 P2로 채택했다. 순수 origin만 허용하도록 수정하고 잘못된
   입력이 실패하는 것을 재현했으며, PR 코멘트와 Actions 결과로 재검증했다.
 - **기각한 지적 — `scripts/post-ci-comment.mjs:53`**: 최근 코멘트 100개만 조회한다는 의견은
@@ -583,18 +666,20 @@ concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추�
 
 ## 규칙 승격
 
-- 반복 지적의 출처: 미선정
-- 결정적으로 참/거짓을 판별할 규칙: 미결정
-- ESLint, `no-restricted-syntax` 또는 Danger 등 승격 수단: 미결정
-- 위반 코드가 실패하는지: 미검증
-- 정상 코드가 통과하는지: 미검증
-- 오탐을 발견했을 때 규칙을 좁힌 기록: 미검증
-- AI·사람에게 남길 것과 기계로 내릴 것에 대한 판단: 미작성
+| 항목                                                    | 상태                                                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 반복 지적의 출처                                        | 선정 완료. 6주차 self-review·피드백 액션플랜(아래 「승격 결과」 참고)                                                                  |
+| 결정적으로 참/거짓을 판별할 규칙                        | 결정 완료. `entities/*/index.ts` named export마다 슬라이스 외부 import 존재 여부                                                       |
+| ESLint, `no-restricted-syntax` 또는 Danger 등 승격 수단 | 커스텀 스크립트(`scripts/check-public-api-consumers.mjs`)를 `pnpm lint`에 연결                                                         |
+| 위반 코드가 실패하는지                                  | 확인. 임시 `__PUBLIC_API_PROBE__` export로 종료 코드 1 재현                                                                            |
+| 정상 코드가 통과하는지                                  | 확인. 현재 다섯 슬라이스의 정상 Public API가 통과                                                                                      |
+| 오탐을 발견했을 때 규칙을 좁힌 기록                     | 해당 없음 — 이번 승격에서 오탐 미발견                                                                                                  |
+| AI·사람에게 남길 것과 기계로 내릴 것에 대한 판단        | 작성 완료. export 공개 여부와 계약 필요성은 사람이 결정하고, 공개하기로 한 export의 외부 소비처 존재 여부만 기계가 판별한다(아래 참고) |
 
 이미 존재하는 규칙을 이번 주에 새로 승격한 것으로 기록하지 않는다. 어떤 반복 지적을 승격할지는
 작성자가 직접 결정한다.
 
-### 2026-09-11 승격 결과
+### 승격 결과
 
 6주차 self-review에서 `PRODUCT_CATEGORY_FILTERS`를 외부 소비처 없이 Public API로 공개한 문제가
 발견된 뒤, 같은 기준으로 `productQueries`, `productQueryKeys`, `GetProductListParams`도 반복 지적됐다
@@ -624,19 +709,33 @@ concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추�
 
 ### 1. E2E를 모든 PR에 required로 걸면 어떤 문제가 생길까?
 
-미작성
+E2E 테스트가 불필요한 문서-only PR에서도 실행되면 실행 시간과 CI 비용이 늘어나 업무 병목이 생길 수
+있습니다. 또한 E2E를 required로 두면서 조건부로 실행하면, 스킵된 PR의 check가 영구 대기 상태가 될
+수 있습니다. 그래서 저비용 검증은 모든 PR에서 실행하고, E2E는 관련 경로에서만 실행하되 스킵 시에도
+성공으로 정리되는 guard 구조가 필요합니다.
 
 ### 2. Lighthouse 점수 하락은 항상 merge blocker여야 할까?
 
-미작성
+Lighthouse 점수가 하락했다고 해서 항상 merge blocker로 둘 필요는 없다고 생각합니다. 크래시나 핵심
+사용자 흐름 중단처럼 즉시 동작을 깨뜨린 문제가 아니라면, 측정 변동성과 영향 범위를 확인한 뒤 PR
+머지 후 후속 개선으로 다룰 수 있습니다. 다만 반복적인 하락이나 사전에 정한 임계값을 크게 넘은
+경우에는 별도 판단을 통해 차단할 수 있습니다.
 
 ### 3. Preview 환경이 production API를 바라보면 무슨 일이 생길까?
 
-미작성
+Production API와 운영 DB에는 실제 운영 데이터와 깨끗한 상태가 유지되어야 합니다. Preview가
+Production API를 바라보면 Preview에서 수행한 로그인·주문·테스트 요청이 운영 DB에 기록될 수 있어
+데이터 오염과 사용자 영향으로 이어집니다. 따라서 Preview에서는 배포별 URL이나 별도 테스트 환경을
+사용하고, `APP_ORIGIN`이 다른 환경을 가리키지 않는지 build 전에 검증해야 합니다.
 
 ### 4. AI가 만든 workflow를 그대로 머지하면 어떤 리스크가 있을까?
 
-미작성
+AI가 만든 workflow는 조건문 오류로 필요한 검증을 스킵하거나, 실패 상황을 통과시키고, 권한 또는
+secret 키를 과도하게 노출할 수 있습니다. 따라서 조건문이 정상 동작하는지 실패 상황을 만들어 확인하고,
+실제 PR에서도 실행해 봐야 합니다. 또한 workflow 권한이 최소인지와 secret 값이 로그·step 환경 변수에
+노출되지 않는지를 반드시 확인해야 합니다.
+
+> 위 네 답변은 `docs/rfc/week10-retrospective.md`의 「제출 질문」 절 원문을 그대로 옮긴 것이다.
 
 ### AI와 작성자의 역할
 
