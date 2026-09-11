@@ -865,6 +865,51 @@ flowchart TD
   class summary report
   class fail failure
 </pre>
+          <div class="callout cold">
+            <strong>구현 결과 · 2026-09-11 · PR 코멘트 하나로 모았다</strong>
+            <p>
+              처음에는 job summary만 썼다. 그런데 PR #21을 눈으로 확인해보니 대화 화면에는
+              <code>All checks have passed</code>만 뜨고 초과 정보가 없었다. summary는
+              <strong>Checks 탭을 눌러 들어가야</strong> 보인다. 번들 예산은
+              <code>continue-on-error</code>로 막지 않으므로 이 상태면 초과를 놓친다.
+            </p>
+            <p>
+              그래서 PR 코멘트를 붙였다. 번들만 올리다가,
+              <strong>통과 여부도 PR에서 바로 확인하고 싶다는 작성자 판단</strong>으로 테스트·환경
+              변수까지 한 코멘트로 묶었다.
+            </p>
+            <pre><code># CI 검증 요약
+
+## ✅ 단위·통합 테스트 통과   | 테스트 164/164 · 스위트 68/68
+## ✅ 환경 변수 검증 통과      | 검사 대상: APP_ORIGIN, AUTH_SESSION_SECRET
+## ❌ 번들 예산 초과          | 273.79 kB / 270.00 kB · 초과 3.79 kB</code></pre>
+          </div>
+
+          <div class="callout warning">
+            <strong>막힌 지점 · <code>$GITHUB_STEP_SUMMARY</code>는 step마다 다른 파일이다</strong>
+            <p>
+              리포트 step에서 vitest가 쓴 요약을 읽어 그대로 올리려 했으나 되지 않는다. step마다
+              별도 파일이라 다른 step의 요약에 접근할 수 없다. 각 스크립트가 공유 디렉터리에 섹션을
+              남기고 마지막 step이 모으는 구조로 바꿨다.
+            </p>
+            <pre><code>ci-report/10-tests.md    ← report-test-results.mjs
+ci-report/20-env.md      ← validate-env.mjs
+ci-report/30-budget.md   ← report-bundle-budget.mjs
+         ↓
+post-ci-comment.mjs  →  PR 코멘트 하나 (표식으로 갱신, 쌓이지 않음)</code></pre>
+            <p>
+              파일명의 숫자가 코멘트 안 순서다. <code>Post CI summary comment</code> step의 조건은
+              <code>!cancelled()</code>라, 앞 step이 실패해 섹션이 일부만 모여도 그때까지의 결과는
+              올라간다.
+            </p>
+            <p>
+              vitest 요약은 <code>json</code> 리포터를 추가해 만든다.
+              <code>--reporter=default --reporter=github-actions --reporter=json</code>으로 기존
+              로그 출력과 job summary를 그대로 두고 json만 얹었다. 리포터를 명시하면
+              <code>github-actions</code> 자동 활성화가 꺼질 수 있어 함께 지정했다.
+            </p>
+          </div>
+
           <div class="callout">
             <strong>실패했을 때도 리포트가 남아야 한다</strong>
             <p>
@@ -1033,6 +1078,80 @@ flowchart TD
               </tbody>
             </table>
           </div>
+          <div class="callout cold">
+            <strong>실행 결과 · 2026-09-11 · 두 게이트가 다르게 동작했다</strong>
+            <div class="table-wrap">
+              <table>
+                <caption>
+                  PR #20(환경 변수) · PR #21(번들 예산)
+                </caption>
+                <thead>
+                  <tr>
+                    <th>항목</th>
+                    <th>환경 변수 · PR #20</th>
+                    <th>번들 예산 · PR #21</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>만든 방법</td>
+                    <td><code>APP_ORIGIN</code>을 잘못된 형식으로</td>
+                    <td>한도를 270 kB로 낮춤</td>
+                  </tr>
+                  <tr>
+                    <td>해당 step</td>
+                    <td><code>failure</code></td>
+                    <td><code>success</code>(실제 outcome은 failure)</td>
+                  </tr>
+                  <tr>
+                    <td>이후 step</td>
+                    <td><strong>build부터 3개 skipped</strong></td>
+                    <td>계속 진행</td>
+                  </tr>
+                  <tr>
+                    <td><code>quality</code> check</td>
+                    <td><strong>failure</strong></td>
+                    <td><strong>pass</strong></td>
+                  </tr>
+                  <tr>
+                    <td>머지</td>
+                    <td>막힘</td>
+                    <td>허용</td>
+                  </tr>
+                  <tr>
+                    <td>알림</td>
+                    <td>summary ❌ · PR 코멘트</td>
+                    <td>summary ❌ · PR 코멘트 · <code>::warning::</code> 주석</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              의도한 대로 갈렸다. 설정 실수는 build 전에 막히고, 번들 초과는 알리되 막지 않는다.
+            </p>
+          </div>
+
+          <div class="callout warning">
+            <strong>부수 발견 1 · 예산은 클라이언트 청크만 잰다</strong>
+            <p>
+              처음에는 &ldquo;큰 라이브러리를 무의미하게 import&rdquo;하는 방식으로 실제 번들을
+              키우려 했다. 클라이언트 컴포넌트(<code>HeaderNav</code>)에 137KB짜리 모듈을 넣었는데
+              클라이언트 번들이 커지지 않았다.
+            </p>
+            <pre><code>.next/server/chunks/ssr/...   ← payload 있음
+.next/static/chunks/          ← 없음</code></pre>
+            <p>
+              <code>'use client'</code> 컴포넌트여도 <code>.length</code>만 참조하니 클라이언트
+              번들에서는 트리 셰이킹으로 걷히고 서버 번들에만 남았다. 소스를 60KB에서 137KB로 키워도
+              측정값은 286.28 kB 그대로였다.
+            </p>
+            <p>
+              <strong>이 예산이 무엇을 재는지 확인한 셈이다.</strong>
+              <code>.next/static/chunks/**</code>, 즉 브라우저가 실제로 받는 JS만 센다. 서버 전용
+              코드는 들어가지 않는다. 그래서 한도를 낮추는 방식으로 바꿨다.
+            </p>
+          </div>
+
           <div class="callout warning">
             <strong>실험 PR은 머지하지 않는다</strong>
             <p>
