@@ -50,6 +50,16 @@ const main = async () => {
 
   const summary = buildSummary(entries)
   process.stdout.write(summary)
+
+  // 번들 초과는 job을 실패시키지 않는다(quality.yml의 continue-on-error). 그래서 check는
+  // 초록불로 남는데, 그것만으로는 초과를 놓치기 쉽다. 주석으로 PR 화면에 띄운다.
+  for (const entry of entries.filter((candidate) => !candidate.passed)) {
+    const over = formatKb(entry.size - entry.sizeLimit)
+    process.stdout.write(
+      `::warning title=번들 예산 초과::${entry.name}이(가) 한도를 ${over} 넘었습니다 ` +
+        `(${formatKb(entry.size)} / ${formatKb(entry.sizeLimit)})\n`,
+    )
+  }
   if (process.env.GITHUB_STEP_SUMMARY) {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, summary)
   }

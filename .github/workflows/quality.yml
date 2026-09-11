@@ -50,8 +50,13 @@ jobs:
         run: pnpm build
       # size-limit은 .next 산출물을 읽으므로 반드시 build 뒤에 둔다.
       # 앞에 두면 "can't find files at .next/static/chunks/**/*.js"로 실패한다.
+      # 번들 초과는 머지를 막지 않는다. 되돌리기 쉬운 문제이고 변동성도 없어서,
+      # 막는 것보다 보이게 하는 쪽이 낫다는 작성자 판단이다. 환경 변수 게이트는 그대로 막는다.
+      # continue-on-error가 붙으면 step이 실패해도 conclusion은 success가 되므로,
+      # 아래 리포트 step 조건은 그대로 동작한다.
       - name: Check bundle budget
         id: budget
+        continue-on-error: true
         run: pnpm exec size-limit --json > size-limit-result.json
       # 초과로 앞 step이 실패해도 리포트는 남아야 한다. 조건을 "성공했을 때"가 아니라
       # "측정이 실행됐을 때"로 두는 이유다(2단계 아티팩트 업로드에서 겪은 것과 같은 구조).

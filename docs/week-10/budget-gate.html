@@ -895,6 +895,103 @@ flowchart TD
               문서에서 확정하지 않는다.
             </p>
           </div>
+
+          <div class="callout cold">
+            <strong>결정 · 2026-09-11 · 번들 예산은 막지 않고 경고만</strong>
+            <p>
+              작성자 판단이다.
+              <strong>번들 초과는 되돌리기 쉬운 문제라 머지를 막을 이유가 약하다.</strong> 크기는
+              나중에 줄여도 되고, 그 사이 다른 작업이 막히는 비용이 더 크다. 환경 변수 검증은 그대로
+              막는다. 설정 실수는 배포까지 흘러가면 되돌리기가 훨씬 비싸다.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <caption>
+                  비용 · 변동성 · 리스크로 나눈 판단
+                </caption>
+                <thead>
+                  <tr>
+                    <th>게이트</th>
+                    <th>변동성</th>
+                    <th>비용</th>
+                    <th>막지 못하면</th>
+                    <th>배치</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>환경 변수</td>
+                    <td>없음(결정적)</td>
+                    <td>1초 미만</td>
+                    <td>잘못된 설정이 배포까지 간다</td>
+                    <td><strong>차단</strong></td>
+                  </tr>
+                  <tr>
+                    <td>번들 예산</td>
+                    <td>없음(재빌드 편차 0)</td>
+                    <td>build 재사용, 수 초</td>
+                    <td>번들이 조용히 커진다. 다만 되돌리기 쉽다</td>
+                    <td><strong>경고</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="callout warning">
+            <strong>별도 job으로 분리하지 않은 이유</strong>
+            <p>
+              &ldquo;번들만 required에서 빼기&rdquo;를 위해 별도 job으로 나누는 방법도 있었다.
+              그러면
+              <code>size-limit</code>이 <code>.next</code>를 읽어야 하므로 checkout·setup·install과
+              <strong>build를 한 번 더 돌려야 한다.</strong> 1단계 실측 기준으로 약 25~32초가
+              추가된다.
+            </p>
+            <p>
+              이는 1단계 체크리스트의 &ldquo;<code
+                >job 병렬화로 각 job의 install 비용을 중복시키지 않았는가</code
+              >&rdquo;에 정면으로 걸린다. 1단계에서 Quality의 불필요한 Chromium 설치 24초를
+              걷어냈는데 비슷한 비용을 도로 넣는 셈이다.
+            </p>
+            <p>
+              대신 step에 <code>continue-on-error: true</code>를 붙였다. 빌드 중복도, required check
+              추가도 없이 같은 결과를 얻는다.
+            </p>
+            <pre><code>- name: Check bundle budget
+  id: budget
+  continue-on-error: true
+  run: pnpm exec size-limit --json &gt; size-limit-result.json</code></pre>
+          </div>
+
+          <div class="callout pending">
+            <strong>경고가 묻히지 않게</strong>
+            <p>
+              <code>continue-on-error</code>만 붙이면 <code>quality</code> check가 초록불로 남아
+              초과를 놓치기 쉽다. 리포트 스크립트가 초과 시 <code>::warning::</code> 주석을 함께
+              남겨 PR 화면에 드러나게 했다.
+            </p>
+            <pre><code>::warning title=번들 예산 초과::전체 클라이언트 JS 번들이(가)
+한도를 23.79 kB 넘었습니다 (273.79 kB / 250.00 kB)</code></pre>
+            <p>
+              <code>continue-on-error</code>가 붙으면 step이 실패해도
+              <code>steps.budget.conclusion</code>은 <code>success</code>가 된다. 리포트 step의
+              조건은 <code>!= 'skipped'</code>이므로 그대로 동작한다. 실제 실패 여부가 필요하면
+              <code>conclusion</code>이 아니라 <code>outcome</code>을 봐야 한다.
+            </p>
+          </div>
+
+          <div class="callout cold">
+            <strong>required check 구조</strong>
+            <p>
+              두 게이트는 <code>quality</code> job 안의 step이므로 따로 required로 걸 수 없다.
+              <code>develop</code>의 ruleset <code>merge-required-ci</code>에는
+              <code>quality</code>, <code>Detect E2E scope</code>, <code>E2E (chromium)</code>,
+              <code>E2E (webkit)</code> 네 개가 등록돼 있고,
+              <strong>ruleset은 그대로 둔다.</strong> 환경 변수 검증이 실패하면
+              <code>quality</code>가 실패해 머지가 막히고, 번들 초과는
+              <code>continue-on-error</code> 때문에 막지 않는다.
+            </p>
+          </div>
         </section>
 
         <section id="redlight" class="step">
