@@ -619,6 +619,159 @@
               하려는 것이다.
             </p>
           </div>
+
+          <div class="callout cold">
+            <strong>구현 결과 · 2026-09-11</strong>
+            <p>
+              위 표의 <code>PORT</code>는 게이트 대상에서 뺐다. 세 변수 중 실제로 사고 경로가 있는
+              것은 <code>APP_ORIGIN</code>과 <code>AUTH_SESSION_SECRET</code> 둘이다.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <caption>
+                  <code>scripts/validate-env.mjs</code
+                  >의 검사 세 가지
+                </caption>
+                <thead>
+                  <tr>
+                    <th>검사</th>
+                    <th>대상</th>
+                    <th>실패 조건</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>누락</td>
+                    <td><code>APP_ORIGIN</code></td>
+                    <td>비어 있으면 실패</td>
+                  </tr>
+                  <tr>
+                    <td>형식</td>
+                    <td><code>APP_ORIGIN</code></td>
+                    <td><code>new URL()</code> 파싱 실패 또는 http/https가 아님</td>
+                  </tr>
+                  <tr>
+                    <td>노출</td>
+                    <td><code>APP_ORIGIN</code>, <code>AUTH_SESSION_SECRET</code></td>
+                    <td><code>NEXT_PUBLIC_</code> 변형이 존재하면 실패</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              노출 검사가 핵심이다. <code>get-api-base-url.ts:4-8</code>에
+              <strong>주석으로만</strong>
+              있던 규칙 &mdash; &ldquo;<code>NEXT_PUBLIC_</code>을 붙이면 서버 내부 origin이
+              브라우저에 그대로 노출된다&rdquo; &mdash; 을 기계가 지키게 한 것이다. 제출 질문 3번
+              &ldquo;Preview 환경이 production API를 바라보면&rdquo;이 묻는 사고 경로가 이것이다.
+            </p>
+          </div>
+
+          <div class="callout warning">
+            <strong>5주차 판단을 뒤집었다 · <code>APP_ORIGIN</code> 폴백 제거</strong>
+            <p>
+              <code>getApiBaseUrl()</code>의 <code>?? http://localhost:${PORT}</code> 폴백을 걷어내
+              <code>APP_ORIGIN</code>을 진짜 필수로 만들었다. <code>AUTH_SESSION_SECRET</code>은
+              mock 백엔드라 폴백을 유지하고 노출 검사만 적용한다.
+            </p>
+            <p>
+              이 폴백은 5주차에 의도적으로 남긴 것이다.
+              <code>docs/week-05/decisions.md:208</code>의 이유는 &ldquo;배포 환경이 정해지기 전에는
+              어떤 env를 읽어야 할지 알 수 없다&rdquo;였고,
+              <strong>배포 설정이 없다는 조건은 지금도 그대로다.</strong> 바꾼 근거는 배포 환경이
+              정해져서가 아니라,
+              <strong>설정 계약을 선언하고 CI가 지키게 하는 것 자체가 이번 과제</strong>이기
+              때문이다. 5주차 기록은 지우지 않는다.
+            </p>
+            <p>
+              폴백이 있으면 origin을 빠뜨려도 조용히 localhost로 흘러간다. 로컬에서는 통과하고 배포
+              환경에서만 엉뚱한 곳을 가리키는, 설정 사고 중 가장 늦게 발견되는 형태다.
+            </p>
+          </div>
+
+          <div class="callout">
+            <strong>로컬 검증 · 2026-09-11</strong>
+            <p>검사 여섯 경로를 모두 확인했다. 값은 어느 출력에도 나타나지 않았다.</p>
+            <pre><code>통과              APP_ORIGIN=http://localhost:3000          → 0
+누락              APP_ORIGIN=                              → 1
+형식 오류         APP_ORIGIN=not-a-url                     → 1
+프로토콜 오류     APP_ORIGIN=ftp://example.com             → 1
+노출(origin)      NEXT_PUBLIC_APP_ORIGIN=...               → 1
+노출(secret)      NEXT_PUBLIC_AUTH_SESSION_SECRET=...      → 1</code></pre>
+            <p>폴백 제거가 깨뜨리는 곳도 확인했다.</p>
+            <ul>
+              <li>
+                <code>pnpm build</code> (값 없음) &mdash; <code>/_not-found</code> page data
+                수집에서 실패. <code>app/layout.tsx:29</code>의 <code>metadataBase</code>가 빌드
+                시점에 평가되기 때문이다. 오류 메시지에 조치 방법이 그대로 나온다
+              </li>
+              <li><code>APP_ORIGIN</code>을 주면 빌드 성공</li>
+              <li>
+                <code>pnpm verify</code> &mdash; 29개 파일 164개 테스트 통과. vitest는 값이 필요
+                없다. <code>api.test.ts</code>가 <code>@vitest-environment jsdom</code>이라
+                <code>window</code>가 있고 <code>getApiBaseUrl()</code>이 조기 반환한다
+              </li>
+              <li>
+                <code>playwright test e2e/order.spec.ts</code> &mdash; 두 브라우저 통과.
+                <code>webServer.env</code>로 <code>pnpm start</code>에 값이 전달된다
+              </li>
+            </ul>
+          </div>
+
+          <div class="callout pending">
+            <strong>값을 공급하는 곳 · <code>.env</code> 파일은 커밋하지 않는다</strong>
+            <div class="table-wrap">
+              <table>
+                <caption>
+                  빌드가 도는 모든 경로에 값이 필요하다
+                </caption>
+                <thead>
+                  <tr>
+                    <th>위치</th>
+                    <th>방식</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>quality.yml</code></td>
+                    <td>
+                      job 레벨 <code>env</code> + build 앞에 <code>Validate environment</code> step
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>e2e.yml</code></td>
+                    <td>
+                      <code>e2e</code> job 레벨 <code>env</code>(<code>changes</code> job은 불필요)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><code>playwright.config.ts</code></td>
+                    <td><code>webServer.env</code>로 <code>pnpm start</code>에 전달</td>
+                  </tr>
+                  <tr>
+                    <td>로컬</td>
+                    <td><code>.env.local</code>을 각자 만든다</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              <code>.env.example</code> 같은 템플릿 파일은 만들지 않았다. 만들려면
+              <code>.gitignore</code>의 <code>.env*</code> 규칙에 negation을 추가해 느슨하게 해야
+              하는데 그만한 이득이 없다.
+              <strong>설정 계약은 검증 스크립트의 변수 목록이 맡고</strong>, 값이 없을 때 무엇을
+              어떻게 설정해야 하는지는 실패 메시지가 알려준다.
+            </p>
+          </div>
+
+          <div class="callout pending">
+            <strong>아직 Actions에서 확인하지 않았다</strong>
+            <p>
+              위는 모두 로컬 실행 결과다. <code>Validate environment</code>가 실제 CI에서
+              <code>Run production build</code> 앞에 서는지, job summary에 결과가 뜨는지, 빨간불
+              실험에서 build가 Skipped 되는지는 push 후 확인한다. required 배치도 미결정이다.
+            </p>
+          </div>
         </section>
 
         <section id="visibility" class="step">
