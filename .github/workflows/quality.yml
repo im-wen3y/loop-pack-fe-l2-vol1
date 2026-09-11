@@ -8,6 +8,9 @@ name: Quality
 
 permissions:
   contents: read
+  # 번들 예산 결과를 PR 대화 화면에 코멘트로 남기기 위해 필요하다.
+  # job summary는 Checks 탭을 눌러야 보여서 초과를 놓치기 쉽다.
+  pull-requests: write
 
 jobs:
   quality:
@@ -62,4 +65,6 @@ jobs:
       # "측정이 실행됐을 때"로 두는 이유다(2단계 아티팩트 업로드에서 겪은 것과 같은 구조).
       - name: Report bundle budget
         if: ${{ !cancelled() && steps.budget.conclusion != 'skipped' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/report-bundle-budget.mjs size-limit-result.json
