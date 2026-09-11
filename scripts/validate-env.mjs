@@ -28,9 +28,10 @@ const checkRequiredUrl = (name) => {
     ].join(' ')
   }
 
+  const value = raw.trim()
   let parsed
   try {
-    parsed = new URL(raw)
+    parsed = new URL(value)
   } catch {
     // 값을 그대로 싣지 않는다. 무엇이 잘못됐는지만 말한다.
     return `${name}이(가) 절대 URL이 아닙니다. http:// 또는 https:// 로 시작하는 origin이어야 합니다.`
@@ -38,6 +39,16 @@ const checkRequiredUrl = (name) => {
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     return `${name}의 프로토콜이 http/https가 아닙니다.`
+  }
+
+  if (
+    parsed.username !== '' ||
+    parsed.password !== '' ||
+    parsed.pathname !== '/' ||
+    parsed.search !== '' ||
+    parsed.hash !== ''
+  ) {
+    return `${name}은(는) 경로·쿼리·해시·인증 정보가 없는 순수 origin이어야 합니다.`
   }
 
   return null
