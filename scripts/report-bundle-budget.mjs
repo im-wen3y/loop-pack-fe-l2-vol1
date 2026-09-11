@@ -45,6 +45,8 @@ const main = async () => {
     if (process.env.GITHUB_STEP_SUMMARY) {
       await appendFile(process.env.GITHUB_STEP_SUMMARY, fallback)
     }
+    await mkdir('ci-report', { recursive: true })
+    await writeFile('ci-report/30-budget.md', fallback)
     return
   }
 
