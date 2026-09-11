@@ -552,6 +552,35 @@ AI 리뷰의 CI 통합은 선택이며 로컬 도구로 진행해도 된다. AI�
 기각은 작성자가 실제 diff와 팀 규칙을 대조해 판단한다. CI에 통합한다면 timeout, max turns,
 concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추가로 검토한다.
 
+### 실제 리뷰 프롬프트와 실행 증거
+
+2026-09-11에 Claude Code의 세션 맥락이 없는 리뷰 에이전트로 PR #12(`develop...feat/week-10`)를
+검토했다. 실제 실행 프롬프트는 다음 순서와 출력 제약을 포함했다.
+
+1. `.agents/skills/ai-review/SKILL.md`, `CLAUDE.md`, `.claude/rules/*` 4개를 먼저 읽는다.
+2. 문서를 제외한 PR 코드·설정 diff를 읽고, 변경 파일의 전체 내용으로 라인 번호를 다시 확인한다.
+3. Critical/Major/Minor로 분류하고 모든 지적에 `파일:라인`, 문제·영향·수정 방향·적용 기준을
+   적는다.
+4. 코드에서 확인할 수 없는 추측, 일반론, 개인 취향은 지적하지 않고, 채택 여부를 예단하지 않는다.
+
+이 프롬프트를 현재 스킬의 기준과 대조한 결과, 리뷰 기준 자체는 누락 없이 반영되어 있었다. 특히
+초기 실행 기록에는 코드·설정만 리뷰하고 문서는 제외한다는 범위와, 각 라인 번호를 현재 파일에서
+검증하라는 조건이 명시되어 있다. 출력은 P1 지적 없음, P2 4건, P4 1건이었다.
+
+### 작성자의 판별 기록
+
+- **잘 잡아낸 지적 — `scripts/validate-env.mjs:39`**: URL 문법만 검사해 pathname·query·인증 정보가
+  붙은 `APP_ORIGIN`을 통과시키는 문제를 P2로 채택했다. 순수 origin만 허용하도록 수정하고 잘못된
+  입력이 실패하는 것을 재현했으며, PR 코멘트와 Actions 결과로 재검증했다.
+- **기각한 지적 — `scripts/post-ci-comment.mjs:53`**: 최근 코멘트 100개만 조회한다는 의견은
+  pagination을 추가하면 더 견고해지는 유효한 P4 제안이지만, 표식 코멘트 하나를 갱신하는 현재
+  운영 범위에서 동작·게이트·보안을 깨뜨리는 결함은 아니므로 기각했다. 이는 오탐(false positive)이
+  아니라 범위와 우선순위에 따른 기각이다.
+- **오탐 기록**: 이번 실제 리뷰에서는 코드 사실과 규칙에 반하는 헛소리 1건을 확인하지 못했다.
+  따라서 제출 조건을 채우기 위해 오탐 사례를 만들어내지 않으며, 오탐 전후 프롬프트 개선 항목은
+  미완료로 남긴다. 추가 리뷰에서 실제 오탐이 확인되면 원문·기각 근거·수정 프롬프트를 이 절에
+  append한다.
+
 ## 규칙 승격
 
 - 반복 지적의 출처: 미선정
@@ -564,6 +593,30 @@ concurrency, 명시적 트리거, 최소 권한과 secret 노출 방지를 추�
 
 이미 존재하는 규칙을 이번 주에 새로 승격한 것으로 기록하지 않는다. 어떤 반복 지적을 승격할지는
 작성자가 직접 결정한다.
+
+### 2026-09-11 승격 결과
+
+6주차 self-review에서 `PRODUCT_CATEGORY_FILTERS`를 외부 소비처 없이 Public API로 공개한 문제가
+발견된 뒤, 같은 기준으로 `productQueries`, `productQueryKeys`, `GetProductListParams`도 반복 지적됐다
+(`docs/week-06/self-review-result.md:41-43, 59-62`). 6주차 피드백도 각 export의 슬라이스 외부 소비처를
+확인하지 않은 것을 재발 원인으로 기록했다(`docs/week-06/feedback-action-plan.md:9-12`). 이 반복 출처를
+바탕으로 `entities/*/index.ts`의 named export마다 슬라이스 바깥 import가 하나 이상 있는지를 검사하는
+`scripts/check-public-api-consumers.mjs`를 새 결정적 룰로 승격했다.
+
+검사 스크립트는 TypeScript AST로 alias·상대 경로 import와 type import를 읽고, 같은 슬라이스 내부의
+참조는 소비처에서 제외한다. 외부 소비처가 없는 export가 있으면 종료 코드 1로 실패하고, 현재 다섯
+슬라이스의 정상 Public API는 통과한다. 임시 `__PUBLIC_API_PROBE__` export로 실패를 재현한 뒤 probe를
+제거했으며, `pnpm check:public-api`, `pnpm lint`, `pnpm typecheck`가 통과했다.
+
+기존 코드에서 실제 소비처가 없던 `selectIsInCart`, 주문 타입 두 개, `sessionQueryKeys`,
+`useSessionQuery`는 Public API에서 제거하고 내부 구현은 유지했다. export의 공개 여부와 계약의 필요성은
+사람이 결정하고, 공개하기로 한 export의 외부 소비처 존재 여부만 기계가 판별한다. `export *`는 공개
+범위를 추적할 수 없으므로 검사에서 실패시켜 named export로 명시하게 한다.
+
+실행 시점은 `package.json`의 `lint`에 `check:public-api`를 연결해 고정했다. 따라서 `pnpm verify`는
+`pnpm test → pnpm lint(ESLint → Public API 소비처 검사) → pnpm typecheck` 순서로 이 게이트를 실행하며,
+`pnpm check:public-api`로 단독 재현할 수 있다. 임시 미사용 export를 추가했을 때 종료 코드 1과 파일·심볼이
+출력되는 것을 확인한 뒤 probe를 제거했다.
 
 ## 질문 답변
 
