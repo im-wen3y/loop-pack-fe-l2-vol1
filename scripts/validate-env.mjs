@@ -1,10 +1,8 @@
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 
 /*
- * build 전에 환경 변수 계약을 검사한다. 이 파일의 목록이 이 프로젝트의 설정 계약이다.
- *
- * 값은 어디에도 출력하지 않는다. 변수 이름과 사유만 쓴다. 실패 리포트가 secret 유출
- * 경로가 되면 게이트를 만든 의미가 없다.
+ * build 전에 환경 변수 계약을 검사한다. 아래 목록이 이 프로젝트의 설정 계약이다.
+ * 실패 메시지에 값을 싣지 않는다. 리포트가 secret 유출 경로가 되면 게이트를 만든 의미가 없다.
  */
 
 const REPORT_DIR = 'ci-report'
@@ -12,14 +10,18 @@ const REPORT_DIR = 'ci-report'
 // 서버 렌더링이 API를 호출할 절대 origin. 없으면 app/layout.tsx의 metadataBase가 빌드 중에 죽는다.
 const REQUIRED_URL_VARS = ['APP_ORIGIN']
 
-// 브라우저에 나가면 안 되는 값들. NEXT_PUBLIC_ 접두사가 붙으면 Next가 빌드 시점에
-// 클라이언트 번들에 문자열로 박아 넣는다(src/shared/api/get-api-base-url.ts 주석 참고).
+// 브라우저에 나가면 안 되는 값들. 이유는 src/shared/api/get-api-base-url.ts 주석 참고.
 const SERVER_ONLY_VARS = ['APP_ORIGIN', 'AUTH_SESSION_SECRET']
+
+// Vercel은 배포마다 URL이 달라 VERCEL_URL이 기본값을 맡는다. 그래서 여기서만 APP_ORIGIN이 선택이다.
+const isOnVercel = process.env.VERCEL === '1'
 
 const checkRequiredUrl = (name) => {
   const raw = process.env[name]
 
   if (raw === undefined || raw.trim() === '') {
+    if (isOnVercel && process.env.VERCEL_URL) return null
+
     return [
       `${name}이(가) 없습니다. 서버 렌더링이 API를 호출할 절대 origin이 필요합니다.`,
       `로컬에서는 .env.local에 ${name}=http://localhost:3000 을 추가하세요.`,
@@ -52,9 +54,38 @@ const checkNotExposed = (name) => {
   ].join(' ')
 }
 
+/*
+ * Preview의 APP_ORIGIN이 다른 환경을 가리키면 Preview의 SSR이 그 환경의 API를 호출한다.
+ * 유효한 URL이라 형식 검사로는 안 걸린다. Production은 커스텀 도메인이 정상이라 제외한다.
+ */
+const checkSelfReference = () => {
+  if (!isOnVercel || process.env.VERCEL_ENV !== 'preview') return null
+
+  const raw = process.env.APP_ORIGIN
+  const deploymentUrl = process.env.VERCEL_URL
+  if (!raw?.trim() || !deploymentUrl) return null
+
+  let host
+  try {
+    host = new URL(raw).host
+  } catch {
+    // 형식 오류는 checkRequiredUrl이 이미 보고한다.
+    return null
+  }
+
+  if (host === deploymentUrl) return null
+
+  return [
+    'APP_ORIGIN이 이 Preview 배포가 아닌 다른 환경을 가리킵니다.',
+    'Preview의 서버 렌더링이 그 환경의 API를 호출하게 되어 테스트 데이터가 섞입니다.',
+    'Preview에서는 APP_ORIGIN을 비워 VERCEL_URL이 쓰이게 하세요.',
+  ].join(' ')
+}
+
 const collectFailures = () => [
   ...REQUIRED_URL_VARS.map(checkRequiredUrl),
   ...SERVER_ONLY_VARS.map(checkNotExposed),
+  checkSelfReference(),
 ]
 
 const buildSummary = (failures) => {
