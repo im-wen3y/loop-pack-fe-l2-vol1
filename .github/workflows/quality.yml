@@ -15,8 +15,12 @@ jobs:
     timeout-minutes: 10
     # app/layout.tsx의 metadataBase가 빌드 시점에 getApiBaseUrl()을 평가하므로
     # build가 도는 job에는 APP_ORIGIN이 있어야 한다. E2E의 baseURL과 같은 값을 쓴다.
+    #
+    # 비밀 값은 아니지만 secrets로 넣는다. Actions는 step 헤더에 그 step이 받는 env를
+    # 그대로 나열하는데, 자동 마스킹은 secrets 컨텍스트 값에만 적용된다. 평문으로 두면
+    # 모든 step 로그에 값이 찍히고, 나중에 진짜 비밀을 같은 자리에 넣었을 때 그대로 샌다.
     env:
-      APP_ORIGIN: http://localhost:3000
+      APP_ORIGIN: ${{ secrets.APP_ORIGIN }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

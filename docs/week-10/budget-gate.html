@@ -764,12 +764,76 @@
             </p>
           </div>
 
+          <div class="callout warning">
+            <strong>Actions 검증에서 잡은 것 · 2026-09-11 · 스크립트만으로는 부족했다</strong>
+            <p>
+              빨간불 실험(PR #20)에서 <code>APP_ORIGIN</code>을 <code>not-a-valid-origin</code>으로
+              바꿔 게이트를 실패시켰다. 값을 비우지 않고 형식을 깨뜨린 이유는
+              <strong>값이 로그에 새는지까지 함께 보기 위해서</strong>였다. 그 판단이 문제를 하나
+              잡았다.
+            </p>
+            <p>스크립트 출력에는 값이 없었다. 그런데 로그 전체를 검색하니 값이 8번 나왔다.</p>
+            <pre><code>##[group]Run actions/checkout@...
+  submodules: false
+  set-safe-directory: true
+env:
+  APP_ORIGIN: not-a-valid-origin     ← 여기
+##[endgroup]</code></pre>
+            <p>
+              <strong
+                >Actions가 모든 step 헤더에 그 step이 받는 <code>env</code>를 나열한다.</strong
+              >
+              성공한 실행에서도 같은 값이 11번 나왔으므로 실패와 무관하고,
+              <code>uses:</code>·<code>run:</code> 양쪽 step 모두에서 나타난다. 다만 이 로깅 동작은
+              문서에 명시된 것이 아니라 이 저장소의 두 실행에서 관찰한 사실이다.
+            </p>
+            <p>
+              바로 옆 줄이 대비를 보여준다. <code>token: ***</code>는 마스킹되고
+              <code>APP_ORIGIN</code>은 그대로다.
+              <a
+                href="https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets"
+                >공식 문서</a
+              >는 <strong>자동 마스킹이 <code>secrets</code> 컨텍스트 값에만 적용된다</strong>고
+              명시하고, 비밀이 아닌 민감한 값은 <code>::add-mask::</code>로 직접 가리라고 안내한다.
+            </p>
+          </div>
+
+          <div class="callout cold">
+            <strong>대응 · <code>APP_ORIGIN</code>을 secrets로 옮겼다</strong>
+            <p>
+              <code>http://localhost:3000</code>은 비밀이 아니다. 그런데도 secrets에 넣은 이유는
+              <strong
+                >값을 어디서 가져오느냐가 스크립트가 무엇을 출력하느냐보다 중요하기 때문</strong
+              >이다. 평문 <code>env:</code>는 자리 자체가 새는 자리라, 나중에 진짜 비밀을 같은
+              자리에 넣으면 모든 step 헤더에 그대로 찍힌다.
+            </p>
+            <pre><code>env:
+  APP_ORIGIN: ${{ secrets.APP_ORIGIN }}</code></pre>
+            <p>
+              감수하는 것이 하나 있다. <strong>fork PR에는 secrets가 전달되지 않아</strong> 외부
+              기여자의 PR에서는 게이트가 &ldquo;누락&rdquo;으로 실패한다. 이 저장소는 지금까지 모든
+              PR이 같은 소유자(<code>im-wen3y</code>)에서 왔으므로 해당되지 않지만, 외부 기여를 받게
+              되면 다시 판단해야 한다.
+            </p>
+            <p>
+              과제 공통 보안 항목(358행) &ldquo;secrets를 로그로 찍지 않는다&rdquo;가 말하는 것이
+              이것이다. <strong>스크립트가 값을 안 찍는 것만으로는 부족했다.</strong>
+            </p>
+          </div>
+
           <div class="callout pending">
             <strong>아직 Actions에서 확인하지 않았다</strong>
             <p>
               위는 모두 로컬 실행 결과다. <code>Validate environment</code>가 실제 CI에서
               <code>Run production build</code> 앞에 서는지, job summary에 결과가 뜨는지, 빨간불
               실험에서 build가 Skipped 되는지는 push 후 확인한다. required 배치도 미결정이다.
+            </p>
+            <p>
+              <strong>이후 확인 · 2026-09-11</strong> &mdash; 세 항목 모두 Actions에서 확인했다.
+              성공 실행(PR #12)에서 <code>Validate environment</code>가 build 앞에서 통과했고 번들은
+              <strong>273.79 kB</strong>로 로컬 측정과 정확히 일치했다. 실패 실행(PR #20)에서는
+              <code>Run production build</code>부터 세 step이 <code>skipped</code>였다. 남은 것은
+              job summary가 PR 화면에 표로 렌더되는지 눈으로 보는 것과 required 배치다.
             </p>
           </div>
         </section>
