@@ -16,7 +16,8 @@ jobs:
     # app/layout.tsx의 metadataBase가 빌드 시점에 getApiBaseUrl()을 평가하므로
     # build가 도는 job에는 APP_ORIGIN이 있어야 한다. E2E의 baseURL과 같은 값을 쓴다.
     env:
-      APP_ORIGIN: http://localhost:3000
+      # 실험: 잘못된 형식으로 게이트를 실패시킨다. 확인 후 브랜치와 함께 삭제한다.
+      APP_ORIGIN: not-a-valid-origin
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
