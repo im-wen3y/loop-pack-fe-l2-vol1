@@ -109,6 +109,12 @@ pnpm exec playwright test --project=${{ matrix.browser }}
 E2E는 실제 Chromium과 WebKit을 사용하므로 브라우저 설치가 필요하다. Quality와 달리 E2E의
 브라우저 설치 step은 사용되지 않는 준비 작업으로 볼 수 없다.
 
+> 위 명령은 **Before/After 측정에 사용한 기준 구조**다. 측정을 끝낸 뒤 브라우저별 의존성 설치
+> 비용이 다르다는 것을 확인해 Chromium은 `--with-deps` 없이 설치하고 WebKit은 공식 이미지를
+> 컨테이너로 쓰도록 나눴다. 이 문서의 Before/After 수치는 모두 위 기준 구조에서 잰 값이며,
+> 변경 근거와 실측은 [`ci-investigation-notes.md`](../week-10/ci-investigation-notes.md)의
+> 「추가 확인 (2026-09-11)」에 있다. 변경 후 수치는 캐시가 채워진 실행을 확인한 뒤 갱신한다.
+
 ### Week 09 참고 실행
 
 #### 참고 실행의 조건
@@ -565,7 +571,7 @@ fallback은 의도대로 전체 실행을 트리거했다.
 | run URL        | [quality](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34574917691/job/103185072726) · [E2E](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34574917682) |
 | 원인           | fork PR에 base 저장소의 secrets가 전달되지 않는다. 게이트의 오작동이 아니라 값 공급이 끊긴 것이다                                                                                                |
 | 조치           | 두 workflow의 값을 `${{ secrets.APP_ORIGIN \|\| 'http://localhost:3000' }}`로 바꿨다                                                                                                             |
-| 조치 후 재검증 | **아직 하지 않았다.** 로컬 YAML 파싱과 Prettier만 통과했고, #210의 세 job이 초록불이 되는지는 push 후 Actions로 확인해야 한다                                                                    |
+| 조치 후 재검증 | **완료.** 같은 fork PR에서 `quality`와 `E2E (chromium)`·`E2E (webkit)`이 모두 통과했다. 아래 「조치 후 재검증 결과」 참고                                                                        |
 
 걷어낸 폴백을 되살린 것으로 보일 수 있으나 자리가 다르다. `getApiBaseUrl()`의 폴백은 **애플리케이션
 런타임이 설정 누락을 조용히 넘기는 자리**였고, 로컬에서는 통과하고 배포 환경에서만 어긋나는 형태를
@@ -577,6 +583,36 @@ fallback은 의도대로 전체 실행을 트리거했다.
 비밀이 아닌 값이라 유출 문제는 아니지만, "평문 `env:`는 새는 자리"라는 원칙을 fork PR에서는 지키지
 못한다는 뜻이다. 진짜 비밀이 필요한 검증을 나중에 추가한다면 fork PR에서는 그 job을 건너뛰게 하거나
 `pull_request_target`의 위험을 따로 검토해야 한다.
+
+이 손실도 예측이 아니라 같은 PR의 로그에서 확인했다. 내 fork에서는 `APP_ORIGIN: ***`로 마스킹되지만,
+secret이 없는 fork PR의 같은 자리에는 값이 그대로 찍혔다.
+
+```text
+# 내 fork (secret 있음)
+env:
+  APP_ORIGIN: ***
+
+# fork PR (secret 없음 → 폴백)
+env:
+  APP_ORIGIN: http://localhost:3000
+```
+
+마스킹이 값의 성격이 아니라 **값의 출처**에 붙는다는 것을 보여주는 자리다. 같은 문자열이라도 `secrets`
+컨텍스트를 거쳐야 가려진다.
+
+#### 조치 후 재검증 결과
+
+`APP_ORIGIN` 폴백을 넣은 뒤 같은 fork PR에서 다시 돌렸다.
+
+| 커밋       | 변경                      | upstream 결과                                                                                                                                                                                                         |
+| ---------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fb019280` | 조치 전                   | Quality **failure**, E2E **failure** — `APP_ORIGIN` 빈 값                                                                                                                                                             |
+| `7115c29f` | `APP_ORIGIN` 폴백 추가    | Quality **success**. E2E는 다음 push로 취소됨                                                                                                                                                                         |
+| `ae636638` | 브라우저 의존성 설치 변경 | Quality **success**, E2E **success**([Quality](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34577821143) · [E2E](https://github.com/loopers-labs/loop-pack-fe-l2-vol1/actions/runs/34577821269)) |
+
+secrets가 전달되지 않는 환경에서 통과한 것이므로, 폴백이 의도대로 동작했다는 근거가 된다. 내 fork의
+PR은 secret이 있어 어느 쪽이든 통과하므로 이 조치의 검증 근거가 되지 못한다. **게이트의 동작 조건을
+바꾼 변경은 그 조건이 실제로 성립하는 환경에서 확인해야 한다.**
 
 #### 배포 환경이 생긴 뒤의 갱신
 
@@ -642,6 +678,28 @@ job summary는 Checks 탭을 눌러야 보인다. PR #21을 눈으로 확인했�
 각 스크립트가 `ci-report/`에 섹션을 남기고 마지막 step이 모아 **PR 코멘트 하나**로 올린다.
 `$GITHUB_STEP_SUMMARY`가 step마다 별도 파일이라 다른 step의 요약을 읽을 수 없어 택한 구조다.
 테스트·환경 변수·번들 세 결과가 함께 올라가며, 표식으로 기존 코멘트를 갱신해 쌓이지 않는다.
+
+#### fork PR에서는 이 개선이 무효다
+
+제출 PR의 `quality` 로그에서 확인했다.
+
+```text
+PR 코멘트: skipped: 코멘트 쓰기 실패 (403)
+```
+
+`quality.yml`에 `permissions: pull-requests: write`를 선언해도, fork에서 온 `pull_request` 이벤트는
+GitHub이 `GITHUB_TOKEN`을 읽기 전용으로 강등한다. 선언한 권한보다 강등이 우선이라 우회할 방법이 없다.
+fork PR의 코드가 base 저장소에 쓰는 것을 막는 장치이므로 이 제약 자체는 타당하다.
+
+| PR                      | 코멘트           |
+| ----------------------- | ---------------- |
+| 내 fork 안의 PR (#12)   | 올라간다         |
+| upstream fork PR (#210) | 403으로 생략된다 |
+
+`scripts/post-ci-comment.mjs`는 이 실패를 job 실패로 올리지 않고 `skipped:`와 상태 코드만 남긴다.
+코멘트를 달지 못한 것이 검증 결과를 빨간불로 바꾸면 안 되기 때문이다. 다만 그 결과로 **fork PR에서는
+번들 초과를 대화 화면에서 놓치는 원래 문제로 되돌아간다.** 이 절이 해결하려던 상황이 외부 기여
+PR에서는 그대로 남아 있다는 뜻이고, 지금 구조로는 받아들이는 것 외에 선택지가 없다.
 
 Lighthouse CI는 선택이며 도입하지 않았다.
 
