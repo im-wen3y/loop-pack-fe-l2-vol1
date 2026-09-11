@@ -943,6 +943,44 @@
             <strong>완료 기준</strong> — 예산 설정과 근거, 환경 변수 검증 코드, 초과량이 보이는 실패
             캡처, 수정 후 성공 run이 있다. 실험 PR은 머지하지 않는다.
           </div>
+          <div class="callout" style="border-color: #2f7d55; background: #eaf7ef; color: #205438">
+            <strong>완료 이력 · 2026-09-11 · 예산·환경 변수 게이트</strong>
+            <p>
+              7주차 Node 22 측정값 <code>273.74 kB</code>에 5% 여유폭을 더해 번들 한도를
+              <code>287.4 kB</code>로 정하고 <code>.size-limit.json</code>에 반영했습니다. 번들 초과
+              실험은
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/21">PR #21</a>에서 PR
+              코멘트·job summary·warning으로 초과량을 확인한 뒤 복구했고, 번들 자체는 작성자 판단에
+              따라 merge blocker가 아닌 경고로 두었습니다.
+            </p>
+            <p>
+              <code>scripts/validate-env.mjs</code>를 <code>build</code> 앞에 연결해 필수 URL,
+              잘못된 형식, <code>NEXT_PUBLIC_</code> 노출을 검사했습니다. 잘못된
+              <code>APP_ORIGIN</code>의 실패와 복구는
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/20">PR #20</a>에서
+              확인했고, 실제 환경 변수 값은 기록하지 않았습니다. Vercel Preview에서는 배포 URL
+              자체를 기본값으로 사용할 수 있도록 별도 조건을 확인했습니다.
+            </p>
+            <p>
+              최종 <code>feat/week-10</code>에는 실험용 변경이 남아 있지 않으며,
+              <code>APP_ORIGIN</code>은 workflow의 평문이 아닌 secrets로 전달합니다. 예산은
+              advisory, 환경 변수 검증은 required 경로에서 실패하도록 역할을 구분했습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #356b9a; background: #edf5fc; color: #244b6b">
+            <strong>정정 이력 · 2026-09-11 · P2 수정 및 로컬 검증 완료</strong>
+            <p>
+              위 세 P2 항목의 “아직 코드 수정과 재검증은 완료하지 않았습니다”라는 이전 상태는 수정
+              이력으로 갱신합니다. 세 항목을 로컬 코드에 반영했고, P2 코멘트 답변에는 로컬 검증
+              결과와 push 후 Actions 재검증 계획을 남겼습니다.
+            </p>
+            <p>
+              <code>pnpm verify</code>(테스트 29개·164개, lint, typecheck), workflow YAML 파싱,
+              Prettier, <code>git diff --check</code>를 통과했습니다. 잘못된
+              <code>APP_ORIGIN</code> 실패와 번들 결과 파일 누락 fallback 파일 생성을 재현했습니다.
+              아직 push와 실제 Actions·브라우저 E2E 검증은 하지 않았습니다.
+            </p>
+          </div>
         </section>
 
         <section class="step" id="review">
@@ -977,6 +1015,123 @@
           <div class="done">
             <strong>완료 기준</strong> — 프롬프트 전후, 실제 리뷰 두 사례와 채택·기각 근거가 있다.
             제출을 위해 오탐을 만들어내지 않는다.
+          </div>
+          <div class="callout" style="border-color: #a35d2d; background: #fff1e8; color: #6b3d20">
+            <strong>진행 이력 · 2026-09-11 · PR #12 리뷰 실행 및 우선순위 결정</strong>
+            <p>
+              <a href="../../.agents/skills/ai-review/SKILL.md">ai-review 기준</a>에 기존
+              <code>.claude/rules/*</code>를 참조하고 10주차 CI에서 실제로 발생한 게이트·조건부
+              실행·캐시·권한·스크립트 사례를 추가했습니다. 문서가 아닌 코드·설정 diff만 대상으로
+              파일과 라인을 필수로 출력하도록 정했습니다.
+            </p>
+            <p>
+              세션 맥락이 없는 AI 리뷰로 PR #12를 다시 검토하고, P1 지적은 없음을 확인했습니다.
+              작성자 판단으로 P2 4건과 P4 1건을 선택해 실제 diff 라인에 등록했습니다. 등록 결과와
+              최종 본문은 아래 하단 이력과 각 GitHub 코멘트 링크에서 다시 확인할 수 있습니다.
+            </p>
+            <p>
+              현재는 리뷰 지적을 PR에 전달한 단계입니다. 작성자의 채택·기각 답변, 수정 후 재검증, 잘
+              잡은 지적과 오탐을 각각 하나씩 정리한 프롬프트 개선 기록이 남아야 05단계 완료 기준을
+              충족하므로 이 단계 전체를 완료로 표시하지 않습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #2f6f9e; background: #eaf4fb; color: #204866">
+            <strong>판단 이력 · 2026-09-11 · CSS-only E2E 지적</strong>
+            <p>
+              CSS-only PR은 기획 의도에 따른 시각 변경을 로컬에서 확인하는 흐름을 전제로 현재 E2E
+              스킵 정책을 유지하기로 했습니다. 다만 CSS만으로 포커스 표시나 레이아웃이 사용자 흐름에
+              영향을 줄 수 있어 CI에서 놓칠 여지는 인정했습니다.
+            </p>
+            <p>
+              이에 따라 첫 번째 코멘트의 우선순위를 P2에서 P3으로 낮추고, CSS 변경을 관련 E2E에
+              연결하는 작업은 후속 개선 과제로 남겼습니다. 판단과 계획은
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985871204"
+                >PR #12 답변</a
+              >에 기록했습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #b23a48; background: #fff0f2; color: #6e202b">
+            <strong>판단 이력 · 2026-09-11 · 미분류 src 경로 지적</strong>
+            <p>
+              <code>src/**</code> 전체를 unknown 필터에서 제외해 미분류 경로가 기본
+              <code>e2e/order.spec.ts</code>만 실행하는 문제를 P2로 수용했습니다. 필요한 E2E를 놓칠
+              수 있어 현재 우선순위를 낮추지 않습니다.
+            </p>
+            <p>
+              인식한 경로만 명시적으로 제외하거나 미분류 경로를 전체 E2E로 승격하도록 수정하고,
+              홈·마이페이지 등 미분류 경로의 scope 결과를 재검증할 계획을
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985878935"
+                >PR 답변</a
+              >에 남겼습니다. 아직 코드 수정과 재검증은 완료하지 않았습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #8b3a8b; background: #f8edfa; color: #5b285b">
+            <strong>판단 이력 · 2026-09-11 · APP_ORIGIN 검증 지적</strong>
+            <p>
+              <code>APP_ORIGIN</code>에 경로나 쿼리, 인증 정보가 붙어도 URL 형식만으로 통과하는
+              문제를 배포·보안 위험으로 판단해 P2로 수용했습니다. 잘못된 값이 서버 렌더링 API 요청을
+              다른 주소로 조합할 수 있으므로 수정이 필요합니다.
+            </p>
+            <p>
+              사용자 정보·pathname·search·hash가 없는 순수 origin만 허용하고, 검증한 origin을
+              정규화해 API 호출에 사용하도록 수정할 계획입니다. 잘못된 입력의 실패도 재검증하며,
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985885544"
+                >PR 답변</a
+              >에 판단과 계획을 남겼습니다. 아직 코드 수정과 재검증은 완료하지 않았습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #a66a1f; background: #fff7e6; color: #68430f">
+            <strong>판단 이력 · 2026-09-11 · 번들 리포트 fallback 지적</strong>
+            <p>
+              번들 측정 결과를 읽지 못한 경우 job summary에만 남고
+              <code>ci-report/30-budget.md</code>가 생성되지 않아 PR 코멘트에서는 측정 실패를 확인할
+              수 없는 문제를 P2로 수용했습니다. 결과 가시성의 목적을 훼손하므로 수정이 필요합니다.
+            </p>
+            <p>
+              fallback도 동일한 섹션 파일에 기록한 뒤 <code>post-ci-comment</code> 단계가 수집하도록
+              수정하고, 결과 파일 누락과 잘못된 JSON 사례를 재검증할 계획입니다. 판단과 계획은
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985891482"
+                >PR 답변</a
+              >에 남겼습니다. 아직 코드 수정과 재검증은 완료하지 않았습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #777; background: #f4f4f4; color: #444">
+            <strong>판단 이력 · 2026-09-11 · 코멘트 pagination 의견</strong>
+            <p>
+              PR 코멘트 첫 100개만 조회하는 구현은 100개를 넘는 코멘트가 쌓이면 중복 요약을 만들 수
+              있다는 P4 의견이었습니다. 현재 CI는 표식으로 하나의 요약 코멘트를 갱신하도록 설계되어
+              있고, 코멘트 폭주는 이번 변경의 정상 운영 범위가 아니므로 선택적 견고성 제안으로
+              판단했습니다.
+            </p>
+            <p>
+              pagination 추가는 더 견고해질 수 있지만 이번 PR의 동작·게이트·보안을 깨뜨리는 문제는
+              아니어서 P4를 기각하고 수정 대상에서 제외했습니다. 이 판단은
+              <a
+                href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985906846"
+                >PR 답변</a
+              >에 남겼습니다.
+            </p>
+          </div>
+          <div class="callout" style="border-color: #2f7d55; background: #eaf7ef; color: #205438">
+            <strong>수정 이력 · 2026-09-11 · P2 세 건 반영</strong>
+            <p>
+              미분류 <code>src</code> 경로가 전체 E2E로 승격되도록 workflow의 unknown 제외 범위를
+              알려진 경로로 좁혔습니다. <code>APP_ORIGIN</code>은 경로·쿼리·해시·인증 정보가 없는
+              순수 origin만 허용하고 API 호출 전 <code>URL.origin</code>으로 정규화합니다. 번들 측정
+              결과를 읽지 못해도 <code>ci-report/30-budget.md</code>에 fallback을 남기도록
+              수정했습니다.
+            </p>
+            <p>
+              <code>pnpm verify</code>에서 테스트 29개/164개, lint, typecheck가 통과했고, 잘못된
+              origin은 실패하며 번들 결과 파일 누락 시 fallback 파일이 생성되는 것을 로컬에서
+              재현했습니다. 수정 결과는 각 P2 코멘트의 답변과
+              <a href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12">PR #12</a>에서
+              확인합니다. 실제 Actions scope 재검증과 브라우저 E2E는 아직 실행하지 않았습니다.
+            </p>
           </div>
         </section>
 
@@ -1182,6 +1337,102 @@
             <a href="checklist.md">10주차 과제 진행 체크리스트</a>와
             <a href="../assignments/week-10.md">과제 원문</a>을 먼저 읽고, 증거가 생긴 항목만 완료로
             표시합니다.
+          </div>
+        </section>
+        <section
+          aria-labelledby="ai-review-history-title"
+          style="border-top: 1px solid #a35d2d; padding-top: 2rem; color: #6b3d20"
+        >
+          <p class="time" style="color: #a35d2d">2026-09-11 · AI 리뷰 결과 등록 이력</p>
+          <h2 id="ai-review-history-title">PR #12 코드 리뷰를 Pn 우선순위로 등록</h2>
+          <div class="callout" style="border-color: #a35d2d; background: #fff1e8; color: #6b3d20">
+            <strong>리뷰 기준과 역할</strong>
+            <p>
+              <a
+                href="https://velog.io/@theword123/%EC%BD%94%EB%93%9C-%EB%A6%AC%EB%B7%B0-%EC%9A%B0%EC%84%A0%EC%88%9C%EC%9C%84-%EC%A0%95%ED%95%98%EA%B8%B0-Pn-%EB%A3%B0"
+                >Pn 룰</a
+              >을 적용해 P1은 반드시 수정, P2는 강하게 수정 권장, P3~P5는 선택 의견으로 구분했다.
+              작성자가 P2 전부와 Minor 한 건의 P4 등록을 직접 결정했다. AI 리뷰는 advisory로만
+              남기며, 이 기록은 지적을 채택했다는 뜻이 아니라 PR에 전달한 결과를 남긴 것이다.
+            </p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <caption>
+                PR #12에 등록한 라인 코멘트
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">우선순위</th>
+                  <th scope="col">위치</th>
+                  <th scope="col">핵심 지적</th>
+                  <th scope="col">증거</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>P2</td>
+                  <td><code>.github/workflows/e2e.yml:94</code></td>
+                  <td>CSS-only 변경이 E2E를 전부 스킵함</td>
+                  <td>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985804098"
+                      >라인 코멘트</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>P2</td>
+                  <td><code>.github/workflows/e2e.yml:98</code></td>
+                  <td>분류되지 않은 <code>src</code> 경로가 order 테스트만 실행함</td>
+                  <td>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985804281"
+                      >라인 코멘트</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>P2</td>
+                  <td><code>scripts/validate-env.mjs:39</code></td>
+                  <td>경로·쿼리가 붙은 값을 origin으로 통과시킴</td>
+                  <td>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985804600"
+                      >라인 코멘트</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>P2</td>
+                  <td><code>scripts/report-bundle-budget.mjs:47</code></td>
+                  <td>번들 측정 실패가 PR 코멘트에 남지 않음</td>
+                  <td>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985804853"
+                      >라인 코멘트</a
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>P4</td>
+                  <td><code>scripts/post-ci-comment.mjs:53</code></td>
+                  <td>코멘트 조회가 첫 100개로 제한됨</td>
+                  <td>
+                    <a
+                      href="https://github.com/im-wen3y/loop-pack-fe-l2-vol1/pull/12#discussion_r3985805054"
+                      >라인 코멘트</a
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="done" style="border-color: #a35d2d; background: #fffaf6; color: #6b3d20">
+            <strong>확인 결과</strong> — P1 지적은 없었고, P2 4건과 P4 1건을 PR #12의 실제 diff
+            라인에 등록한 뒤 본문과 위치를 다시 조회해 확인했다. 다음 단계는 작성자의 각 지적에 대한
+            채택·기각 판단과 수정 후 재검증이다. 이 기록만으로 과제의 AI 리뷰 완료 조건이나 최종
+            제출 조건을 완료 처리하지 않는다.
           </div>
         </section>
         <footer>
