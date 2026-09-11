@@ -468,6 +468,47 @@ fallback은 의도대로 전체 실행을 트리거했다.
 비밀이 아닌 값이지만 **평문 `env:`는 자리 자체가 새는 자리**라, 나중에 진짜 비밀을 같은 칸에 넣으면
 그대로 샌다. fork PR에는 secrets가 전달되지 않아 외부 기여 PR에서는 게이트가 실패한다는 한계가 있다.
 
+#### 배포 환경이 생긴 뒤의 갱신 — 2026-09-11
+
+Vercel을 연결하면서 위 목록 중 한 줄이 바뀐다. **Vercel에서는 `APP_ORIGIN`이 필수가 아니다.**
+배포마다 URL이 달라 고정값을 미리 넣을 수 없고, 대신 `VERCEL_URL`이 그 배포의 도메인을 담아 준다.
+`VERCEL=1`이고 `VERCEL_URL`이 있으면 누락 검사를 건너뛴다. 계약이 느슨해진 것이 아니라 값의
+공급자가 사람에서 플랫폼으로 바뀐 것이며, Vercel 밖(로컬·CI)에서는 그대로 실패한다.
+
+같은 작업에서 게이트 자체의 결함을 하나 찾았다. Preview가 다른 환경을 가리키는지 보는
+`checkSelfReference()`는 `VERCEL_ENV === 'preview'`일 때만 동작하는데, Vercel이 부르는 `pnpm build`가
+`next build` 하나였다. 검증은 Actions의 별도 step에서만 돌았고 거기서는 그 조건이 참이 될 수 없다.
+**즉 어디에서도 실행되지 않는 죽은 코드였다.** `build`를 `node scripts/validate-env.mjs && next build`로
+바꿔 배포 경로에 연결했다. 게이트는 조건이 맞으면 막는지뿐 아니라 실제로 빌드하는 명령에 걸려
+있는지까지 확인해야 완성이다.
+
+#### 제출 질문 3번 실험 — Preview에 Production URL
+
+Vercel Environment Variables에서 `APP_ORIGIN`을 **Preview 환경에만** Production URL로 지정하고
+재배포했다.
+
+| 확인 항목              | 결과                                                                    |
+| ---------------------- | ----------------------------------------------------------------------- |
+| build 앞에서 막히는가  | `&&` 앞에서 종료. `next build` 미실행 — 잘못된 배포물이 만들어지지 않음 |
+| 사유가 로그에 보이는가 | 변수 이름, 무엇이 잘못됐는지, 어떻게 고치는지까지 출력                  |
+| 값이 로그에 남는가     | 남지 않음. Production URL 문자열이 로그 어디에도 없음                   |
+
+Preview 변수를 지우고 재배포해 초록불로 복구했다. 복구 후 Preview `/products`의 **서버 응답 HTML**에
+`총 30개`가 들어 있는 것으로 `VERCEL_URL` 분기가 동작함을 확인했다. 브라우저가 나중에 채운 값이
+아니라 서버가 만든 HTML에 이미 있다는 뜻이다.
+
+#### Deployment Protection과 `VERCEL_URL`의 충돌
+
+위 확인에 도달하기 전 Preview가 스켈레톤에서 멈춰 있었다. 브라우저로 API 경로를 부르면 200인데
+같은 경로를 `curl`로 부르면 302로 `vercel.com/sso-api`에 튕겼다. 브라우저에는 SSO 쿠키가 있고
+**서버가 스스로 부르는 요청에는 없다.** Vercel 문서도 Standard Protection에서는 `VERCEL_URL`로 향하는
+fetch를 쓰지 말라고 명시한다. 보호 범위는 Standard(production 제외 전부)와 All Deployments 둘뿐이고
+production만 보호하는 선택지는 Enterprise 전용이라, Hobby에서 켤 수 있는 유일한 옵션이 정확히
+Preview를 잠그는 옵션이었다. 보호를 해제해 해결했다.
+
+기준 하나를 얻었다. **접근 제한이 걸린 환경에서 "브라우저에서 200"은 서버도 통과한다는 근거가 되지
+않는다.** 서버 쪽 요청을 따로 확인해야 한다.
+
 ### required 배치
 
 | 게이트    | 변동성 | 비용                | 막지 못하면                              | 배치     |

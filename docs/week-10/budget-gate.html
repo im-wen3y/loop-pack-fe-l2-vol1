@@ -836,6 +836,119 @@ env:
               job summary가 PR 화면에 표로 렌더되는지 눈으로 보는 것과 required 배치다.
             </p>
           </div>
+
+          <div class="callout cold">
+            <strong
+              >이후 확인 · 2026-09-11 · Vercel에서 <code>APP_ORIGIN</code>은 필수가 아니다</strong
+            >
+            <p>
+              위 표는 <code>APP_ORIGIN</code>을 &ldquo;누락 시 실패&rdquo;로 적었다. 배포 환경이
+              생기면서 이 판단이 한 군데에서 바뀐다.
+              <strong>Vercel은 배포마다 URL이 달라</strong> 고정값을 미리 넣을 수 없고, 대신
+              <code>VERCEL_URL</code>이 그 배포의 도메인을 프로토콜 없이 담아 준다. 그래서
+              <code>VERCEL=1</code>이고 <code>VERCEL_URL</code>이 있으면 누락 검사를 건너뛴다.
+            </p>
+            <pre><code>if (isOnVercel &amp;&amp; process.env.VERCEL_URL) return null</code></pre>
+            <p>
+              계약이 느슨해진 것이 아니라 <strong>공급자가 바뀐 것</strong>이다. 절대 origin이
+              필요하다는 요구는 그대로고, 그 값을 사람이 넣느냐 플랫폼이 넣느냐만 다르다. Vercel
+              밖(로컬 · CI)에서는 여전히 없으면 실패한다.
+            </p>
+          </div>
+
+          <div class="callout warning">
+            <strong>검사를 짠 것과 검사가 도는 것은 별개였다</strong>
+            <p>
+              Preview가 다른 환경을 가리키는지 보는 <code>checkSelfReference()</code>는
+              <code>VERCEL_ENV === 'preview'</code>일 때만 동작한다. 그런데 Vercel이 부르는
+              <code>pnpm build</code>는 <code>next build</code> 하나였다. 검증은 GitHub Actions의
+              별도 step에서만 돌고 있었고, Actions에서는 그 조건이 참이 될 수 없다.
+              <strong>즉 이 검사는 어디에서도 실행되지 않는 죽은 코드였다.</strong>
+            </p>
+            <pre><code>- "build": "next build"
++ "build": "node scripts/validate-env.mjs &amp;&amp; next build"</code></pre>
+            <p>
+              게이트는 &ldquo;조건이 맞으면 막는가&rdquo;뿐 아니라
+              <strong>&ldquo;실제로 빌드하는 명령에 걸려 있는가&rdquo;</strong>까지 확인해야
+              완성이다. CI에만 붙이면 배포 경로는 무방비다.
+            </p>
+          </div>
+
+          <div class="callout cold">
+            <strong>제출 질문 3번 실험 · Preview에 Production URL 넣기</strong>
+            <p>
+              Vercel Settings &rarr; Environment Variables에서 <code>APP_ORIGIN</code>을
+              <strong>Preview 환경에만</strong> Production URL로 지정하고 재배포했다. 결과는 아래와
+              같다.
+            </p>
+            <pre><code>&gt; node scripts/validate-env.mjs &amp;&amp; next build
+
+## ❌ 환경 변수 검증 실패
+
+- APP_ORIGIN이 이 Preview 배포가 아닌 다른 환경을 가리킵니다. …</code></pre>
+            <div class="table-wrap">
+              <table>
+                <caption>
+                  실험에서 확인한 세 가지
+                </caption>
+                <thead>
+                  <tr>
+                    <th>확인 항목</th>
+                    <th>결과</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>build 앞에서 막히는가</td>
+                    <td>
+                      <code>&amp;&amp;</code> 앞에서 종료. <code>next build</code> 미실행 &mdash;
+                      잘못된 설정으로 만든 배포물이 존재하지 않는다
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>사유가 로그에 보이는가</td>
+                    <td>변수 이름과 무엇이 잘못됐는지, 어떻게 고치는지까지 출력</td>
+                  </tr>
+                  <tr>
+                    <td>값이 로그에 남는가</td>
+                    <td><strong>남지 않는다.</strong> Production URL 문자열이 어디에도 없다</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              Preview 변수를 지우고 재배포해 초록불로 복구했다. 복구 후 Preview
+              <code>/products</code>의 서버 응답 HTML에 <code>총 30개</code>가 들어 있는 것으로
+              <code>VERCEL_URL</code> 분기가 동작함을 확인했다 &mdash; 브라우저가 나중에 채운 값이
+              아니라 서버가 만든 HTML에 이미 있다는 뜻이다.
+            </p>
+          </div>
+
+          <div class="callout warning">
+            <strong>곁가지 · Deployment Protection이 SSR 자기 호출을 막는다</strong>
+            <p>
+              위 확인에 도달하기까지 Preview가 스켈레톤에서 멈춰 있었다. 브라우저로 API 경로를
+              부르면 200이었는데, 같은 경로를 <code>curl</code>로 부르니 302로
+              <code>vercel.com/sso-api</code>에 튕겼다.
+              <strong>브라우저에는 SSO 쿠키가 있고 서버가 스스로 부르는 요청에는 없다.</strong> 같은
+              URL인데 호출 주체에 따라 결과가 갈린 것이다.
+            </p>
+            <p>
+              Vercel 문서도 Standard Protection에서는 <code>VERCEL_URL</code>로 향하는 fetch를 쓰지
+              말라고 명시한다. 보호 범위는 Standard(production 제외 전부)와 All Deployments
+              둘뿐이고, <strong>production만 보호하는 선택지는 Enterprise 전용</strong>이라
+              Hobby에서 켤 수 있는 유일한 옵션이 정확히 Preview를 잠그는 옵션이었다. 보호를 끄고
+              해결했다.
+            </p>
+            <p>
+              얻은 기준 하나.
+              <strong
+                >접근 제한이 걸린 환경에서 &ldquo;브라우저에서 200&rdquo;은 서버도 통과한다는 근거가
+                되지 않는다.</strong
+              >
+              서버 쪽 요청을 따로 확인해야 한다.
+            </p>
+          </div>
         </section>
 
         <section id="visibility" class="step">
